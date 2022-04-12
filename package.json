@@ -28,7 +28,7 @@
     "build": "pnpm -r --filter ./packages run build",
     "clean": "pnpm -r --parallel exec rm -rf node_modules dist && pnpm exec rm -rf node_modules",
     "test": "pnpm -r --filter ./packages run test",
-    "release": "pnpm clean && pnpm i && pnpm build && pnpm test && pnpm changeset publish --filter ./packages",
+    "release": "pnpm clean && pnpm i && pnpm build && pnpm test && pnpm changeset publish",
     "lint": "pnpm -r run lint",
     "lint:fix": "pnpm -r run lint:fix"
   },
