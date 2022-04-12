@@ -1,0 +1,51 @@
+{
+  "name": "@shuvi/redox-react",
+  "version": "0.0.1-pre.4",
+  "sideEffects": false,
+  "description": "Rematch core with react hooks",
+  "homepage": "https://rematchjs.org",
+  "main": "dist/index.js",
+  "module": "dist/react.esm.js",
+  "browser": "dist/react.esm.js",
+  "unpkg": "dist/react.umd.production.min.js",
+  "types": "dist/index.d.ts",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "start": "dts watch",
+    "build": "dts build --format cjs,esm,umd --tsconfig ./tsconfig.build.json",
+    "test": "dts test",
+    "lint": "dts lint",
+    "clean": "rimraf dist"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "devDependencies": {
+    "@shuvi/redox": "^0.0.1-pre.4",
+    "@types/react": "^16.9.43",
+    "@types/react-dom": "^16.9.6",
+    "react": "16.14.0",
+    "react-dom": "16.14.0"
+  },
+  "peerDependencies": {
+    "@shuvi/redox": "^0.0.1",
+    "react": ">=16.8",
+    "react-dom": ">=16.8"
+  },
+  "keywords": [
+    "@rematch",
+    "react",
+    "plugin",
+    "redux",
+    "rematch"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shuvijs/redox.git"
+  }
+}

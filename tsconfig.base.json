@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+		"module": "esnext",
+		"lib": ["dom", "esnext"],
+		"importHelpers": true,
+		"declaration": true,
+		"declarationMap": true,
+		"downlevelIteration": true,
+		"sourceMap": true,
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"moduleResolution": "node",
+		"esModuleInterop": true,
+		"removeComments": true,
+		"noEmit": true
+  }
+}
