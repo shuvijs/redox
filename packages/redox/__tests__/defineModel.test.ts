@@ -6,7 +6,7 @@ beforeEach(() => {
 	manager = redox()
 })
 
-test('should work', () => {
+test('should return the model', () => {
 	const model = {
 		name: 'a',
 		state: {},
@@ -14,8 +14,6 @@ test('should work', () => {
 	}
 
 	const modelA = defineModel(model)
-	const modelB = defineModel(model)
 
 	expect(model).toBe(modelA)
-	expect(modelA).toBe(modelB)
 })

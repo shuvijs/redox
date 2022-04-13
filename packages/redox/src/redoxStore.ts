@@ -12,19 +12,19 @@ import {
 	Views,
 	Store,
 	Model,
-	AnyModel
+	AnyModel,
 } from './types'
 import { createEffectDispatcher, createReducerDispatcher } from './dispatcher'
 import { createViews } from './views'
-import validate from './validate';
+import validate from './validate'
 import { getDependsState, getDependsDispatch, emptyObject } from './utils'
 
 const randomString = () =>
-  Math.random().toString(36).substring(7).split('').join('.');
+	Math.random().toString(36).substring(7).split('').join('.')
 
 const ActionTypes = {
-  INIT: `@@redux/INIT${/* #__PURE__ */ randomString()}`,
-};
+	INIT: `@@redux/INIT${/* #__PURE__ */ randomString()}`,
+}
 
 export type IModelManager = {
 	get<IModel extends AnyModel>(model: IModel): RedoxStore<IModel>
@@ -33,17 +33,18 @@ export type IModelManager = {
 	destroy(): void
 }
 
-
 type ICacheMap = Map<string, RedoxStore<any>>
 
-export function redox(initialState?: IModelManager['initialState']): IModelManager {
+export function redox(
+	initialState?: IModelManager['initialState']
+): IModelManager {
 	const cacheMap: ICacheMap = new Map()
 	const modelCache = {
 		initialState: initialState || emptyObject,
 		get<T extends AnyModel>(model: T) {
 			const name = model.name
 			let cacheStore = cacheMap.get(name)
-			if(cacheStore){
+			if (cacheStore) {
 				return cacheStore as RedoxStore<T>
 			}
 			return initModel(model)
@@ -67,39 +68,40 @@ export function redox(initialState?: IModelManager['initialState']): IModelManag
 			cacheMap.clear()
 		},
 	}
-	function initModel<M extends AnyModel>(model: M): RedoxStore<M>{
-		const depends = model._depends;
-		if(depends){
-			depends.forEach(depend => {
+	function initModel<M extends AnyModel>(model: M): RedoxStore<M> {
+		const depends = model._depends
+		if (depends) {
+			depends.forEach((depend) => {
 				modelCache.get(depend) // trigger initial
 			})
 		}
-		const store = new RedoxStore(model, modelCache);
+		const store = new RedoxStore(model, modelCache)
 		const storeName = model.name
 		cacheMap.set(storeName, store)
-		return store;
+		return store
 	}
-	return modelCache;
+	return modelCache
 }
 
-export class RedoxStore<
-	IModel extends AnyModel,
-> implements Store<IModel>{
-
+export class RedoxStore<IModel extends AnyModel> implements Store<IModel> {
 	public name: string
-	public views!: Store<IModel>['views'];
+	public views!: Store<IModel>['views']
+
 	public _beDepends: Store<IModel>['_beDepends'] = new Set()
-	public _cache: IModelManager;
-	public model: Readonly<IModel>;
+
+	public _cache: IModelManager
+
+	public model: Readonly<IModel>
+
 	private currentState: IModel['state'] | null
 	private currentReducer: ReduxReducer<IModel['state']> | null
 	private listeners: Set<() => void> = new Set()
 	private isDispatching: boolean
 
-	constructor(model: IModel, cache: IModelManager){
-		this.name = model.name;
-		this._cache = cache;
-		this.model = model;
+	constructor(model: IModel, cache: IModelManager) {
+		this.name = model.name
+		this._cache = cache
+		this.model = model
 		const depends = this.model._depends
 		// collection _beDepends, a depends b, when b update, call a need update
 		if (depends) {
@@ -110,45 +112,42 @@ export class RedoxStore<
 		}
 		const reducer = createModelReducer(model)
 		this.currentReducer = reducer
-		let initialState = model.state;
-		if(this._cache.initialState[this.name]){
+		let initialState = model.state
+		if (this._cache.initialState[this.name]) {
 			initialState = this._cache.initialState[this.name]
-			delete this._cache.initialState[this.name];
+			delete this._cache.initialState[this.name]
 		}
-		this.currentState = initialState;
+		this.currentState = initialState
 		this.isDispatching = false
 		this.dispatch({ type: ActionTypes.INIT })
-	
+
 		enhanceModel(this, model)
-	
 	}
 
 	getState = () => {
-		return this.currentState!;
+		return this.currentState!
 	}
 
 	subscribe(listener: () => void) {
-
-		validate(()=>[
+		validate(() => [
 			[
 				typeof listener !== 'function',
-				`Expected the listener to be a function`
+				`Expected the listener to be a function`,
 			],
 			[
 				this.isDispatching,
-				'You may not call store.subscribe() while the reducer is executing.'
-			]
+				'You may not call store.subscribe() while the reducer is executing.',
+			],
 		])
 
 		this.listeners.add(listener)
 
 		return () => {
-
-			validate(()=>[
+			validate(() => [
 				[
 					this.isDispatching,
-					'You may not unsubscribe from a store listener while the reducer is executing. '
-				]
+					'You may not unsubscribe from a store listener while the reducer is executing. ',
+				],
 			])
 
 			this.listeners.delete(listener)
@@ -163,9 +162,12 @@ export class RedoxStore<
 			// then run the effect and return its result
 			const effect = this.model.effects[action.type] as Effect<any, any, any>
 			const getState = () => {
-				return getDependsState(this.model._depends, this._cache);
+				return getDependsState(this.model._depends, this._cache)
 			}
-			const dependsDispatch = getDependsDispatch(this.model._depends, this._cache)
+			const dependsDispatch = getDependsDispatch(
+				this.model._depends,
+				this._cache
+			)
 
 			return effect.call(
 				this.dispatch,
@@ -194,7 +196,6 @@ export class RedoxStore<
 
 		let nextState
 
-
 		try {
 			this.isDispatching = true
 			nextState = this.currentReducer!(this.currentState, action)
@@ -204,20 +205,20 @@ export class RedoxStore<
 
 		if (nextState !== this.currentState) {
 			this.currentState = nextState
-      // trigger self listeners
+			// trigger self listeners
 			this._triggerListener()
-      // trigger beDepends listeners
-      for (const beDepend of this._beDepends) {
-        beDepend._triggerListener()
+			// trigger beDepends listeners
+			for (const beDepend of this._beDepends) {
+				beDepend._triggerListener()
 			}
 		}
 
 		return action
 	}
 
-  private addBeDepends = (dependStore: RedoxStore<any>) => {
-    dependStore._beDepends.add(this)
-  }
+	private addBeDepends = (dependStore: RedoxStore<any>) => {
+		dependStore._beDepends.add(this)
+	}
 
 	_triggerListener = () => {
 		for (const listener of this.listeners) {
@@ -225,25 +226,23 @@ export class RedoxStore<
 		}
 	}
 
-  destroy = () => {
-    this.currentState = null
-    this.currentReducer = null
-    this.listeners.clear()
-    this._beDepends.clear()
-		this.model = emptyObject;
-		this._cache = emptyObject;
-		if(this.views){
-			const viewsKeys = Object.keys(this.views);
-			for(const viewsKey of viewsKeys){
+	destroy = () => {
+		this.currentState = null
+		this.currentReducer = null
+		this.listeners.clear()
+		this._beDepends.clear()
+		this.model = emptyObject
+		this._cache = emptyObject
+		if (this.views) {
+			const viewsKeys = Object.keys(this.views)
+			for (const viewsKey of viewsKeys) {
 				// @ts-ignore
-				this.views[viewsKey] = null;
+				this.views[viewsKey] = null
 			}
-			this.views = emptyObject;
+			this.views = emptyObject
 		}
-  }
+	}
 }
-
-
 
 function enhanceModel<IModel extends AnyModel>(
 	store: RedoxStore<IModel>,
@@ -251,7 +250,7 @@ function enhanceModel<IModel extends AnyModel>(
 ): void {
 	createReducerDispatcher(store, model)
 	createEffectDispatcher(store, model)
-	if(model.views) createViews(store, model)
+	if (model.views) createViews(store, model)
 }
 
 setAutoFreeze(false)
