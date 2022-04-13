@@ -30,13 +30,6 @@ jobs:
           node-version: 16
           cache: 'pnpm'
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly-2021-08-12
-          profile: minimal
-
-
       - run: pnpm install --frozen-lockfile
 
       - name: Build
