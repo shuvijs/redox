@@ -1,8 +1,6 @@
 {
 	"compilerOptions": {
-    "compilerOptions": {
-      "jsx": "react"
-    },
+		"jsx": "react",
 		"module": "esnext",
 		"lib": ["dom", "esnext"],
 		"importHelpers": true,

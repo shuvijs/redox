@@ -16,7 +16,6 @@
   "scripts": {
     "dev": "dts watch --tsconfig ./tsconfig.build.json",
     "build": "dts build --format cjs,esm,umd --tsconfig ./tsconfig.build.json",
-    "test": "dts test",
     "lint": "dts lint",
     "clean": "rimraf dist"
   },
