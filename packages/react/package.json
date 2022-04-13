@@ -5,16 +5,16 @@
   "description": "Rematch core with react hooks",
   "homepage": "https://rematchjs.org",
   "main": "dist/index.js",
-  "module": "dist/react.esm.js",
-  "browser": "dist/react.esm.js",
-  "unpkg": "dist/react.umd.production.min.js",
+  "module": "dist/redox-react.esm.js",
+  "browser": "dist/redox-react.esm.js",
+  "unpkg": "dist/redox-react.umd.production.min.js",
   "types": "dist/index.d.ts",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
   "scripts": {
-    "start": "dts watch",
+    "dev": "dts watch --tsconfig ./tsconfig.build.json",
     "build": "dts build --format cjs,esm,umd --tsconfig ./tsconfig.build.json",
     "test": "dts test",
     "lint": "dts lint",
@@ -25,23 +25,22 @@
     "src"
   ],
   "devDependencies": {
-    "@shuvi/redox": "^0.0.1-pre.5",
+    "@shuvi/redox": "0.0.1-pre.5",
     "@types/react": "^16.9.43",
     "@types/react-dom": "^16.9.6",
     "react": "16.14.0",
     "react-dom": "16.14.0"
   },
   "peerDependencies": {
-    "@shuvi/redox": "^0.0.1",
+    "@shuvi/redox": "0.0.1-pre.5",
     "react": ">=16.8",
     "react-dom": ">=16.8"
   },
   "keywords": [
-    "@rematch",
+    "@shuvi/redox",
+    "redox",
     "react",
-    "plugin",
-    "redux",
-    "rematch"
+    "redux"
   ],
   "license": "MIT",
   "repository": {
