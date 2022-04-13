@@ -1,5 +1,8 @@
 {
-  "compilerOptions": {
+	"compilerOptions": {
+    "compilerOptions": {
+      "jsx": "react"
+    },
 		"module": "esnext",
 		"lib": ["dom", "esnext"],
 		"importHelpers": true,
@@ -16,5 +19,7 @@
 		"esModuleInterop": true,
 		"removeComments": true,
 		"noEmit": true
-  }
+	},
+	"include": ["packages/*/src", "packages/*/__tests__"],
+	"exclude": ["node_modules"]
 }
