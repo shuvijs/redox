@@ -7,14 +7,8 @@ import React, {
 	useMemo,
 	useRef,
 } from 'react'
-import {
-	validate,
-	redox,
-} from '@shuvi/redox'
-import type {
-	IModelManager,
-  RedoxStore
- } from '@shuvi/redox';
+import { validate, redox } from '@shuvi/redox'
+import type { IModelManager, Store } from '@shuvi/redox'
 import { createBatchManager } from './batchManager'
 import { shadowEqual } from './utils'
 import { IUseModel, ISelector, AnyModel } from './types'
@@ -26,7 +20,7 @@ function tuplify<T extends any[]>(...elements: T) {
 function getStateOrViews<
 	IModel extends AnyModel,
 	Selector extends ISelector<IModel>
->(store: RedoxStore<IModel>, selector?: Selector) {
+>(store: Store<IModel>, selector?: Selector) {
 	const modelState = store.getState()
 	if (!selector) {
 		return modelState
@@ -63,10 +57,7 @@ const createUseModel =
 		modelManager: IModelManager,
 		batchManager: ReturnType<typeof createBatchManager>
 	) =>
-	<
-		IModel extends AnyModel,
-		Selector extends ISelector<IModel>
-	>(
+	<IModel extends AnyModel, Selector extends ISelector<IModel>>(
 		model: IModel,
 		selector?: Selector
 	) => {
