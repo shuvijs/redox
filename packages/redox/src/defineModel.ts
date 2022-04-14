@@ -1,7 +1,4 @@
-import 
-// validate, 
-{ validateModel } 
-from './validate'
+import validate, { validateModel } from './validate'
 import {
 	Effects,
 	Model,
@@ -9,7 +6,7 @@ import {
 	Reducers,
 	Views,
 	State,
-	Tuple
+	Tuple,
 } from './types'
 
 const modelNameCache = new Set<string>()
@@ -24,16 +21,16 @@ export const defineModel = <
 	D extends any[] = []
 >(
 	modelOptions: Omit<Model<N, S, MC, R, E, V>, 'depends'>,
-	depends?: Tuple<D>,
+	depends?: Tuple<D>
 ) => {
 	validateModel(modelOptions)
-	const modelName = modelOptions.name;
-	// validate(()=>[
-	// 	[
-	// 		modelNameCache.has(modelName),
-	// 		`model name "${modelName}" has been defined, change one please !`
-	// 	]
-	// ])
+	const modelName = modelOptions.name
+	validate(() => [
+		[
+			depends && !Array.isArray(depends),
+			`second argument depends should be an array, now is ${typeof depends} !`,
+		],
+	])
 	modelNameCache.add(modelName)
 	const finalModel = modelOptions as Model<N, S, MC, R, E, V>
 	finalModel._depends = depends
