@@ -27,21 +27,42 @@ const ActionTypes = {
 }
 
 export type IModelManager = {
-	get<IModel extends AnyModel>(model: IModel): RedoxStore<IModel>
-	initialState: Record<string, State>
+	get<IModel extends AnyModel>(model: IModel): Store<IModel>
+	_getRedox<IModel extends AnyModel>(model: IModel): RedoxStore<IModel>
+	getInitialState: (name: string) => State | undefined
 	getChangedState(): { [X: string]: State }
 	destroy(): void
 }
 
 type ICacheMap = Map<string, RedoxStore<any>>
 
-export function redox(
-	initialState?: IModelManager['initialState']
-): IModelManager {
+function getStoreApi<M extends AnyModel = AnyModel>(
+	redoxStore: RedoxStore<M>
+): Store<M> {
+	const store = {} as Store<M>
+	;(['name', 'getState', 'dispatch', 'subscribe', 'views'] as const).forEach(
+		(apiKey) => {
+			// @ts-ignore
+			store[apiKey] = redoxStore[apiKey]
+		}
+	)
+	return store
+}
+
+export function redox(initialState?: Record<string, State>): IModelManager {
 	const cacheMap: ICacheMap = new Map()
+	let initState = initialState || emptyObject
 	const modelCache = {
-		initialState: initialState || emptyObject,
+		getInitialState: (name: string): State | undefined => {
+			const result = initState[name]
+			delete initState[name]
+			return result
+		},
 		get<T extends AnyModel>(model: T) {
+			const redoxStore = modelCache._getRedox(model)
+			return getStoreApi(redoxStore)
+		},
+		_getRedox<T extends AnyModel>(model: T) {
 			const name = model.name
 			let cacheStore = cacheMap.get(name)
 			if (cacheStore) {
@@ -66,13 +87,14 @@ export function redox(
 				store.destroy()
 			}
 			cacheMap.clear()
+			initState = emptyObject
 		},
 	}
 	function initModel<M extends AnyModel>(model: M): RedoxStore<M> {
 		const depends = model._depends
 		if (depends) {
 			depends.forEach((depend) => {
-				modelCache.get(depend) // trigger initial
+				modelCache._getRedox(depend) // trigger initial
 			})
 		}
 		const store = new RedoxStore(model, modelCache)
@@ -87,7 +109,7 @@ export class RedoxStore<IModel extends AnyModel> implements Store<IModel> {
 	public name: string
 	public views!: Store<IModel>['views']
 
-	public _beDepends: Store<IModel>['_beDepends'] = new Set()
+	public _beDepends: Set<RedoxStore<any>> = new Set()
 
 	public _cache: IModelManager
 
@@ -106,18 +128,13 @@ export class RedoxStore<IModel extends AnyModel> implements Store<IModel> {
 		// collection _beDepends, a depends b, when b update, call a need update
 		if (depends) {
 			depends.forEach((depend) => {
-				const dependStore = this._cache.get(depend)
+				const dependStore = this._cache._getRedox(depend)
 				this.addBeDepends(dependStore)
 			})
 		}
 		const reducer = createModelReducer(model)
 		this.currentReducer = reducer
-		let initialState = model.state
-		if (this._cache.initialState[this.name]) {
-			initialState = this._cache.initialState[this.name]
-			delete this._cache.initialState[this.name]
-		}
-		this.currentState = initialState
+		this.currentState = this._cache.getInitialState(this.name) || model.state
 		this.isDispatching = false
 		this.dispatch({ type: ActionTypes.INIT })
 
@@ -128,7 +145,7 @@ export class RedoxStore<IModel extends AnyModel> implements Store<IModel> {
 		return this.currentState!
 	}
 
-	subscribe(listener: () => void) {
+	subscribe = (listener: () => void) => {
 		validate(() => [
 			[
 				typeof listener !== 'function',
