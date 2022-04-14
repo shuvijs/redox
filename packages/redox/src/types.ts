@@ -331,10 +331,7 @@ export interface Store<IModel extends AnyModel> {
 	getState(): IModel['state']
 	dispatch: RedoxDispatch<IModel>
 	subscribe(listener: () => void): unSubscribe
-	destroy: () => void
 	views: RedoxViews<IModel>
-	_triggerListener: () => void
-	_beDepends: Set<Store<any>>
 }
 type unSubscribe = () => void
 
