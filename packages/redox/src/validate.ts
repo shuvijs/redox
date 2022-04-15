@@ -1,8 +1,4 @@
-import {
-	Effects,
-	Reducers,
-	AnyModel,
-} from './types'
+import { AnyModel } from './types'
 
 /**
  * If the first item is true, it means there is an error described by
@@ -47,51 +43,55 @@ const validate = (runValidations: () => Validation[]): void => {
 	}
 }
 
-export const validateModel = (
-	model: AnyModel
-): void => {
+export const validateModel = (model: AnyModel): void => {
 	validate(() => [
 		[!model, 'model config is required'],
-		[typeof model.name !== 'string', 'model "name[string]"  is required !'],
 		[
-			typeof model.state !== 'object',
-			'model "state" is required and it should be object !'
+			typeof model.name !== 'string' || !model.name,
+			'model "name[string]"  is required and can\'t be empty !',
 		],
 		[
-			model.reducers === undefined,
+			typeof model.state !== 'object',
+			'model "state" is required and it should be object !',
+		],
+		[
+			typeof model.reducers === 'undefined',
 			'model "reducers" is required and it should be object !',
 		],
 	])
+	const keys = new Set<string>(Object.keys(model.reducers))
+	validateProperty(model, 'reducers', keys)
+	validateProperty(model, 'effects', keys)
+	validateProperty(model, 'views', keys)
+	keys.clear()
 }
 
-export const validateModelReducer = (
-	modelName: string,
-	reducers: Reducers<any>,
-	reducerName: string
-): void => {
-	validate(() => [
-		[
-			!!reducerName.match(/\/.+\//),
-			`Invalid reducer name (${modelName}/${reducerName})`,
-		],
-		[
-			typeof reducers[reducerName] !== 'function',
-			`Invalid reducer (${modelName}/${reducerName}). Must be a function`,
-		],
-	])
-}
-
-export const validateModelEffect = (
-	modelName: string,
-	effects: Effects<any, any, any>,
-	effectName: string
-): void => {
-	validate(() => [
-		[
-			typeof effects[effectName] !== 'function',
-			`Invalid effect (${modelName}/${effectName}). Must be a function`,
-		],
-	])
+function validateProperty(
+	model: AnyModel,
+	prop: keyof AnyModel,
+	keys: Set<string>
+) {
+	const target = model[prop] as any
+	if (target) {
+		validate(() => [
+			[typeof target !== 'object', `model.${prop} should be object !`],
+		])
+		for (const Key of Object.keys(target)) {
+			if (keys.has(Key)) {
+				keys.clear()
+				validate(() => [[true, `repeat key "${Key}" in model.${prop} !`]])
+				break
+			} else {
+				validate(() => [
+					[
+						typeof target[Key] !== 'function',
+						`model.${prop} "${Key}" should be function !`,
+					],
+				])
+				keys.add(Key)
+			}
+		}
+	}
 }
 
 export default validate

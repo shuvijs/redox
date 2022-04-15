@@ -4,20 +4,22 @@ import {
 	State,
 	ModelCollection,
 	ReduxReducer,
-	AnyAction,
 	ReduxDispatch,
 	Reducers,
 	Effects,
-	Effect,
 	Views,
 	Store,
 	Model,
+	DispatcherOfReducers,
+	DispatcherOfEffects,
+	RedoxViews,
 	AnyModel,
 } from './types'
-import { createEffectDispatcher, createReducerDispatcher } from './dispatcher'
+import { createReducers } from './reducers'
+import { createEffects } from './effects'
 import { createViews } from './views'
 import validate from './validate'
-import { getDependsState, getDependsDispatch, emptyObject } from './utils'
+import { emptyObject } from './utils'
 
 const randomString = () =>
 	Math.random().toString(36).substring(7).split('').join('.')
@@ -26,28 +28,18 @@ const ActionTypes = {
 	INIT: `@@redux/INIT${/* #__PURE__ */ randomString()}`,
 }
 
+type unSubscribe = () => void
+
 export type IModelManager = {
 	get<IModel extends AnyModel>(model: IModel): Store<IModel>
 	_getRedox<IModel extends AnyModel>(model: IModel): RedoxStore<IModel>
+	subscribe(model: AnyModel, fn: () => any): unSubscribe
 	getInitialState: (name: string) => State | undefined
 	getChangedState(): { [X: string]: State }
 	destroy(): void
 }
 
 type ICacheMap = Map<string, RedoxStore<any>>
-
-function getStoreApi<M extends AnyModel = AnyModel>(
-	redoxStore: RedoxStore<M>
-): Store<M> {
-	const store = {} as Store<M>
-	;(['name', 'getState', 'dispatch', 'subscribe', 'views'] as const).forEach(
-		(apiKey) => {
-			// @ts-ignore
-			store[apiKey] = redoxStore[apiKey]
-		}
-	)
-	return store
-}
 
 export function redox(initialState?: Record<string, State>): IModelManager {
 	const cacheMap: ICacheMap = new Map()
@@ -58,17 +50,21 @@ export function redox(initialState?: Record<string, State>): IModelManager {
 			delete initState[name]
 			return result
 		},
-		get<T extends AnyModel>(model: T) {
+		get<IModel extends AnyModel>(model: IModel) {
 			const redoxStore = modelCache._getRedox(model)
-			return getStoreApi(redoxStore)
+			return redoxStore.storeApi
 		},
-		_getRedox<T extends AnyModel>(model: T) {
+		_getRedox<IModel extends AnyModel>(model: IModel) {
 			const name = model.name
 			let cacheStore = cacheMap.get(name)
 			if (cacheStore) {
-				return cacheStore as RedoxStore<T>
+				return cacheStore as RedoxStore<IModel>
 			}
 			return initModel(model)
+		},
+		subscribe(model: AnyModel, fn: () => any) {
+			const redoxStore = modelCache._getRedox(model)
+			return redoxStore.subscribe(fn)
 		},
 		// only get change state
 		getChangedState() {
@@ -105,40 +101,48 @@ export function redox(initialState?: Record<string, State>): IModelManager {
 	return modelCache
 }
 
-export class RedoxStore<IModel extends AnyModel> implements Store<IModel> {
-	public name: string
-	public views!: Store<IModel>['views']
-
+export class RedoxStore<IModel extends AnyModel> {
 	public _beDepends: Set<RedoxStore<any>> = new Set()
-
 	public _cache: IModelManager
-
 	public model: Readonly<IModel>
+	public storeApi: Store<IModel>
+	public storeDepends: Record<string, Store<AnyModel>>
+	public reducers = {} as DispatcherOfReducers<
+		IModel['state'],
+		IModel['reducers']
+	>
+	public effects = {} as DispatcherOfEffects<IModel['effects']>
+	public views = {} as RedoxViews<IModel>
 
-	private currentState: IModel['state'] | null
-	private currentReducer: ReduxReducer<IModel['state']> | null
+	private currentState: State | undefined
+	private currentReducer: ReduxReducer<State> | null
 	private listeners: Set<() => void> = new Set()
 	private isDispatching: boolean
 
 	constructor(model: IModel, cache: IModelManager) {
-		this.name = model.name
 		this._cache = cache
 		this.model = model
+		this.storeDepends = {}
+		const reducer = createModelReducer(model)
+		this.currentReducer = reducer
+		this.currentState =
+			this._cache.getInitialState(this.model.name) || model.state
+		this.isDispatching = false
+		this.dispatch({ type: ActionTypes.INIT })
+
+		enhanceModel(this)
+
+		this.storeApi = getStoreApi(this)
+
 		const depends = this.model._depends
 		// collection _beDepends, a depends b, when b update, call a need update
 		if (depends) {
 			depends.forEach((depend) => {
 				const dependStore = this._cache._getRedox(depend)
 				this.addBeDepends(dependStore)
+				this.storeDepends[depend.name] = dependStore.storeApi
 			})
 		}
-		const reducer = createModelReducer(model)
-		this.currentReducer = reducer
-		this.currentState = this._cache.getInitialState(this.name) || model.state
-		this.isDispatching = false
-		this.dispatch({ type: ActionTypes.INIT })
-
-		enhanceModel(this, model)
 	}
 
 	getState = () => {
@@ -171,36 +175,7 @@ export class RedoxStore<IModel extends AnyModel> implements Store<IModel> {
 		}
 	}
 
-	// applyMiddleware middleware for handling effects
-	dispatch = ((action: AnyAction) => {
-		if (this.model.effects && this.model.effects.hasOwnProperty(action.type)) {
-			// first run reducer action if exists
-			this.reduxDispatch(action)
-			// then run the effect and return its result
-			const effect = this.model.effects[action.type] as Effect<any, any, any>
-			const getState = () => {
-				return getDependsState(this.model._depends, this._cache)
-			}
-			const dependsDispatch = getDependsDispatch(
-				this.model._depends,
-				this._cache
-			)
-
-			return effect.call(
-				this.dispatch,
-				action.payload,
-				this.getState(), // selfState
-				{
-					getState,
-					dispatch: dependsDispatch,
-				} // collects depends
-			)
-		}
-
-		return this.reduxDispatch(action)
-	}) as unknown as Store<IModel>['dispatch']
-
-	private reduxDispatch: ReduxDispatch = (action) => {
+	dispatch: ReduxDispatch = (action) => {
 		if (typeof action.type === 'undefined') {
 			throw new Error(
 				'Actions may not have an undefined "type" property. You may have misspelled an action type string constant.'
@@ -244,7 +219,7 @@ export class RedoxStore<IModel extends AnyModel> implements Store<IModel> {
 	}
 
 	destroy = () => {
-		this.currentState = null
+		this.currentState = undefined
 		this.currentReducer = null
 		this.listeners.clear()
 		this._beDepends.clear()
@@ -261,13 +236,26 @@ export class RedoxStore<IModel extends AnyModel> implements Store<IModel> {
 	}
 }
 
+function getStoreApi<M extends AnyModel = AnyModel>(
+	redoxStore: RedoxStore<M>
+): Store<M> {
+	const store = {} as Store<M>
+	store.$state = redoxStore.getState
+	Object.assign(
+		store,
+		redoxStore.reducers,
+		redoxStore.effects,
+		redoxStore.views
+	)
+	return store
+}
+
 function enhanceModel<IModel extends AnyModel>(
-	store: RedoxStore<IModel>,
-	model: IModel
+	redoxStore: RedoxStore<IModel>
 ): void {
-	createReducerDispatcher(store, model)
-	createEffectDispatcher(store, model)
-	if (model.views) createViews(store, model)
+	createReducers(redoxStore)
+	if (redoxStore.model.effects) createEffects(redoxStore)
+	if (redoxStore.model.views) createViews(redoxStore)
 }
 
 setAutoFreeze(false)
@@ -283,7 +271,7 @@ export function createModelReducer<
 	S extends State,
 	MC extends ModelCollection,
 	R extends Reducers<S>,
-	E extends Effects<S, R, MC>,
+	E extends Effects,
 	V extends Views<S, MC>
 >(model: Model<N, S, MC, R, E, V>): ReduxReducer<S, Action> {
 	// select and run a reducer based on the incoming action
