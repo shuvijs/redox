@@ -20,6 +20,12 @@ describe('defineModel worked:', () => {
 	})
 
 	describe('defineModel valid:', () => {
+		test('model is necessary', () => {
+			expect(() => {
+				// @ts-ignore
+				const modelA = defineModel()
+			}).toThrow()
+		})
 		test('name is necessary', () => {
 			expect(() => {
 				const modelA = defineModel(
@@ -131,6 +137,32 @@ describe('defineModel worked:', () => {
 					views: {
 						// @ts-ignore
 						1: 1,
+					},
+				})
+			}).toThrow()
+		})
+		test('not allow repeat key reducers effects views', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					state: {},
+					reducers: {
+						a() {},
+					},
+					effects: {
+						async a() {},
+					},
+				})
+			}).toThrow()
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					state: {},
+					reducers: {
+						a() {},
+					},
+					views: {
+						a() {},
 					},
 				})
 			}).toThrow()
