@@ -34,7 +34,7 @@ export type IModelManager = {
 	get<IModel extends AnyModel>(model: IModel): Store<IModel>
 	_getRedox<IModel extends AnyModel>(model: IModel): RedoxStore<IModel>
 	subscribe(model: AnyModel, fn: () => any): unSubscribe
-	getInitialState: (name: string) => State | undefined
+	_getInitialState: (name: string) => State | undefined
 	getChangedState(): { [X: string]: State }
 	destroy(): void
 }
@@ -45,14 +45,14 @@ export function redox(initialState?: Record<string, State>): IModelManager {
 	const cacheMap: ICacheMap = new Map()
 	let initState = initialState || emptyObject
 	const modelCache = {
-		getInitialState: (name: string): State | undefined => {
-			const result = initState[name]
-			delete initState[name]
-			return result
-		},
 		get<IModel extends AnyModel>(model: IModel) {
 			const redoxStore = modelCache._getRedox(model)
 			return redoxStore.storeApi
+		},
+		_getInitialState: (name: string): State | undefined => {
+			const result = initState[name]
+			delete initState[name]
+			return result
 		},
 		_getRedox<IModel extends AnyModel>(model: IModel) {
 			const name = model.name
@@ -126,7 +126,7 @@ export class RedoxStore<IModel extends AnyModel> {
 		const reducer = createModelReducer(model)
 		this.currentReducer = reducer
 		this.currentState =
-			this._cache.getInitialState(this.model.name) || model.state
+			this._cache._getInitialState(this.model.name) || model.state
 		this.isDispatching = false
 		this.dispatch({ type: ActionTypes.INIT })
 

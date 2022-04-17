@@ -59,7 +59,7 @@ export const validateModel = (model: AnyModel): void => {
 			'model "reducers" is required and it should be object !',
 		],
 	])
-	const keys = new Set<string>(Object.keys(model.reducers))
+	const keys = new Set<string>()
 	validateProperty(model, 'reducers', keys)
 	validateProperty(model, 'effects', keys)
 	validateProperty(model, 'views', keys)

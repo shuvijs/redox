@@ -1,14 +1,14 @@
 import { defineModel, redox } from '../src'
 let manager: ReturnType<typeof redox>
 
-describe('effects:', () => {
+describe('effects worked:', () => {
 	beforeEach(() => {
 		manager = redox()
 	})
 	test('should create an action', () => {
 		const count = defineModel({
 			name: 'count',
-			state: { value: 0},
+			state: { value: 0 },
 			reducers: {},
 			effects: {
 				add: (): number => 1,
@@ -48,7 +48,7 @@ describe('effects:', () => {
 			name: 'count',
 			state: { value: 7 },
 			reducers: {
-				add: (s, p: number) => ({value: s.value + p}),
+				add: (s, p: number) => ({ value: s.value + p }),
 			},
 			effects: {
 				makeCall(_: number, state): void {
@@ -72,7 +72,7 @@ describe('effects:', () => {
 			state: { count: 0 },
 			reducers: {
 				add: (s, p: number) => ({
-					count: s.count + p
+					count: s.count + p,
 				}),
 			},
 			effects: {
@@ -80,34 +80,36 @@ describe('effects:', () => {
 			},
 		})
 
-		const count0 = defineModel({
-			name: 'count0',
-			state: { value: 7 },
-			reducers: {
-				add: (s, p: number) => ({value: s.value + p}),
-			},
-			effects: {
-				makeCall(_: void, _state, depends): void {
-					thirdParam = depends;
-					depends.dispatch.count.add(1);
+		const count0 = defineModel(
+			{
+				name: 'count0',
+				state: { value: 7 },
+				reducers: {
+					add: (s, p: number) => ({ value: s.value + p }),
+				},
+				effects: {
+					makeCall(_: void, _state, depends): void {
+						thirdParam = depends
+						depends.dispatch.count.add(1)
+					},
 				},
 			},
-		}, [count])
+			[count]
+		)
 
 		const store = manager.get(count0)
 
 		store.dispatch.makeCall()
-		expect(thirdParam.getState()).toStrictEqual({ count: {count: 1} })
-		expect(typeof thirdParam.dispatch.count.makeCall).toBe("function")
+		expect(thirdParam.getState()).toStrictEqual({ count: { count: 1 } })
+		expect(typeof thirdParam.dispatch.count.makeCall).toBe('function')
 	})
 
 	test('should create an effect dynamically', () => {
-
 		const example = defineModel({
 			name: 'example',
-			state: { value: 0},
+			state: { value: 0 },
 			reducers: {
-				addOne: () => ({ value: 1}),
+				addOne: () => ({ value: 1 }),
 			},
 			effects: {
 				add(this: any): void {
@@ -119,16 +121,15 @@ describe('effects:', () => {
 		const store = manager.get(example)
 
 		store.dispatch({ type: 'add' })
-		expect(store.getState()).toStrictEqual({value: 1})
+		expect(store.getState()).toStrictEqual({ value: 1 })
 	})
 
 	test('should be able to trigger another action', async () => {
-
 		const example = defineModel({
 			name: 'example',
-			state: { value: 0},
+			state: { value: 0 },
 			reducers: {
-				addOne: (s) => ({ value: s.value + 1}),
+				addOne: (s) => ({ value: s.value + 1 }),
 			},
 			effects: {
 				async asyncAddOneArrow(): Promise<void> {
@@ -141,16 +142,15 @@ describe('effects:', () => {
 
 		await store.dispatch.asyncAddOneArrow()
 
-		expect(store.getState()).toStrictEqual({value:1})
+		expect(store.getState()).toStrictEqual({ value: 1 })
 	})
 
 	test('should be able trigger a local reducer using functions and `this`', async () => {
-
 		const example = defineModel({
 			name: 'example',
-			state: { value: 0},
+			state: { value: 0 },
 			reducers: {
-				addOne: (s) => ({ value: s.value + 1}),
+				addOne: (s) => ({ value: s.value + 1 }),
 			},
 			effects: {
 				async asyncAddOne(): Promise<void> {
@@ -163,16 +163,15 @@ describe('effects:', () => {
 
 		await store.dispatch.asyncAddOne()
 
-		expect(store.getState()).toStrictEqual({value: 1})
+		expect(store.getState()).toStrictEqual({ value: 1 })
 	})
 
 	test('should be able to trigger another action with a value', async () => {
-
 		const example = defineModel({
 			name: 'example',
-			state: { value: 2},
+			state: { value: 2 },
 			reducers: {
-				addBy: (state, payload: number) => ({value: state.value + payload})
+				addBy: (state, payload: number) => ({ value: state.value + payload }),
 			},
 			effects: {
 				async asyncAddBy(value: number): Promise<void> {
@@ -185,16 +184,17 @@ describe('effects:', () => {
 
 		await store.dispatch.asyncAddBy(5)
 
-		expect(store.getState()).toStrictEqual({value:7})
+		expect(store.getState()).toStrictEqual({ value: 7 })
 	})
 
 	test('should be able to trigger another action w/ an object value', async () => {
-
 		const example = defineModel({
 			name: 'example',
-			state: { value: 3},
+			state: { value: 3 },
 			reducers: {
-				addBy: (state, payload: { value: number }) => ({value: state.value + payload.value}),
+				addBy: (state, payload: { value: number }) => ({
+					value: state.value + payload.value,
+				}),
 			},
 			effects: {
 				async asyncAddBy(payload: { value: number }): Promise<void> {
@@ -207,15 +207,15 @@ describe('effects:', () => {
 
 		await store.dispatch.asyncAddBy({ value: 6 })
 
-		expect(store.getState()).toStrictEqual({value: 9})
+		expect(store.getState()).toStrictEqual({ value: 9 })
 	})
 
 	test('should be able to trigger another action w/ another action', async () => {
 		const example = defineModel({
 			name: 'example',
-			state: { value: 0},
+			state: { value: 0 },
 			reducers: {
-				addOne: (state) => ({value: state.value + 1}),
+				addOne: (state) => ({ value: state.value + 1 }),
 			},
 			effects: {
 				async asyncAddOne(): Promise<void> {
@@ -231,16 +231,15 @@ describe('effects:', () => {
 
 		await store.dispatch.asyncCallAddOne()
 
-		expect(store.getState()).toStrictEqual({value: 1})
+		expect(store.getState()).toStrictEqual({ value: 1 })
 	})
 
 	test('should be able to trigger another action w/ multiple actions', async () => {
-
 		const example = defineModel({
 			name: 'example',
-			state: { value: 0},
+			state: { value: 0 },
 			reducers: {
-				addBy: (state, payload: number) => ({value: state.value + payload}),
+				addBy: (state, payload: number) => ({ value: state.value + payload }),
 			},
 			effects: {
 				async asyncAddOne(): Promise<void> {
@@ -261,6 +260,6 @@ describe('effects:', () => {
 
 		await store.dispatch.asyncAddSome()
 
-		expect(store.getState()).toStrictEqual({value: 5})
+		expect(store.getState()).toStrictEqual({ value: 5 })
 	})
 })
