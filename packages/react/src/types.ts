@@ -1,18 +1,20 @@
-import { Model, Store } from '@shuvi/redox';
+import { RedoxStore, AnyModel } from '@shuvi/redox'
 
-export type AnyModel = Model<any, any, any, any, any, any>
+type noExist = { [X: string | number | symbol]: never }
 
-export type ISelector<
-	IModel extends AnyModel,
-> = (state: ReturnType<Store<IModel>['getState']>, views:  Store<IModel>['views']) => any;
+export type ISelector<IModel extends AnyModel> = (
+	state: ReturnType<RedoxStore<IModel>['$state']>,
+	views: RedoxStore<IModel>['$views']
+) => any
 
 export interface IUseModel {
-	<IModel extends AnyModel>(
-		model: IModel
-	): [ReturnType<Store<IModel>['getState']>, Store<IModel>['dispatch']];
+	<IModel extends AnyModel>(model: IModel): [
+		ReturnType<RedoxStore<IModel>['$state']>,
+		RedoxStore<IModel>['$actions']
+	]
 
 	<IModel extends AnyModel, Selector extends ISelector<IModel>>(
 		model: IModel,
 		selectors: Selector
-	): [ReturnType<Selector>, Store<IModel>['dispatch']];
+	): [ReturnType<Selector>, RedoxStore<IModel>['$actions']]
 }
