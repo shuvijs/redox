@@ -30,9 +30,8 @@ describe('effects worked:', () => {
 			state: { value: 0 },
 			reducers: {},
 			effects: {
-				add(payload: number): any {
-					const a = this.$state().value + payload
-					return a
+				add(payload: number): number {
+					return this.$state().value + payload
 				},
 			},
 		})
@@ -102,7 +101,7 @@ describe('effects worked:', () => {
 
 		const oneStore = manager.get(one)
 
-		oneStore.add(1)
+		expect(oneStore.add(1)).toEqual(1)
 
 		const twoStore = manager.get(two)
 		twoStore.setString({ name: 'two' }, '2')

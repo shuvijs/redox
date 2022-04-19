@@ -1,6 +1,6 @@
 import type { RedoxStore } from '../redoxStore'
 import { createSelector } from './createSelector'
-import { Store, AnyModel } from '../types'
+import { RedoxViews, AnyModel } from '../types'
 import validate, { isObject } from '../validate'
 import { getDependsState } from '../utils'
 
@@ -273,7 +273,7 @@ export const createViews = <IModel extends AnyModel>(
 				`model.views should be object, now is ${typeof views}`,
 			],
 		])
-		const proxyObj = {} as Store<IModel>['views']
+		const proxyObj = {} as RedoxViews<IModel>
 		;(Object.keys(views) as Array<keyof IModel['views']>).forEach(
 			(viewsKey) => {
 				const cacheFun = cacheFactory(views[viewsKey], proxyObj)

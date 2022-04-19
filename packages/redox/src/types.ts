@@ -111,7 +111,7 @@ type DispatchOfModel<M> = M extends Model<
 	: never
 
 export type DispatchOfModelByProps<S, R, E> = DispatcherOfReducers<S, R> &
-	DispatcherOfEffects<E> & { [X: string | number | symbol]: never }
+	DispatcherOfEffects<E>
 
 export type DispatcherOfReducers<S, R> = R extends undefined
 	? {}
@@ -222,9 +222,9 @@ export interface Model<
 	reducers: R
 	effects?: E &
 		ThisType<
-			DispatchOfModelByProps<S, R, E> & {
-				$dep: MiniStoreOfStoreCollection<MC>
-			} & { $state: () => S } & transformViews<V>
+			{ $state: () => S } & transformViews<V> & {
+					$dep: MiniStoreOfStoreCollection<MC>
+				} & DispatchOfModelByProps<S, R, E>
 		>
 	views?: V & ThisType<ViewsObj<V>>
 	_depends?: Depends

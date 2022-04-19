@@ -1,9 +1,4 @@
-import {
-	Action,
-	RedoxDispatcher,
-	AnyModel,
-	DispatcherOfReducers,
-} from './types'
+import { Action, RedoxDispatcher, AnyModel } from './types'
 import type { RedoxStore } from './redoxStore'
 
 const createReducer = <IModel extends AnyModel>(
