@@ -8,10 +8,10 @@ import React, {
 	useRef,
 } from 'react'
 import { validate, redox } from '@shuvi/redox'
-import type { IModelManager, Store } from '@shuvi/redox'
+import type { IModelManager, RedoxStore, AnyModel } from '@shuvi/redox'
 import { createBatchManager } from './batchManager'
 import { shadowEqual } from './utils'
-import { IUseModel, ISelector, AnyModel } from './types'
+import { IUseModel, ISelector } from './types'
 
 function tuplify<T extends any[]>(...elements: T) {
 	return elements
@@ -20,22 +20,21 @@ function tuplify<T extends any[]>(...elements: T) {
 function getStateOrViews<
 	IModel extends AnyModel,
 	Selector extends ISelector<IModel>
->(store: Store<IModel>, selector?: Selector) {
-	const modelState = store.getState()
+>(redoxStore: RedoxStore<IModel>, selector?: Selector) {
+	const modelState = redoxStore.$state()
 	if (!selector) {
 		return modelState
 	}
-	const ModelViews = store.views || {}
+	const ModelViews = redoxStore.$views
 	return selector(modelState, ModelViews)
 }
 
-function getStateDispatch<
+function getStateActions<
 	IModel extends AnyModel,
 	Selector extends ISelector<IModel>
 >(model: IModel, modelManager: IModelManager, selector?: Selector) {
-	const store = modelManager.get(model)
-	const dispatch = store.dispatch
-	return tuplify(getStateOrViews(store, selector), dispatch)
+	const redoxStore = modelManager._getRedox(model)
+	return tuplify(getStateOrViews(redoxStore, selector), redoxStore.$actions)
 }
 
 function initModel(
@@ -43,10 +42,9 @@ function initModel(
 	modelManager: IModelManager,
 	batchManager: ReturnType<typeof createBatchManager>
 ) {
-	const store = modelManager.get(model)
 	if (!batchManager.hasInitModel(model)) {
 		batchManager.initModel(model)
-		store.subscribe(function () {
+		modelManager.subscribe(model, function () {
 			batchManager.triggerSubscribe(model) // render self;
 		})
 	}
@@ -63,7 +61,7 @@ const createUseModel =
 	) => {
 		const initialValue = useMemo(() => {
 			initModel(model, modelManager, batchManager)
-			return getStateDispatch(model, modelManager, selector)
+			return getStateActions(model, modelManager, selector)
 		}, [])
 
 		const [modelValue, setModelValue] = useState(initialValue)
@@ -72,7 +70,7 @@ const createUseModel =
 
 		useEffect(() => {
 			const fn = () => {
-				const newValue = getStateDispatch(model, modelManager, selector)
+				const newValue = getStateActions(model, modelManager, selector)
 				if (!shadowEqual(lastValueRef.current[0], newValue[0])) {
 					setModelValue(newValue as any)
 					lastValueRef.current = newValue
@@ -114,7 +112,7 @@ const createContainer = () => {
 		)
 	}
 
-	const useModel: IUseModel = <
+	const useSharedModel: IUseModel = <
 		IModel extends AnyModel,
 		Selector extends ISelector<IModel>
 	>(
@@ -158,7 +156,7 @@ const createContainer = () => {
 		const { modelManager, batchManager } = context
 		const initialValue = useMemo(() => {
 			initModel(model, modelManager, batchManager)
-			return getStateDispatch(model, modelManager, selector)
+			return getStateActions(model, modelManager, selector)
 		}, [])
 
 		const value = useRef<[any, any]>([
@@ -169,7 +167,7 @@ const createContainer = () => {
 
 		useEffect(() => {
 			const fn = () => {
-				const newValue = getStateDispatch(model, modelManager, selector)
+				const newValue = getStateActions(model, modelManager, selector)
 				if (
 					Object.prototype.toString.call(value.current[0]) === '[object Object]'
 				) {
@@ -190,12 +188,12 @@ const createContainer = () => {
 
 	return {
 		Provider,
-		useModel,
+		useSharedModel,
 		useStaticModel,
 	}
 }
 
-const useLocalModel: IUseModel = <
+const useModel: IUseModel = <
 	IModel extends AnyModel,
 	Selector extends ISelector<IModel>
 >(
@@ -213,6 +211,6 @@ const useLocalModel: IUseModel = <
 	)
 }
 
-export { useLocalModel }
+export { useModel }
 
 export default createContainer

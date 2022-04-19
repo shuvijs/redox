@@ -1,7 +1,11 @@
-import createContainer, { useLocalModel } from './createContainer';
+import createContainer, { useModel } from './createContainer'
 
-const { Provider, useModel, useStaticModel } = createContainer();
+const {
+	Provider,
+	useSharedModel: useGlobalModel,
+	useStaticModel,
+} = createContainer()
 
-export { Provider, useModel, createContainer, useStaticModel, useLocalModel };
+export { Provider, useGlobalModel, createContainer, useStaticModel, useModel }
 
-export { ISelector } from './types';
+export { ISelector } from './types'

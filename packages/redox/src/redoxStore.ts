@@ -109,8 +109,8 @@ export class RedoxStore<IModel extends AnyModel> {
 	public $actions = {} as DispatchOfModel<IModel>
 	public $views = {} as RedoxViews<IModel>
 
-	private currentState: State | undefined
-	private currentReducer: ReduxReducer<State> | null
+	private currentState: IModel['state']
+	private currentReducer: ReduxReducer<IModel['state']> | null
 	private listeners: Set<() => void> = new Set()
 	private isDispatching: boolean
 
@@ -214,7 +214,8 @@ export class RedoxStore<IModel extends AnyModel> {
 	}
 
 	destroy = () => {
-		this.currentState = undefined
+		// @ts-ignore
+		this.currentState = null
 		this.currentReducer = null
 		this.listeners.clear()
 		this._beDepends.clear()

@@ -96,6 +96,8 @@ type StateOfStoreCollection<MC extends ModelCollection> = {
 	[K in keyof MC]: MC[K]['state']
 }
 
+type noExist = { [X: string | number | symbol]: never }
+
 /**
  * Get the type of Dispatch
  */
@@ -107,7 +109,7 @@ export type DispatchOfModel<M> = M extends Model<
 	infer E,
 	any
 >
-	? DispatchOfModelByProps<S, R, E>
+	? DispatchOfModelByProps<S, R, E> & noExist
 	: never
 
 type DispatchOfModelByProps<S, R, E> = DispatcherOfReducers<S, R> &
