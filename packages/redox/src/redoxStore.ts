@@ -10,8 +10,7 @@ import {
 	Views,
 	Store,
 	Model,
-	DispatcherOfReducers,
-	DispatcherOfEffects,
+	DispatchOfModel,
 	RedoxViews,
 	AnyModel,
 } from './types'
@@ -71,7 +70,7 @@ export function redox(initialState?: Record<string, State>): IModelManager {
 			const allState = {} as ReturnType<IModelManager['getChangedState']>
 			for (const [key, store] of cacheMap.entries()) {
 				const initialState = store.model.state
-				const getStateRes = store.getState()
+				const getStateRes = store.$state()
 				if (initialState !== getStateRes) {
 					allState[key] = getStateRes
 				}
@@ -107,12 +106,8 @@ export class RedoxStore<IModel extends AnyModel> {
 	public model: Readonly<IModel>
 	public storeApi: Store<IModel>
 	public storeDepends: Record<string, Store<AnyModel>>
-	public reducers = {} as DispatcherOfReducers<
-		IModel['state'],
-		IModel['reducers']
-	>
-	public effects = {} as DispatcherOfEffects<IModel['effects']>
-	public views = {} as RedoxViews<IModel>
+	public $actions = {} as DispatchOfModel<IModel>
+	public $views = {} as RedoxViews<IModel>
 
 	private currentState: State | undefined
 	private currentReducer: ReduxReducer<State> | null
@@ -145,7 +140,7 @@ export class RedoxStore<IModel extends AnyModel> {
 		}
 	}
 
-	getState = () => {
+	$state = () => {
 		return this.currentState!
 	}
 
@@ -225,13 +220,13 @@ export class RedoxStore<IModel extends AnyModel> {
 		this._beDepends.clear()
 		this.model = emptyObject
 		this._cache = emptyObject
-		if (this.views) {
-			const viewsKeys = Object.keys(this.views)
+		if (this.$views) {
+			const viewsKeys = Object.keys(this.$views)
 			for (const viewsKey of viewsKeys) {
 				// @ts-ignore
-				this.views[viewsKey] = null
+				this.$views[viewsKey] = null
 			}
-			this.views = emptyObject
+			this.$views = emptyObject
 		}
 	}
 }
@@ -240,13 +235,8 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 	redoxStore: RedoxStore<M>
 ): Store<M> {
 	const store = {} as Store<M>
-	store.$state = redoxStore.getState
-	Object.assign(
-		store,
-		redoxStore.reducers,
-		redoxStore.effects,
-		redoxStore.views
-	)
+	store.$state = redoxStore.$state
+	Object.assign(store, redoxStore.$actions, redoxStore.$views)
 	return store
 }
 

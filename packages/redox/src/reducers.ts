@@ -27,6 +27,6 @@ export const createReducers = <IModel extends AnyModel>(
 	const reducersKeys = Object.keys(model.reducers)
 	reducersKeys.forEach((reducerName) => {
 		// @ts-ignore
-		redoxStore.reducers[reducerName] = createReducer(redoxStore, reducerName)
+		redoxStore.$actions[reducerName] = createReducer(redoxStore, reducerName)
 	})
 }

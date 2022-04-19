@@ -279,7 +279,7 @@ export const createViews = <IModel extends AnyModel>(
 				const cacheFun = cacheFactory(views[viewsKey], proxyObj)
 				// @ts-ignore
 				proxyObj[viewsKey] = function (args?: any) {
-					const state = redoxStore.getState() as IModel['state']
+					const state = redoxStore.$state()
 					// generate dependsState by dependencies
 					const dependsState = getDependsState(
 						model._depends,
@@ -289,6 +289,6 @@ export const createViews = <IModel extends AnyModel>(
 				}
 			}
 		)
-		redoxStore.views = proxyObj
+		redoxStore.$views = proxyObj
 	}
 }

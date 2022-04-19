@@ -9,7 +9,7 @@ export const createEffects = <IModel extends AnyModel>(
 	const effectKeys = Object.keys(effects) as Array<keyof IModel['effects']>
 	effectKeys.forEach((effectName) => {
 		// @ts-ignore
-		redoxStore.effects[effectName as string] = function (...args: any[]) {
+		redoxStore.$actions[effectName as string] = function (...args: any[]) {
 			const effect = effects[effectName]
 			const store = redoxStore._cache._getRedox(redoxStore.model)
 			return effect.call(
