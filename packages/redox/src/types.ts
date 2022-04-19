@@ -99,7 +99,7 @@ type StateOfStoreCollection<MC extends ModelCollection> = {
 /**
  * Get the type of Dispatch
  */
-type DispatchOfModel<M> = M extends Model<
+export type DispatchOfModel<M> = M extends Model<
 	any,
 	infer S,
 	any,
@@ -110,7 +110,7 @@ type DispatchOfModel<M> = M extends Model<
 	? DispatchOfModelByProps<S, R, E>
 	: never
 
-export type DispatchOfModelByProps<S, R, E> = DispatcherOfReducers<S, R> &
+type DispatchOfModelByProps<S, R, E> = DispatcherOfReducers<S, R> &
 	DispatcherOfEffects<E>
 
 export type DispatcherOfReducers<S, R> = R extends undefined

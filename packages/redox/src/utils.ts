@@ -6,7 +6,7 @@ export function getDependsState(depends: Depends = [], cache: IModelManager) {
 	let state = {} as Record<string, State>
 	if (depends) {
 		for (const model of depends) {
-			state[model.name] = cache._getRedox(model).getState()
+			state[model.name] = cache._getRedox(model).$state()
 		}
 	}
 	return state
