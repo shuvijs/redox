@@ -347,7 +347,7 @@ describe('typings', () => {
 					// }
 				},
 				effects: {
-					none() {
+					anyEffect() {
 						this.none()
 						this.one()
 						this.two(1)
@@ -610,25 +610,25 @@ describe('typings', () => {
 					},
 				},
 			})
-			it('views typescript with depends', () => {
-				const model = defineModel(
-					{
-						name: 'model',
-						state: [] as customType[],
-						reducers: {},
-						views: {
-							none(state, dependsState) {
-								dependsState
-								const selfState = state
-								const depend0 = dependsState.depend0
-								const depend1 = dependsState.depend1
-								return 'none' as const
-							},
+		})
+		it('views typescript with depends', () => {
+			const model = defineModel(
+				{
+					name: 'model',
+					state: [] as customType[],
+					reducers: {},
+					views: {
+						none(state, dependsState) {
+							dependsState
+							const selfState = state
+							const depend0 = dependsState.depend0
+							const depend1 = dependsState.depend1
+							return 'none' as const
 						},
 					},
-					[depend0, depend1]
-				)
-			})
+				},
+				[depend0, depend1]
+			)
 		})
 	})
 })
