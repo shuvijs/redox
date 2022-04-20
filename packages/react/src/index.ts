@@ -8,4 +8,4 @@ const {
 
 export { Provider, useGlobalModel, createContainer, useStaticModel, useModel }
 
-export { ISelector } from './types'
+export { ISelectorParams, ISelector } from './types'

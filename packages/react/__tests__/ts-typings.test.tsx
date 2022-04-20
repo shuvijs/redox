@@ -4,7 +4,13 @@
 
 import * as React from 'react'
 import { defineModel } from '@shuvi/redox'
-import { useModel, useGlobalModel, useStaticModel, ISelector } from '../src'
+import {
+	useModel,
+	useGlobalModel,
+	useStaticModel,
+	ISelectorParams,
+	ISelector,
+} from '../src'
 
 type customType = 'custom' | 'custom0'
 
@@ -48,7 +54,11 @@ const count = defineModel({
 	},
 })
 
-const countSelector: ISelector<typeof count> = function (state, views) {
+type countSelectorParameters = ISelectorParams<typeof count>
+const countSelector = function (
+	state: countSelectorParameters[0],
+	views: countSelectorParameters[1]
+) {
 	return {
 		v: state.value,
 		n: views.viewNumber(1),
@@ -61,12 +71,13 @@ type a = typeof countSelector
 
 describe('typings:', () => {
 	test('selector type:', () => {
-		const countSelectorTemp: ISelector<typeof count> = function (state, views) {
-			return {
-				v: state.value,
-				s: views.viewString(),
+		const countSelectorTemp: ISelector<typeof count, { v: number; s: string }> =
+			function (state, views) {
+				return {
+					v: state.value,
+					s: views.viewString(),
+				}
 			}
-		}
 		type temp = typeof countSelectorTemp
 	})
 	test('useModel state and action:', () => {
@@ -107,8 +118,10 @@ describe('typings:', () => {
 	test('useModel state and action with selector:', () => {
 		function App() {
 			const [state, action] = useModel(count, countSelector)
-			state.value
+			state.n
+			state.v
 			state.s
+			state.scustom
 			action.addValue()
 			action.addValue()
 			action.addValue(1)
@@ -152,6 +165,23 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
+	test('useGlobalModel state and action with selector:', () => {
+		function App() {
+			const [state, action] = useGlobalModel(count, countSelector)
+			state.n
+			state.v
+			state.s
+			state.scustom
+			action.addValue()
+			action.addValue()
+			action.addValue(1)
+			action.setString('custom')
+			action.asyncAdd(1)
+			action.asyncStr(1)
+			action.asyncStr(1, 'custom')
+			return <></>
+		}
+	})
 	test('useStaticModel state and action:', () => {
 		function App() {
 			const [state, action] = useStaticModel(count)
@@ -176,6 +206,23 @@ describe('typings:', () => {
 			})
 			state.n
 			state.viewS
+			action.addValue()
+			action.addValue(1)
+			action.setString('custom')
+			action.asyncAdd(1)
+			action.asyncStr(1)
+			action.asyncStr(1, 'custom')
+			return <></>
+		}
+	})
+	test('useStaticModel state and action with selector:', () => {
+		function App() {
+			const [state, action] = useStaticModel(count, countSelector)
+			state.n
+			state.v
+			state.s
+			state.scustom
+			action.addValue()
 			action.addValue()
 			action.addValue(1)
 			action.setString('custom')
