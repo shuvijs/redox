@@ -1,87 +1,34 @@
 import { defineModel } from '@shuvi/redox'
+import { ISelectorParams } from '../../src'
 
-export const sleep = (time: number) => new Promise((resolve) => {
-	setTimeout(() => {
-		resolve(null)
-	}, time)
-})
-
-export const stepModel = defineModel({
-	name: 'stepModel',
-  state: {
-    step: 1
-  },
-	reducers: {
-		addOneStep(state) {
-      return {
-        ...state,
-        step: state.step + 1
-      };
-    },
-    addStep(state, payload: number) {
-      return {
-        ...state,
-        step: state.step + payload
-      };
-    },
-  },
-	effects: {
-		addStepByEffect(payload: number) {
-			this.addStep(payload)
-		}
-	}
-});
+export const sleep = (time: number) =>
+	new Promise((resolve) => {
+		setTimeout(() => {
+			resolve(null)
+		}, time)
+	})
 
 export const countModel = defineModel({
 	name: 'countModel',
-  state: {
-    value: 1,
-    value1: 1
-  },
+	state: {
+		value: 1,
+	},
 	reducers: {
-    addValue(state) {
-      return {
-        ...state,
-        value: state.value + 1
-      };
-    },
-    addValue1(state) {
-      return {
-        ...state,
-        value1: state.value1 + 1
-      };
-    },
-		addValueByParam(state, payload: number){
-			return {
-				...state,
-				value: state.value + payload
-			}
-		}
-  },
+		add(state, payload: number = 1) {
+			state.value += payload
+		},
+	},
 	effects: {
-		addValueByEffect() {
-			this.addValue()
-		},
-		addValueByEffectAndState(_: void, state) {
-			this.addValueByParam(state.value1 + state.value)
-		},
-		async addValueByEffectAsync() {
+		async asyncAdd(n: number) {
 			await sleep(200)
-			this.addValue()
+			this.add(n)
 		},
-		addValueByEffectWithPaload(payload: number) {
-			this.addValueByParam(payload)
+	},
+	views: {
+		test(state, _dependsState, args: number) {
+			return state.value + args
 		},
-		addValueByEffectWithPaloadAndMeta(payload: number, _state, _depends) {
-			this.addValueByParam(payload)
-		},
-		addValueByDependsState(_payload: void, _state, depends) {
-			const { getState } = depends
-			this.addValueByParam(getState().stepModel.step)
-		},
-		addStepByDependsDispatch(_payload: void, _state, depends) {
-			const { dispatch: { stepModel } } = depends
-			stepModel.addOneStep()
-		}
-	}
-}, [ stepModel ]);
+	},
+})
+
+export type countSelectorParameters = ISelectorParams<typeof countModel>

@@ -55,7 +55,17 @@ const createBatchManager = () => {
 		usingModelsMap.set(model, new Set())
 	}
 
+	const tasks = new Set<() => void>()
+
+	const destroyTask = function (fn: () => void) {
+		tasks.add(fn)
+	}
+
 	const destroy = function () {
+		for (const task of tasks) {
+			task()
+		}
+		tasks.clear()
 		for (const modelSet of usingModelsMap.values()) {
 			modelSet.clear()
 		}
@@ -64,6 +74,7 @@ const createBatchManager = () => {
 
 	return {
 		addSubscribe,
+		destroyTask,
 		removeSubscribe,
 		triggerSubscribe,
 		hasInitModel,

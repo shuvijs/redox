@@ -1,5 +1,5 @@
-import createContainer, { useModel } from './createContainer'
-
+import createContainer from './createContainer'
+import { useModel } from './useModel'
 const {
 	Provider,
 	useSharedModel: useGlobalModel,

@@ -67,8 +67,6 @@ const countSelector = function (
 	}
 }
 
-type a = typeof countSelector
-
 describe('typings:', () => {
 	test('selector type:', () => {
 		const countSelectorTemp: ISelector<typeof count, { v: number; s: string }> =
