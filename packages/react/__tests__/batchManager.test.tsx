@@ -47,7 +47,7 @@ afterEach(() => {
 })
 
 describe('batchedUpdates worked:', () => {
-	test('once store change, update should batch in one render', () => {
+	test('once store change, update should batch in one time render', () => {
 		let AppRenderCount = 0
 
 		function App() {
@@ -92,7 +92,7 @@ describe('batchedUpdates worked:', () => {
 		})
 		expect(AppRenderCount).toBe(2)
 	})
-	test('trigger component render outside of component', () => {
+	test('it can trigger component render outside of component', () => {
 		let AppRenderCount = 0
 
 		function App() {
@@ -127,7 +127,7 @@ describe('batchedUpdates worked:', () => {
 		expect(AppRenderCount).toBe(2)
 	})
 
-	test('unsubscribe component render auto when component unmount', () => {
+	test('unsubscribe component render should is auto when component unmount', () => {
 		let AppRenderCount = 0
 
 		function SubApp() {
@@ -191,7 +191,61 @@ describe('batchedUpdates worked:', () => {
 		expect(AppRenderCount).toBe(1)
 	})
 
-	test('depends update beDepend should update', () => {
+	test('selector and shadowEqual with return state can reduce the rerender times', () => {
+		let renderCount = 0
+
+		function App() {
+			renderCount += 1
+			const [{ value }, { addValue1 }] = useGlobalModel(
+				countModel,
+				(state, _views) => {
+					return {
+						value: state.value,
+					}
+				}
+			)
+
+			return (
+				<div>
+					<div id="value">value:{value}</div>
+					<button
+						id="button1"
+						onClick={() => {
+							addValue1()
+						}}
+					>
+						addValue1
+					</button>
+				</div>
+			)
+		}
+
+		const modelManager = redox()
+		act(() => {
+			ReactDOM.render(
+				<Provider modelManager={modelManager}>
+					<App />
+				</Provider>,
+				node
+			)
+		})
+
+		expect(renderCount).toBe(1)
+
+		expect(node.querySelector('#value')?.innerHTML).toEqual('value:1')
+
+		act(() => {
+			node
+				.querySelector('#button1')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+
+		expect(modelManager.get(countModel).$state().value1).toBe(2)
+
+		expect(renderCount).toBe(1)
+	})
+
+	test('depends rendered beDepend should render too', () => {
 		let parentRenderCount = 0
 		let childRenderCount = 0
 
@@ -201,17 +255,11 @@ describe('batchedUpdates worked:', () => {
 				state: {
 					value: 2,
 				},
-				reducers: {
-					addValue(state) {
-						return {
-							...state,
-							value: state.value * 10,
-						}
-					},
-				},
+				reducers: {},
 				views: {
-					test(state, dependsState): number {
-						return state.value + dependsState.countModel.value
+					// for test depend changed
+					test(_s, dependState) {
+						return dependState.countModel.value * 2
 					},
 				},
 			},
@@ -240,12 +288,15 @@ describe('batchedUpdates worked:', () => {
 
 		function App() {
 			parentRenderCount += 1
-			const [{ value }, { addValue }] = useGlobalModel(appModel)
+			const [{ test }, _] = useGlobalModel(appModel, function (_state, views) {
+				return {
+					test: views.test(),
+				}
+			})
 
 			return (
 				<div>
-					<div id="test">test:{value}</div>
-					<button onClick={() => addValue()}>addValue</button>
+					<div id="test">test:{test}</div>
 					<SubApp />
 				</div>
 			)
@@ -263,7 +314,7 @@ describe('batchedUpdates worked:', () => {
 		expect(parentRenderCount).toBe(1)
 		expect(childRenderCount).toBe(1)
 
-		expect(node.querySelector('#test')?.innerHTML).toEqual('test:1')
+		expect(node.querySelector('#test')?.innerHTML).toEqual('test:2')
 		expect(node.querySelector('#value')?.innerHTML).toEqual('value:1')
 
 		act(() => {
@@ -275,99 +326,5 @@ describe('batchedUpdates worked:', () => {
 		expect(childRenderCount).toBe(2)
 		expect(node.querySelector('#test')?.innerHTML).toEqual('test:4')
 		expect(node.querySelector('#value')?.innerHTML).toEqual('value:2')
-	})
-
-	test('selector will reduce the rerender times', () => {
-		let renderCount = 0
-
-		function App() {
-			renderCount += 1
-			const [{ value, test }, { addValue, addValue1 }] = useModel(
-				countModel,
-				(state, views) => {
-					return {
-						test: views.test(3),
-						value: state.value,
-					}
-				}
-			)
-			const [index, setIndex] = React.useState(0)
-
-			return (
-				<div>
-					<div id="index">index:{index}</div>
-					<div id="value">value:{value}</div>
-					<div id="test">test:{test}</div>
-					<div id="test1">test1:{test1}</div>
-					<button id="index-button" onClick={() => setIndex(1)}>
-						setIndex
-					</button>
-					<button id="button" onClick={() => addValue()}>
-						addValue
-					</button>
-					<button id="button1" onClick={() => addValue1()}>
-						addValue1
-					</button>
-				</div>
-			)
-		}
-
-		act(() => {
-			ReactDOM.render(
-				<Provider>
-					<App />
-				</Provider>,
-				node
-			)
-		})
-
-		expect(renderCount).toBe(1)
-		expect(computed).toBe(1)
-
-		expect(node.querySelector('#index')?.innerHTML).toEqual('index:0')
-		expect(node.querySelector('#value')?.innerHTML).toEqual('value:1')
-		expect(node.querySelector('#test')?.innerHTML).toEqual('test:4')
-		expect(node.querySelector('#test1')?.innerHTML).toEqual('test1:5')
-
-		act(() => {
-			node
-				.querySelector('#index-button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-
-		expect(renderCount).toBe(2)
-		expect(computed).toBe(1)
-
-		expect(node.querySelector('#index')?.innerHTML).toEqual('index:1')
-		expect(node.querySelector('#value')?.innerHTML).toEqual('value:1')
-		expect(node.querySelector('#test')?.innerHTML).toEqual('test:4')
-		expect(node.querySelector('#test1')?.innerHTML).toEqual('test1:5')
-
-		act(() => {
-			node
-				.querySelector('#button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-
-		expect(renderCount).toBe(3)
-		expect(computed).toBe(2)
-
-		expect(node.querySelector('#index')?.innerHTML).toEqual('index:1')
-		expect(node.querySelector('#value')?.innerHTML).toEqual('value:2')
-		expect(node.querySelector('#test')?.innerHTML).toEqual('test:5')
-		expect(node.querySelector('#test1')?.innerHTML).toEqual('test1:6')
-
-		act(() => {
-			node
-				.querySelector('#button1')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-
-		expect(renderCount).toBe(3)
-		expect(computed).toBe(3)
-
-		expect(node.querySelector('#index')?.innerHTML).toEqual('index:1')
-		expect(node.querySelector('#value')?.innerHTML).toEqual('value:2')
-		expect(node.querySelector('#test')?.innerHTML).toEqual('test:5')
 	})
 })
