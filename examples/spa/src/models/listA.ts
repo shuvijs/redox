@@ -1,14 +1,14 @@
 import { defineModel } from '@shuvi/redox'
-import { id } from '../baseModels/id'
+import { id } from './baseModels/id'
 
 type item = {
 	id: number
 	content: string
 }
 
-export const list = defineModel(
+export const listA = defineModel(
 	{
-		name: 'list',
+		name: 'listA',
 		state: {
 			arr: [
 				{
@@ -35,7 +35,7 @@ export const list = defineModel(
 		effects: {
 			async addContentAsync(payload: string) {
 				const id = this.$dep.id
-				await id.incrementAsync(id.$state().id + 1)
+				await id.setId(id.$state().id + 1)
 				const tempId = id.$state().id
 				this.addList({ content: `${payload}-id:${tempId}` })
 			},

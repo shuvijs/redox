@@ -1,150 +1,135 @@
-import React, { useState } from 'react';
+import React, { useState } from 'react'
 import { defineModel } from '@shuvi/redox'
-import { useModel, ISelector } from '../container'
+import { useGlobalModel, ISelectorParams } from '@shuvi/redox-react'
 
-const other = defineModel({
-  name: 'other',
-  state: {
-    other: ['other']
-  },
-  reducers: {
-    add: (state, step) => {
-      return {
-        ...state,
-        other: [...state.other, step]
-      };
-    }
-  }
-});
+const otherDep = defineModel({
+	name: 'otherDep',
+	state: {
+		other: ['other'],
+	},
+	reducers: {
+		add: (state, step: string = 'other') => {
+			return {
+				other: [...state.other, step],
+			}
+		},
+	},
+})
 
-const dome = defineModel({
-  name: 'dome',
-  state: {
-    number: 0
-  },
-  reducers: {
-    add: (state, step: number) => {
-      state.number = step;
-    }
-  }
-});
+const domeDep = defineModel({
+	name: 'domeDep',
+	state: {
+		dome: 0,
+	},
+	reducers: {
+		add: (state, step: number = 1) => {
+			state.dome += step
+		},
+	},
+})
 
 const user = defineModel(
-  {
-    name: 'user1',
-    state: {
-      id: 1,
-      name: 'haha'
-    },
-    reducers: {
-      add: (state, step) => {
-        return {
-          ...state,
-          id: state.id + step
-        };
-      }
-    },
-    effects: {
-      async depends(_payload: string, _state, depends) {
-        console.log('depends: ', depends);
-      }
-    },
-    views: {
-      d (state, dependsState): {number: number} {
-        console.log(state.id);
-        const a = dependsState.other;
-        console.log(dependsState.dome.number);
-        console.log(a.other[0]);
-        console.log('d computed');
-        return dependsState.dome;
-      },
-      one (_state, dependsState): number{
-        return dependsState.dome.number;
-      },
-      double (state, _dependsState, args): string {
-        // console.log('views', state, rootState, views, args);
-        // console.log('this', this)
-        // console.log('this', views.one)
-        // return state.id * args;
-        console.log('double computed');
-        return `state.id=>${state.id}, args=>${args},views.one=>${this.one}`;
-      }
-    }
-  },
-  [ other, dome ]
-);
+	{
+		name: 'user',
+		state: {
+			value: 1,
+			value1: 1,
+		},
+		reducers: {
+			add: (state, step: number = 1) => {
+				state.value += step
+			},
+			add1: (state, step: number = 1) => {
+				state.value1 += step
+			},
+		},
+		views: {
+			viewValue1(state) {
+				console.log('viewValue1 computed')
+				return state.value1
+			},
+			viewDome(_state, dependsState) {
+				console.log('viewDome computed')
+				return dependsState.domeDep.dome
+			},
+		},
+	},
+	[otherDep, domeDep]
+)
 
-const selector:ISelector<typeof user> = function (state, views) {
-  console.log('call selector'); 
-  return {
-    stateData: state.id,
-    one: views.one(),
-    double: views.double(3),
-    d: views.d().number
-  };
-};
+export type userSelectorParameters = ISelectorParams<typeof user>
+
+const selector = function (
+	_state: userSelectorParameters[0],
+	views: userSelectorParameters[1]
+) {
+	return {
+		v: views.viewValue1(),
+		d: views.viewDome(),
+	}
+}
 
 export default function Views() {
-  const [index, setIndex] = useState(0);
-  const [stateOther, actionsOther] = useModel(other);
-  const [stateDome, actionsDome] = useModel(dome);
-  const [views, actions] = useModel(user, selector);
+	const [index, setIndex] = useState(0)
+	const [stateOther, actionsOther] = useGlobalModel(otherDep)
+	const [stateDome, actionsDome] = useGlobalModel(domeDep)
+	const [views, actions] = useGlobalModel(user, selector)
 
-  return (
-    <div>
-      <h1>Views</h1>
-      <div>views automatic collect dependencies of state what it used. if state not changed, views will not be computed.</div>
-      <div>
-        <div>views.double: {views.double}</div>
-        <div>views.one: {views.one}</div>
-        <div>views.d: {views.d}</div>
-        <hr />
-      </div>
-      <button
-        onClick={() => {
-          actions.add(2);
-        }}
-      >
-      trigger user actions
-      </button>
-      <hr />
-      {JSON.stringify(stateDome)}
-      <hr />
-      <button
-        onClick={() => {
-          actionsDome.add(1);
-        }}
-      >
-      trigger dome actions
-      </button>
-      <hr />
-      {JSON.stringify(stateOther)}
-      <hr />
-      <button
-        onClick={() => {
-          actionsOther.add(1);
-        }}
-      >
-      trigger other actions
-      </button>
-      <div id="index">useState index: {index}</div>
-      <button
-        onClick={() => {
-          setIndex(index + 1);
-        }}
-      >
-        trigger useState
-      </button>
-      <hr />
-      <div>
-        <button
-          onClick={() => {
-            actions.depends('');
-          }}
-        >
-          trigger depends
-        </button>
-      </div>
-    </div>
-  );
+	return (
+		<div>
+			<h1>Views</h1>
+			<div>
+				views automatic collect dependencies of state what it used. if state not
+				changed, views will not be computed.
+			</div>
+			<div>
+				<div>computed by 'state.value1', views.v: {views.v}</div>
+				<div>computed by 'dependsState.domeDep.dome', views.d: {views.d}</div>
+				<hr />
+			</div>
+			<button
+				onClick={() => {
+					actions.add(1)
+				}}
+			>
+				changed user value
+			</button>
+			<button
+				onClick={() => {
+					actions.add1(1)
+				}}
+			>
+				changed user value1
+			</button>
+			<hr />
+			{JSON.stringify(stateDome)}
+			<hr />
+			<button
+				onClick={() => {
+					actionsDome.add(1)
+				}}
+			>
+				trigger dome actions
+			</button>
+			<hr />
+			{JSON.stringify(stateOther)}
+			<hr />
+			<button
+				onClick={() => {
+					actionsOther.add()
+				}}
+			>
+				trigger other actions
+			</button>
+			<div id="index">useState index: {index}</div>
+			<button
+				onClick={() => {
+					setIndex(index + 1)
+				}}
+			>
+				trigger useState
+			</button>
+			<hr />
+		</div>
+	)
 }
