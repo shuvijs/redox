@@ -7,7 +7,7 @@ import List from './components/List'
 import Repeat from './components/Repeat'
 import type { IModelManager } from '@shuvi/redox'
 
-function App(props: { modelManager: IModelManager }) {
+function App(props: { modelManager?: IModelManager }) {
 	return (
 		<>
 			<Provider {...props}>
