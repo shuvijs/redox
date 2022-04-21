@@ -3,90 +3,14 @@ import React, {
 	useContext,
 	PropsWithChildren,
 	useEffect,
-	useState,
 	useMemo,
 	useRef,
 } from 'react'
 import { validate, redox } from '@shuvi/redox'
-import type { IModelManager, Store } from '@shuvi/redox'
+import type { IModelManager, AnyModel } from '@shuvi/redox'
+import { createUseModel, initModel, getStateActions } from './useModel'
 import { createBatchManager } from './batchManager'
-import { shadowEqual } from './utils'
-import { IUseModel, ISelector, AnyModel } from './types'
-
-function tuplify<T extends any[]>(...elements: T) {
-	return elements
-}
-
-function getStateOrViews<
-	IModel extends AnyModel,
-	Selector extends ISelector<IModel>
->(store: Store<IModel>, selector?: Selector) {
-	const modelState = store.getState()
-	if (!selector) {
-		return modelState
-	}
-	const ModelViews = store.views || {}
-	return selector(modelState, ModelViews)
-}
-
-function getStateDispatch<
-	IModel extends AnyModel,
-	Selector extends ISelector<IModel>
->(model: IModel, modelManager: IModelManager, selector?: Selector) {
-	const store = modelManager.get(model)
-	const dispatch = store.dispatch
-	return tuplify(getStateOrViews(store, selector), dispatch)
-}
-
-function initModel(
-	model: AnyModel,
-	modelManager: IModelManager,
-	batchManager: ReturnType<typeof createBatchManager>
-) {
-	const store = modelManager.get(model)
-	if (!batchManager.hasInitModel(model)) {
-		batchManager.initModel(model)
-		store.subscribe(function () {
-			batchManager.triggerSubscribe(model) // render self;
-		})
-	}
-}
-
-const createUseModel =
-	(
-		modelManager: IModelManager,
-		batchManager: ReturnType<typeof createBatchManager>
-	) =>
-	<IModel extends AnyModel, Selector extends ISelector<IModel>>(
-		model: IModel,
-		selector?: Selector
-	) => {
-		const initialValue = useMemo(() => {
-			initModel(model, modelManager, batchManager)
-			return getStateDispatch(model, modelManager, selector)
-		}, [])
-
-		const [modelValue, setModelValue] = useState(initialValue)
-
-		const lastValueRef = useRef<any>(initialValue)
-
-		useEffect(() => {
-			const fn = () => {
-				const newValue = getStateDispatch(model, modelManager, selector)
-				if (!shadowEqual(lastValueRef.current[0], newValue[0])) {
-					setModelValue(newValue as any)
-					lastValueRef.current = newValue
-				}
-			}
-			const unSubscribe = batchManager.addSubscribe(model, fn)
-
-			return () => {
-				unSubscribe()
-			}
-		}, [])
-
-		return modelValue
-	}
+import { IUseModel, ISelector } from './types'
 
 const createContainer = () => {
 	const Context = createContext<{
@@ -107,6 +31,12 @@ const createContainer = () => {
 		}
 		const batchManager = createBatchManager()
 
+		useEffect(() => {
+			return function () {
+				batchManager.destroy()
+			}
+		}, [])
+
 		return (
 			<Context.Provider value={{ modelManager, batchManager }}>
 				{children}
@@ -114,7 +44,7 @@ const createContainer = () => {
 		)
 	}
 
-	const useModel: IUseModel = <
+	const useSharedModel: IUseModel = <
 		IModel extends AnyModel,
 		Selector extends ISelector<IModel>
 	>(
@@ -158,7 +88,7 @@ const createContainer = () => {
 		const { modelManager, batchManager } = context
 		const initialValue = useMemo(() => {
 			initModel(model, modelManager, batchManager)
-			return getStateDispatch(model, modelManager, selector)
+			return getStateActions(model, modelManager, selector)
 		}, [])
 
 		const value = useRef<[any, any]>([
@@ -169,7 +99,7 @@ const createContainer = () => {
 
 		useEffect(() => {
 			const fn = () => {
-				const newValue = getStateDispatch(model, modelManager, selector)
+				const newValue = getStateActions(model, modelManager, selector)
 				if (
 					Object.prototype.toString.call(value.current[0]) === '[object Object]'
 				) {
@@ -190,29 +120,9 @@ const createContainer = () => {
 
 	return {
 		Provider,
-		useModel,
+		useSharedModel,
 		useStaticModel,
 	}
 }
-
-const useLocalModel: IUseModel = <
-	IModel extends AnyModel,
-	Selector extends ISelector<IModel>
->(
-	model: IModel,
-	selector?: Selector
-) => {
-	const [modelManager, batchManager] = useMemo(() => {
-		const modelManager = redox()
-		return [modelManager, createBatchManager()]
-	}, [])
-
-	return useMemo(() => createUseModel(modelManager, batchManager), [])(
-		model,
-		selector
-	)
-}
-
-export { useLocalModel }
 
 export default createContainer
