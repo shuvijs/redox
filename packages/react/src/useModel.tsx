@@ -86,22 +86,22 @@ const useModel: IUseModel = <
 	model: IModel,
 	selector?: Selector
 ) => {
-	const [modelManager, batchManager] = useMemo(() => {
-		const modelManager = redox()
-		return [modelManager, createBatchManager()]
+	let [modelManager, batchManager] = useMemo(() => {
+		return [redox(), createBatchManager()]
 	}, [])
+
+	const res = useMemo(() => createUseModel(modelManager, batchManager), [])(
+		model,
+		selector
+	)
 
 	useEffect(() => {
 		return function () {
-			console.log('batchManager.destroy')
 			batchManager.destroy()
 		}
 	}, [])
 
-	return useMemo(() => createUseModel(modelManager, batchManager), [])(
-		model,
-		selector
-	)
+	return res
 }
 
 export { useModel, createUseModel, initModel, getStateActions }
