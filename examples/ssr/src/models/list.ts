@@ -1,40 +1,45 @@
 import { defineModel } from '@shuvi/redox'
-import {id} from '../dependsModels/id'
+import { id } from '../baseModels/id'
 
 type item = {
-	id: number,
+	id: number
 	content: string
 }
 
-export const list = defineModel({
-	name: 'list',
-	state: {
-		arr: [
-			{
-				id: 0,
-				content: 'default 0'
+export const list = defineModel(
+	{
+		name: 'list',
+		state: {
+			arr: [
+				{
+					id: 0,
+					content: 'content 0',
+				},
+				{
+					id: 1,
+					content: 'content 1',
+				},
+			],
+		},
+		reducers: {
+			addList(state, payload: Partial<item> & { content: string }) {
+				state.arr.push({
+					id: state.arr.length + 1,
+					content: payload.content,
+				})
 			},
-			{
-				id: 1,
-				content: 'default 1'
-			}
-		],
-	},
-	reducers: {
-		addList(state, payload: Partial<item> & {content: string}) {
-			state.arr.push({
-				id: state.arr.length + 1,
-				content: payload.content
-			})
-			return state;
+			removeById(state, payload: number) {
+				state.arr = state.arr.filter((item) => item.id !== payload)
+			},
+		},
+		effects: {
+			async addContentAsync(payload: string) {
+				const id = this.$dep.id
+				await id.incrementAsync(id.$state().id + 1)
+				const tempId = id.$state().id
+				this.addList({ content: `${payload}-id:${tempId}` })
+			},
 		},
 	},
-	effects: {
-		async addContentAsync(payload: string, state, depends) {
-			const { getState, dispatch: { id } } = depends;
-			await id.incrementAsync(getState().id.id+1);
-			const tempId = getState().id.id;
-			this.addList({ content: `${payload}-id:${tempId}` });
-		}
-	},
-}, [id])
+	[id]
+)
