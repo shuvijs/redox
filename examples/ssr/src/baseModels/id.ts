@@ -5,9 +5,9 @@ export const id = defineModel({
 	name: 'id',
 	state: { id: 0 },
 	reducers: {
-		increment: (state, payload: number) => {
+		increment: (_state, payload: number) => {
 			return {
-				id: payload
+				id: payload,
 			}
 		},
 	},
@@ -16,5 +16,5 @@ export const id = defineModel({
 			await delay(500)
 			this.increment(id || 1)
 		},
-	}
+	},
 })

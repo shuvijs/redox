@@ -1,13 +1,18 @@
 import * as React from 'react'
-import { useModel } from '@shuvi/redox-react'
+import { useGlobalModel } from '@shuvi/redox-react'
 
+import { test } from '../models/test'
 import { count } from '../models/count'
 
 function Count() {
-	const [{ value }, { increment, incrementAsync }] = useModel(count)
+	const [{ value }, { increment, incrementAsync }] = useGlobalModel(count)
+	const [{ value: testString }, _] = useGlobalModel(test)
 	return (
 		<div>
-			<h1>useModel basic use</h1>
+			<h1>SSR data form server</h1>
+			<div>
+				<h3>test: {testString}</h3>
+			</div>
 			<div>
 				<h3>count: {value}</h3>
 				<button onClick={() => increment(1)}>Immer reducer +1</button>

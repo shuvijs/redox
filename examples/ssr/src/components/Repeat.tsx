@@ -1,6 +1,6 @@
 // for ssr memory leak test
 import * as React from 'react'
-import { useLocalModel } from '../container'
+import { useModel } from '@shuvi/redox-react'
 
 import { local } from '../models/local'
 
@@ -11,7 +11,7 @@ for (let i = 0; i < 10; i++) {
 }
 
 function Count() {
-	const [{ value }] = useLocalModel(local)
+	const [{ value }] = useModel(local)
 	return (
 		<div>
 			{arr.map((index) => {
