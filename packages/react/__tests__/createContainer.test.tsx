@@ -7,29 +7,13 @@ import * as ReactDOM from 'react-dom'
 import { defineModel, redox } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
 import {
-	useModel,
 	Provider,
 	createContainer,
 	useStaticModel,
 	useGlobalModel,
-	ISelectorParams,
-	ISelector,
 } from '../src'
 
 import { sleep, countModel, countSelectorParameters } from './models'
-
-const App = () => {
-	const [state, dispatch] = useModel(countModel)
-
-	return (
-		<>
-			<div id="state">{state.value}</div>
-			<button id="button" type="button" onClick={() => dispatch.add()}>
-				add
-			</button>
-		</>
-	)
-}
 
 let node: HTMLDivElement
 beforeEach(() => {
@@ -46,6 +30,47 @@ describe('useGlobalModel worked:', () => {
 	test('reducer worked:', async () => {
 		const App = () => {
 			const [state, actions] = useGlobalModel(countModel)
+
+			return (
+				<>
+					<div id="value">{state.value}</div>
+					<button id="button" type="button" onClick={() => actions.add()}>
+						add
+					</button>
+				</>
+			)
+		}
+		act(() => {
+			ReactDOM.render(
+				<Provider>
+					<App />
+				</Provider>,
+				node
+			)
+		})
+
+		expect(node.querySelector('#value')?.innerHTML).toEqual('1')
+		act(() => {
+			node
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
+	})
+	test('immer worked:', async () => {
+		const immer = defineModel({
+			name: 'immer',
+			state: {
+				value: 1,
+			},
+			reducers: {
+				add(state, payload: number = 1) {
+					state.value += payload
+				},
+			},
+		})
+		const App = () => {
+			const [state, actions] = useGlobalModel(immer)
 
 			return (
 				<>
@@ -103,6 +128,59 @@ describe('useGlobalModel worked:', () => {
 		})
 		await sleep(250)
 		expect(node.querySelector('#value')?.innerHTML).toEqual('3')
+	})
+	test('views worked:', async () => {
+		let viewComputedTime = 0
+		const views = defineModel({
+			name: 'views',
+			state: {
+				value: 1,
+				value1: 1,
+			},
+			reducers: {
+				add(state, payload: number = 1) {
+					state.value += payload
+				},
+			},
+			views: {
+				test(state, _dependsState) {
+					viewComputedTime++
+					return state.value1
+				},
+			},
+		})
+		const App = () => {
+			const [state, actions] = useGlobalModel(views, function (_, views) {
+				return views.test()
+			})
+
+			return (
+				<>
+					<div id="value">{state}</div>
+					<button id="button" type="button" onClick={() => actions.add()}>
+						add
+					</button>
+				</>
+			)
+		}
+		act(() => {
+			ReactDOM.render(
+				<Provider>
+					<App />
+				</Provider>,
+				node
+			)
+		})
+
+		expect(node.querySelector('#value')?.innerHTML).toEqual('1')
+		expect(viewComputedTime).toBe(1)
+		act(() => {
+			node
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(viewComputedTime).toBe(1)
+		expect(node.querySelector('#value')?.innerHTML).toEqual('1')
 	})
 	test('selector worked:', async () => {
 		const countSelector = function (
