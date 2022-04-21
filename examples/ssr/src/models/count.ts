@@ -6,9 +6,7 @@ export const count = defineModel({
 	state: { value: 0 },
 	reducers: {
 		increment: (state, payload: number) => {
-			return {
-				value: state.value + payload
-			}
+			state.value += payload // change state by immer way
 		},
 	},
 	effects: {
@@ -16,5 +14,5 @@ export const count = defineModel({
 			await delay(2)
 			this.increment(1)
 		},
-	}
+	},
 })

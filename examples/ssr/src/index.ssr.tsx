@@ -37,8 +37,8 @@ router.use(
 		next: express.NextFunction
 	) => {
 		const modelManager = redox()
-		await modelManager.get(count).dispatch.incrementAsync()
-		await modelManager.get(test).dispatch.setString(Math.random().toString())
+		await modelManager.get(count).incrementAsync()
+		await modelManager.get(test).setString(Math.random().toString())
 		const template = readFileSync('build/index.html')
 			.toString()
 			.replace(/%BASE_HREF%/g, process.env.BASE_HREF || '')
