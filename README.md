@@ -1,15 +1,31 @@
 <div align="center">
-<h1>Redox</h1>
+<h1>redox-react</h1>
 </div>
 
-Redox is a decentralized storage management, base on Redux best practices without the boilerplate. No more action types, action creators, switch statements.
+Redox-react is a decentralized store management solution base on redox, All stores do not need to be initialized at the very beginning, but will only be initialized when it needed.
+
+1. It is tiny, after gzip redox/2kB，redox-react/1kB, support esmodule and treeShaking.
+
+2. There is a subscription relationship between the model and the components that subscribe to it. If the state changes, only the components that subscribe to it will be rendered.
+
+3. In the same component, regardless of whether it is in the same context, the any data changes are triggered at the same time, and only rendered once
+
+4. Based on TS writing, TS type hints are very friendly
 
 <hr />
 
-## how to use
+## producer consumer model
 
-- strongly typed supported.
-- config
+  - **producer** is `defineModel`
+    The model like react component, which can be run separately or combined through the second parameter `depend`
+  - **consumer** is `usexxModel` eg `useModel` `useGlobalModel` `useSharedModel` `useStaticModel`
+    xxModel consumes the model in the Provider context, and only creates the store when it is called.
+
+## `defineModel`
+
+  strongly typed supported.
+
+- first params is **model** self
   - name*
     name is necessary and should be unique
   - reducers*
@@ -18,21 +34,12 @@ Redox is a decentralized storage management, base on Redux best practices withou
   - effects?
     some effects functions, like fetch data
   - views?
-    define view by property
-  - depends?
-    if a model is depends other model, it is very useful. eg: depends isLogin status.
+    define view by property, when a view been called, it will collect dependencies with automatic. if depends on changes, view return value with cache.
 
-- sample api to use
-  - dispatch
-    dispatch is a function, with key of reducers and effects. 
-  - getState
-    return state of store
-  - subscribe
-    return unsubscribe function and trigger when state changed.
-  - views
-    call config views method, view will  collect dependencies with automatic. if depends on changes, view return value with cache.
-  - destroy
-    for clear memory
+- second option params depends
+  
+    depends should be the value defineModel returned. if a model is depends other model, it is very useful. eg: depends isLogin status.
+
 
 ```ts
 import { defineModel } from '@shuvi/redox'
@@ -42,7 +49,7 @@ const count = defineModel({
     state: { value: 0 },
     // concept of Redux 
     reducers: {
-        increment: (state, payload: number) => {
+        add: (state, payload: number) => {
             return {
                 value: state.value + payload,
             }
@@ -50,7 +57,7 @@ const count = defineModel({
     },
     effects: {
         // some effects method
-        async incrementAsync(payload: number, _state) {
+        async addAsync(payload: number, _state) {
             await delay(payload) // may be await some async method
             this.increment(1) // this point reducers
         },
@@ -75,179 +82,125 @@ const user = defineModel(
       }
     },
     effects: {
-      async depends(_payload: string, _state, depends) {
-        console.log('depends: ', depends);
-        const { getState, dispatch } = depends;
+      async depends(selfArg0: string, selfArg1: number, selfArg2: any) {
+        // get current state
+        const state = this.$state()
+        // call self effect
+        await this.anyMethod(1)
         // get depends state
-        const dependsState = getState();
-        const countState = dependsState.count
-        // trigger depends dispatch
-        dispatch.count({type: 'increment', payload: 1})
-        dispatch.count({type: 'incrementAsync', payload: 1})
-        dispatch.count.increment(1)
-        dispatch.count.incrementAsync(1)
+        const countState = this.$dep.count.$state()
+        // trigger depends actions
+        this.$dep.count.add(1)
+        this.$dep.count.addAsync(1)
+      }
+      async anyMethod(n:number){
+        // call self reducer
+        this.add(n)
       }
     },
     views: {
-      d (state, dependsState): {value: number} {
+      viewCount (state, dependsState){
         // dependsState point depends state collection
-        console.log(state.id);
-        return dependsState.count;
+        return dependsState.count.value;
       },
-      double (state, _dependsState, args): string {
+      anyView (state, _dependsState, args: number {
           // args allow custom args
-          // this point views
-        return `state.id=>${state.id}, args=>${args},views.one=>${this.d.number}`;
+          // this point views self
+        return this.viewCount + state.id;
       }
     }
   },
   [ count ] // defined depends
 );
 ```
-consume models by redox
+
+> `this` in `Effects` and `views` can be accessed to itself, `ts` automatically infers the type, and when there is an error in the type related to `this` returned, it can actively mark the type
+
+## `usexxModel`
+
+### selector
+
+`usexxModel`, first param is `model`, second optional param is `selector`.
+
+`selector` selects the state what the react component needed, and purpose is to reduce render times.
+
+> `ISelector` is typescript tips for create selector.
+
+```ts
+import type { ISelectorParams } from '@shuvi/redox-react'
+const selector= function (stateAndViews: ISelectorParams<typeof user>) {
+  return {
+    stateData: stateAndViews.id,
+    double: stateAndViews.anyView(3),
+    d: stateAndViews.viewCount()
+  };
+};
+```
+```ts
+const [views, actions] = useModel(user, selector);
+```
+
+### `useModel`
+
+Always completely separate context
+
+### `useGlobalModel`
+
+Global `Provider` context, you can get the global context anywhere, even if the component is unmount, the state will not be destroyed.
+
+### `useSharedModel`
+
+In the same `Provider` context, share the state of the store
+
+`createContainer` return a independent scope `Provider, useSharedModel, useStaticModel` for context and methods to consume models. 
+
+```ts
+const { Provider, useModel, useStaticModel } = createContainer();
+```
+
+All the models in same `Provider` can be shared by each other. `useModel, useStaticModel` for consume models. 
+
+> `Provider` accepts props modelManager, there is way to connect to different independent context by shared with same modelManager call `redox()`
+
+### `useStaticModel`
+
+`useStaticModel` is similar to `useSharedModel` adn `useGlobalModel`, the different is that, `useStaticModel` will not rerender on state changed.
+
+> `useStaticModel` not support [Destructuring Assignment](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment). no error eg `const [state, _] = useStaticModel(model)`
+
+## modelManager
+
+### Store 
+  return by modelManager.get(model), Store contains keys of reducers, effects and views.
+  - $state
+    return state of store
+  - subscribe
+    trigger subscribe functions called when state changed, if there is depends relationship between models, beDepend model subscribe functions also been called, and return unsubscribe function. 
+    
+#### destroy
+  for clear memory
+
 ```ts
 import { redox } from '@shuvi/redox'
-const manager = redox();
+const modelManager = redox();
 const countStore = manager.get(count);
-count.getState()
 
-// reducers
-count.dispatch({type: 'increment', payload: 1}) 
-dispatch.count.increment(1)
+// getState of store
+countStore.$state()
 
-// effects
-count.dispatch({type: 'incrementAsync', payload: 1}) 
-dispatch.count.incrementAsync(1)
+// call reducers
+countStore.add(1)
 
-const unsubscribe = count.subscribe(()=>{
+// call effects 
+countStore.addAsync(1)
+
+const unsubscribe = modelManager.subscribe(count, ()=>{
     console.log('state change')
 })
 unsubscribe();
 
 const userStore = manager.get(user);
 // call view
-userStore.views.d()
-userStore.views.ddouble('string')
+userStore.viewCount()
+userStore.anyView(1)
 ```
-
-## redox with react
-
-`@shuvi/redox-react` is library redox work with react. it can rendered by state changed.
-
-### show to works
-
-`createContainer` return a independent scope `Provider, useModel, useStaticModel` for consume models. 
-
-```ts
-const { Provider, useModel, useStaticModel } = createContainer();
-```
-
-All the models in same `Provider` can be shared by each other. `useModel, useStaticModel` for consume models. the different between `useModel` and `useStaticModel` is that, `useStaticModel` will not rerender on state changed.
-
-```ts
-const count = defineModel({
-	name: 'count',
-	state: { value: 0 },
-	reducers: {
-		increment: (state, payload: number) => {
-			return {
-				value: state.value + payload
-			}
-		},
-	},
-	effects: {
-		async incrementAsync() {
-			await delay(2)
-			this.increment(1)
-		},
-	}
-})
-function Count() {
-	const [{ value }, { increment, incrementAsync }] = useModel(count);
-	return (
-        <>
-            <h1>Basic use</h1>
-            <div style={{ width: 120 }}>
-                <h3>count: {value}</h3>
-                <button onClick={()=>increment(1)}>+1</button>
-                <button onClick={incrementAsync}>Async +1</button>
-            </div>
-        </>
-	)
-}
-
-```
-
-```ts
-function App() {
-	return (
-		<>
-			<Provider>
-				<Count />
-			</Provider>
-		</>
-	)
-}
-```
-
-> `Provider` accepts props modelManager, there is way to connect to different independent scopes by shared with same modelManager call `redox()`
-
-`useLocalModel` always create a independent scope quickly. without `Provider`
-
-```ts
-const local = defineModel({
-	name: 'local',
-	state: { value: 'localValue' },
-	reducers: {
-		setLocal: (_state, payload: string) => {
-			return {
-				value: payload
-			}
-		},
-	},
-})
-function Count() {
-	const [{ value }] = useLocalModel(local)
-	return (
-		<div>
-            <h1>Test local model</h1>
-            <div>
-                <h3>test: {value}</h3>
-            </div>
-        </div>
-	)
-}
-```
-
-### selector
-
-`useModel, useStaticModel, useLocalModel`, first param is `model`, second param is `selector`.
-
-`selector` selects the state what the react needed, and it also reduce render times.
-
-`ISelector` is typescript tips for create selector.
-
-```ts
-import type { ISelector } from '@shuvi/redox-react'
-const selector:ISelector<typeof user> = function (state, views) {
-  console.log('call selector'); 
-  return {
-    stateData: state.id,
-    double: views.double(3),
-    d: views.d().value
-  };
-};
-```
-```ts
-const [views, actions] = useModel(user, selector);
-const [views, actions] = useStaticModel(user, selector);
-const [views, actions] = useLocalModel(user, selector);
-
-```
-
-### global container
-
-`@shuvi/redox-react` export `Provider, useModel, useStaticModel` is global scope for consume models.
-
-
-
