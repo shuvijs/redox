@@ -59,17 +59,20 @@ export const validateModel = (model: AnyModel): void => {
 			'model "reducers" is required and it should be object !',
 		],
 	])
-	const keys = new Set<string>()
-	validateProperty(model, 'reducers', keys)
-	validateProperty(model, 'effects', keys)
-	validateProperty(model, 'views', keys)
+	const keys = new Set<string>(Object.keys(model.state))
+	validateProperty(model, 'views', keys, 'check state and views')
+	keys.clear()
+	validateProperty(model, 'reducers', keys, 'check reducers')
+	validateProperty(model, 'effects', keys, 'check reducers and effects')
+	validateProperty(model, 'views', keys, 'check reducers, effects and views')
 	keys.clear()
 }
 
 function validateProperty(
 	model: AnyModel,
 	prop: keyof AnyModel,
-	keys: Set<string>
+	keys: Set<string>,
+	extraTip: string = ''
 ) {
 	const target = model[prop] as any
 	if (target) {
@@ -79,7 +82,9 @@ function validateProperty(
 		for (const Key of Object.keys(target)) {
 			if (keys.has(Key)) {
 				keys.clear()
-				validate(() => [[true, `repeat key "${Key}" in model.${prop} !`]])
+				validate(() => [
+					[true, `${extraTip + ','}repeat key "${Key}" in model.${prop} !`],
+				])
 				break
 			} else {
 				validate(() => [

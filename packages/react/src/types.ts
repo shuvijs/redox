@@ -6,17 +6,17 @@ type IState<IModel extends AnyModel> = ReturnType<
 	RedoxStore<IModel>['$state']
 > &
 	noExist
-type IViews<IModel extends AnyModel> = RedoxStore<IModel>['$views'] & noExist
+
+type IViews<IModel extends AnyModel> = RedoxStore<IModel>['$views']
 type IActions<IModel extends AnyModel> = RedoxStore<IModel>['$actions']
 
 export type ISelector<IModel extends AnyModel, TReturn = any> = (
-	...args: ISelectorParams<IModel>
+	stateAndViews: ISelectorParams<IModel>
 ) => TReturn
 
-export type ISelectorParams<IModel extends AnyModel> = [
-	IState<IModel>,
-	IViews<IModel>
-]
+export type ISelectorParams<IModel extends AnyModel> = IState<IModel> &
+	IViews<IModel> &
+	noExist
 
 export interface IUseModel {
 	<IModel extends AnyModel>(model: IModel): [IState<IModel>, IActions<IModel>]

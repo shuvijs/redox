@@ -3,7 +3,7 @@ import { redox } from '@shuvi/redox'
 import type { IModelManager, RedoxStore, AnyModel } from '@shuvi/redox'
 import { createBatchManager } from './batchManager'
 import { shadowEqual } from './utils'
-import { IUseModel, ISelector } from './types'
+import { IUseModel, ISelector, ISelectorParams } from './types'
 
 function tuplify<T extends any[]>(...elements: T) {
 	return elements
@@ -18,7 +18,9 @@ function getStateOrViews<
 		return modelState
 	}
 	const ModelViews = redoxStore.$views
-	return selector(modelState, ModelViews)
+	const tempObj = Object.create(null) as ISelectorParams<IModel>
+	Object.assign(tempObj, modelState, ModelViews)
+	return selector(tempObj)
 }
 
 function getStateActions<
