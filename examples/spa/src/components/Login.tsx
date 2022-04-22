@@ -7,7 +7,7 @@ function Login() {
 	const [{ isLogin }, { toggleLogin }] = useGlobalModel(login)
 	return (
 		<div>
-			<h3>isLogin: {isLogin.toString()}</h3>
+			<h3>useGlobalModel isLogin: {isLogin.toString()}</h3>
 			<button onClick={() => toggleLogin()}>toggleLogin</button>
 			<hr />
 		</div>
