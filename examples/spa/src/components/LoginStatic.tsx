@@ -4,6 +4,7 @@ import { useStaticModel } from '@shuvi/redox-react'
 import { login } from '../models/login'
 
 function Login() {
+	// not support Destructuring Assignment
 	const [state] = useStaticModel(login)
 	return (
 		<div>
