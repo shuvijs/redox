@@ -150,8 +150,8 @@ describe('useGlobalModel worked:', () => {
 			},
 		})
 		const App = () => {
-			const [state, actions] = useGlobalModel(views, function (_, views) {
-				return views.test()
+			const [state, actions] = useGlobalModel(views, function (stateAndViews) {
+				return stateAndViews.test()
 			})
 
 			return (
@@ -183,13 +183,10 @@ describe('useGlobalModel worked:', () => {
 		expect(node.querySelector('#value')?.innerHTML).toEqual('1')
 	})
 	test('selector worked:', async () => {
-		const countSelector = function (
-			state: countSelectorParameters[0],
-			views: countSelectorParameters[1]
-		) {
+		const countSelector = function (stateAndViews: countSelectorParameters) {
 			return {
-				v: state.value,
-				t: views.test(2),
+				v: stateAndViews.value,
+				t: stateAndViews.test(2),
 			}
 		}
 		const App = () => {
@@ -252,10 +249,10 @@ describe('useGlobalModel worked:', () => {
 		const App = () => {
 			const [state, actions] = useGlobalModel(
 				newModel,
-				function (state, views) {
+				function (stateAndViews) {
 					return {
-						v: state.value,
-						t: views.test(),
+						v: stateAndViews.value,
+						t: stateAndViews.test(),
 					}
 				}
 			)

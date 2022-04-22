@@ -141,6 +141,20 @@ describe('defineModel worked:', () => {
 				})
 			}).toThrow()
 		})
+		test('not allow repeat key state views', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					state: {
+						a: 0,
+					},
+					reducers: {},
+					views: {
+						a() {},
+					},
+				})
+			}).toThrow()
+		})
 		test('not allow repeat key reducers effects views', () => {
 			expect(() => {
 				const model = defineModel({

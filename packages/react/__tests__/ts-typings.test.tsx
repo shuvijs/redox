@@ -9,7 +9,6 @@ import {
 	useGlobalModel,
 	useStaticModel,
 	ISelectorParams,
-	ISelector,
 } from '../src'
 
 type customType = 'custom' | 'custom0'
@@ -55,27 +54,25 @@ const count = defineModel({
 })
 
 type countSelectorParameters = ISelectorParams<typeof count>
-const countSelector = function (
-	state: countSelectorParameters[0],
-	views: countSelectorParameters[1]
-) {
+const countSelector = function (stateAndViews: countSelectorParameters) {
 	return {
-		v: state.value,
-		n: views.viewNumber(1),
-		s: views.viewString(),
-		scustom: views.viewString('custom'),
+		v: stateAndViews.value,
+		n: stateAndViews.viewNumber(1),
+		s: stateAndViews.viewString(),
+		scustom: stateAndViews.viewString('custom'),
 	}
 }
 
 describe('typings:', () => {
 	test('selector type:', () => {
-		const countSelectorTemp: ISelector<typeof count, { v: number; s: string }> =
-			function (state, views) {
-				return {
-					v: state.value,
-					s: views.viewString(),
-				}
+		const countSelectorTemp = function (
+			stateAndViews: countSelectorParameters
+		) {
+			return {
+				v: stateAndViews.value,
+				s: stateAndViews.viewString(),
 			}
+		}
 		type temp = typeof countSelectorTemp
 	})
 	test('useModel state and action:', () => {
@@ -95,10 +92,10 @@ describe('typings:', () => {
 
 	test('useModel state and action with selector inline:', () => {
 		function App() {
-			const [state, action] = useModel(count, function (state, views) {
+			const [state, action] = useModel(count, function (stateAndViews) {
 				return {
-					n: state.value,
-					viewS: views.viewString(),
+					n: stateAndViews.value,
+					viewS: stateAndViews.viewString(),
 				}
 			})
 			state.n
@@ -146,10 +143,10 @@ describe('typings:', () => {
 	})
 	test('useGlobalModel state and action with selector inline:', () => {
 		function App() {
-			const [state, action] = useGlobalModel(count, function (state, views) {
+			const [state, action] = useGlobalModel(count, function (stateAndViews) {
 				return {
-					n: state.value,
-					viewS: views.viewString(),
+					n: stateAndViews.value,
+					viewS: stateAndViews.viewString(),
 				}
 			})
 			state.n
@@ -196,10 +193,10 @@ describe('typings:', () => {
 	})
 	test('useStaticModel state and action with selector inline:', () => {
 		function App() {
-			const [state, action] = useStaticModel(count, function (state, views) {
+			const [state, action] = useStaticModel(count, function (stateAndViews) {
 				return {
-					n: state.value,
-					viewS: views.viewString(),
+					n: stateAndViews.value,
+					viewS: stateAndViews.viewString(),
 				}
 			})
 			state.n

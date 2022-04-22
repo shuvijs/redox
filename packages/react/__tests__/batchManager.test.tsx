@@ -198,9 +198,9 @@ describe('batchedUpdates worked:', () => {
 			renderCount += 1
 			const [{ value }, { addValue1 }] = useGlobalModel(
 				countModel,
-				(state, _views) => {
+				(stateAndViews) => {
 					return {
-						value: state.value,
+						value: stateAndViews.value,
 					}
 				}
 			)
@@ -288,9 +288,9 @@ describe('batchedUpdates worked:', () => {
 
 		function App() {
 			parentRenderCount += 1
-			const [{ test }, _] = useGlobalModel(appModel, function (_state, views) {
+			const [{ test }, _] = useGlobalModel(appModel, function (stateAndViews) {
 				return {
-					test: views.test(),
+					test: stateAndViews.test(),
 				}
 			})
 
