@@ -18,9 +18,9 @@ const createContainer = () => {
 		batchManager: ReturnType<typeof createBatchManager>
 	}>(null as any)
 
-	const Provider = (
+	function Provider(
 		props: PropsWithChildren<{ modelManager?: IModelManager }>
-	) => {
+	) {
 		const { children, modelManager: propsModelManager } = props
 
 		let modelManager: IModelManager
