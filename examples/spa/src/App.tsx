@@ -1,5 +1,8 @@
 import React from 'react'
+import Basic from './components/Basic'
+import Views from './components/Views'
 import Login from './components/Login'
+import LoginStatic from './components/LoginStatic'
 import ListA from './components/ListA'
 import ListB from './components/ListB'
 import Isolation from './components/Isolation'
@@ -13,7 +16,10 @@ function App() {
 			<hr />
 			{show ? (
 				<>
+					<Basic />
+					<Views />
 					<Login />
+					<LoginStatic />
 					<ListA />
 					<ListB />
 					<h3>Isolation useSharedModel</h3>
