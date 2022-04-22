@@ -59,13 +59,10 @@ const user = defineModel(
 
 export type userSelectorParameters = ISelectorParams<typeof user>
 
-const selector = function (
-	_state: userSelectorParameters[0],
-	views: userSelectorParameters[1]
-) {
+const selector = function (stateAndViews: userSelectorParameters) {
 	return {
-		v: views.viewValue1(),
-		d: views.viewDome(),
+		v: stateAndViews.viewValue1(),
+		d: stateAndViews.viewDome(),
 	}
 }
 
