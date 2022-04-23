@@ -55,7 +55,6 @@ const createUseModel =
 		selector?: Selector
 	) => {
 		const initialValue = useMemo(() => {
-			initModel(model, modelManager, batchManager)
 			return getStateActions(model, modelManager, selector)
 		}, [])
 
@@ -71,6 +70,7 @@ const createUseModel =
 					lastValueRef.current = newValue
 				}
 			}
+			initModel(model, modelManager, batchManager)
 			const unSubscribe = batchManager.addSubscribe(model, fn)
 
 			return () => {
@@ -99,7 +99,7 @@ const useModel: IUseModel = <
 
 	useEffect(() => {
 		return function () {
-			batchManager.destroy()
+			// batchManager.destroy()
 		}
 	}, [])
 
