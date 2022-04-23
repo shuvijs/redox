@@ -17,7 +17,6 @@ const createContainer = () => {
 		modelManager: IModelManager
 		batchManager: ReturnType<typeof createBatchManager>
 	}>(null as any)
-
 	function Provider(
 		props: PropsWithChildren<{ modelManager?: IModelManager }>
 	) {
@@ -31,16 +30,16 @@ const createContainer = () => {
 		}
 		const batchManager = createBatchManager()
 
-		useEffect(() => {
+		const context = useRef({ modelManager, batchManager })
+
+		useEffect(function () {
 			return function () {
-				batchManager.destroy()
+				context.current.batchManager.destroy()
 			}
 		}, [])
 
 		return (
-			<Context.Provider value={{ modelManager, batchManager }}>
-				{children}
-			</Context.Provider>
+			<Context.Provider value={context.current}>{children}</Context.Provider>
 		)
 	}
 
