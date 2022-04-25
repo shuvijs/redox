@@ -12,6 +12,7 @@ const selector = function (stateAndViews: selectorParameters) {
 }
 
 function ListB() {
+	console.log('ListB rendered')
 	const [{ arr, current }, { addContentAsync, choose }] = useModel(
 		listB,
 		selector

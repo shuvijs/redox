@@ -12,6 +12,10 @@ Redox-react is a decentralized store management solution base on redox, All stor
 
 4. Based on TS writing, TS type hints are very friendly
 
+5. Keep state status when [hmr](https://webpack.js.org/concepts/hot-module-replacement/)
+
+1. SSR supported very well
+
 <hr />
 
 ## producer consumer model
@@ -37,7 +41,7 @@ Redox-react is a decentralized store management solution base on redox, All stor
     define view by property, when a view been called, it will collect dependencies with automatic. if depends on changes, view return value with cache.
 
 - second option params depends
-  
+
     depends should be the value defineModel returned. if a model is depends other model, it is very useful. eg: depends isLogin status.
 
 
@@ -47,7 +51,7 @@ import { defineModel } from '@shuvi/redox'
 const count = defineModel({
     name: 'count', // necessary and should be unique
     state: { value: 0 },
-    // concept of Redux 
+    // concept of Redux
     reducers: {
         add: (state, payload: number) => {
             return {
@@ -152,13 +156,13 @@ Global `Provider` context, you can get the global context anywhere, even if the 
 
 In the same `Provider` context, share the state of the store
 
-`createContainer` return a independent scope `Provider, useSharedModel, useStaticModel` for context and methods to consume models. 
+`createContainer` return a independent scope `Provider, useSharedModel, useStaticModel` for context and methods to consume models.
 
 ```ts
 const { Provider, useModel, useStaticModel } = createContainer();
 ```
 
-All the models in same `Provider` can be shared by each other. `useModel, useStaticModel` for consume models. 
+All the models in same `Provider` can be shared by each other. `useModel, useStaticModel` for consume models.
 
 > `Provider` accepts props modelManager, there is way to connect to different independent context by shared with same modelManager call `redox()`
 
@@ -170,13 +174,13 @@ All the models in same `Provider` can be shared by each other. `useModel, useSta
 
 ## modelManager
 
-### Store 
+### Store
   return by modelManager.get(model), Store contains keys of reducers, effects and views.
   - $state
     return state of store
   - subscribe
-    trigger subscribe functions called when state changed, if there is depends relationship between models, beDepend model subscribe functions also been called, and return unsubscribe function. 
-    
+    trigger subscribe functions called when state changed, if there is depends relationship between models, beDepend model subscribe functions also been called, and return unsubscribe function.
+
 #### destroy
   for clear memory
 
@@ -191,7 +195,7 @@ countStore.$state()
 // call reducers
 countStore.add(1)
 
-// call effects 
+// call effects
 countStore.addAsync(1)
 
 const unsubscribe = modelManager.subscribe(count, ()=>{
