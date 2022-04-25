@@ -4,15 +4,16 @@ import React, {
 	PropsWithChildren,
 	useEffect,
 	useMemo,
+	useState,
 	useRef,
 } from 'react'
 import { validate, redox } from '@shuvi/redox'
 import type { IModelManager, AnyModel } from '@shuvi/redox'
-import { createUseModel, initModel, getStateActions } from './useModel'
+import { createUseModel, getStateActions } from './useModel'
 import { createBatchManager } from './batchManager'
 import { IUseModel, ISelector } from './types'
 
-const createContainer = () => {
+const createContainer = function () {
 	const Context = createContext<{
 		modelManager: IModelManager
 		batchManager: ReturnType<typeof createBatchManager>
@@ -22,25 +23,40 @@ const createContainer = () => {
 	) {
 		const { children, modelManager: propsModelManager } = props
 
-		let modelManager: IModelManager
-		if (propsModelManager) {
-			modelManager = propsModelManager
-		} else {
-			modelManager = redox()
-		}
-		const batchManager = createBatchManager()
+		const memoContext = useMemo(
+			function () {
+				let modelManager: IModelManager
+				if (propsModelManager) {
+					modelManager = propsModelManager
+				} else {
+					modelManager = redox()
+				}
+				const batchManager = createBatchManager()
 
-		const context = useRef({ modelManager, batchManager })
-
-		useEffect(function () {
-			return function () {
-				context.current.batchManager.destroy()
-			}
-		}, [])
-
-		return (
-			<Context.Provider value={context.current}>{children}</Context.Provider>
+				return {
+					modelManager,
+					batchManager,
+				}
+			},
+			[propsModelManager]
 		)
+
+		const [contextValue, setContextValue] = useState(memoContext)
+
+		const isUpdate = useRef(false)
+
+		useEffect(
+			function () {
+				if (isUpdate.current) {
+					setContextValue(memoContext)
+				} else {
+					isUpdate.current = true
+				}
+			},
+			[propsModelManager]
+		)
+
+		return <Context.Provider value={contextValue}>{children}</Context.Provider>
 	}
 
 	const useSharedModel: IUseModel = <
@@ -56,7 +72,7 @@ const createContainer = () => {
 			[!Boolean(model), `useModel param model is necessary`],
 			[
 				!Boolean(context),
-				`You should wrap your Component in CreateApp().Provider.`,
+				`You should wrap your Component in createContainer().Provider.`,
 			],
 		])
 
@@ -78,23 +94,25 @@ const createContainer = () => {
 		const context = useContext(Context)
 
 		validate(() => [
+			[!Boolean(model), `useModel param model is necessary`],
 			[
 				!Boolean(context),
-				'You should wrap your Component in CreateApp().Provider.',
+				'You should wrap your Component in createContainer().Provider.',
 			],
 		])
 
 		const { modelManager, batchManager } = context
 		const initialValue = useMemo(() => {
-			initModel(model, modelManager, batchManager)
 			return getStateActions(model, modelManager, selector)
-		}, [])
+		}, [modelManager, batchManager])
 
 		const value = useRef<[any, any]>([
 			// deep clone state in case mutate origin state accidentlly.
 			JSON.parse(JSON.stringify(initialValue[0])),
 			initialValue[1],
 		])
+
+		const isUpdate = useRef(false)
 
 		useEffect(() => {
 			const fn = () => {
@@ -104,15 +122,21 @@ const createContainer = () => {
 				) {
 					// merge data to old reference
 					Object.assign(value.current[0], newValue[0])
-					Object.assign(value.current[1], newValue[1])
 				}
 			}
-			const unSubscribe = batchManager.addSubscribe(model, fn)
-
+			if (isUpdate.current) {
+				value.current = [
+					JSON.parse(JSON.stringify(initialValue[0])),
+					initialValue[1],
+				]
+			} else {
+				isUpdate.current = true
+			}
+			const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
 			return () => {
 				unSubscribe()
 			}
-		}, [])
+		}, [modelManager, batchManager])
 
 		return value.current
 	}

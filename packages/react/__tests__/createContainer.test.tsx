@@ -968,4 +968,61 @@ describe('createContainer:', () => {
 		})
 		modelManager.get(countModel).add(1)
 	})
+	test('modelManager changed state change should be changed directly:', () => {
+		const { Provider: LocalProvider, useSharedModel } = createContainer()
+
+		const SubApp = () => {
+			const [state, actions] = useSharedModel(countModel)
+
+			return (
+				<>
+					<div id="state">{state.value}</div>
+					<button id="button" type="button" onClick={() => actions.add()}>
+						add
+					</button>
+				</>
+			)
+		}
+
+		const modelManager0 = redox()
+		const modelManager1 = redox()
+
+		const App = () => {
+			const [toggle, setToggle] = React.useState(true)
+			return (
+				<>
+					<button id="toggle" type="button" onClick={() => setToggle(!toggle)}>
+						toggle
+					</button>
+					<LocalProvider modelManager={toggle ? modelManager0 : modelManager1}>
+						<SubApp />
+					</LocalProvider>
+				</>
+			)
+		}
+
+		act(() => {
+			ReactDOM.render(<App></App>, node)
+		})
+
+		expect(node.querySelector('#state')?.innerHTML).toEqual('1')
+		act(() => {
+			node
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(node.querySelector('#state')?.innerHTML).toEqual('2')
+		act(() => {
+			node
+				.querySelector('#toggle')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(node.querySelector('#state')?.innerHTML).toEqual('1')
+		act(() => {
+			node
+				.querySelector('#toggle')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(node.querySelector('#state')?.innerHTML).toEqual('2')
+	})
 })
