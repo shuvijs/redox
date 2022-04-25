@@ -9,3 +9,21 @@ export const login = defineModel({
 		},
 	},
 })
+
+export const currentUser = defineModel(
+	{
+		name: 'currentUser',
+		state: { user: 'user xxx' },
+		reducers: {
+			setUser(state, payload: string) {
+				state.user = payload
+			},
+		},
+		views: {
+			userInfo(state, dependsState) {
+				return dependsState.login.isLogin ? state.user : 'need login'
+			},
+		},
+	},
+	[login]
+)

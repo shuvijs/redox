@@ -5,6 +5,7 @@ import Login from './components/Login'
 import LoginStatic from './components/LoginStatic'
 import ListA from './components/ListA'
 import ListB from './components/ListB'
+import Fetch from './components/FetchData'
 import Isolation from './components/Isolation'
 import Shared from './components/Shared'
 
@@ -22,6 +23,7 @@ function App() {
 					<LoginStatic />
 					<ListA />
 					<ListB />
+					<Fetch />
 					<h3>Isolation useSharedModel</h3>
 					<Isolation></Isolation>
 					<hr />
