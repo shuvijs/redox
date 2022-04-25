@@ -191,6 +191,85 @@ describe('batchedUpdates worked:', () => {
 		expect(AppRenderCount).toBe(1)
 	})
 
+	test('component should render when other component unmount', () => {
+		function SubApp() {
+			const [{ value }, { addValue }] = useGlobalModel(countModel)
+
+			return (
+				<>
+					<div id="sub-value">{`${value}`}</div>
+					<div
+						id="sub-button"
+						onClick={() => {
+							addValue()
+						}}
+					>
+						trigger actions
+					</div>
+				</>
+			)
+		}
+
+		function App() {
+			const [state, setState] = React.useState(1)
+			const [{ value }, { addValue }] = useGlobalModel(countModel)
+			return (
+				<>
+					<div id="app-value">{`${value}`}</div>
+					<div
+						id="app-button"
+						onClick={() => {
+							addValue()
+						}}
+					>
+						trigger actions
+					</div>
+					<div
+						id="button-remove-sub"
+						onClick={() => {
+							setState(0)
+						}}
+					>
+						trigger actions
+					</div>
+					{state ? <SubApp /> : null}
+				</>
+			)
+		}
+
+		const modelManager = redox()
+
+		act(() => {
+			ReactDOM.render(
+				<Provider modelManager={modelManager}>
+					<App />
+				</Provider>,
+				node
+			)
+		})
+
+		expect(node.querySelector('#sub-value')?.innerHTML).toEqual('1')
+		expect(node.querySelector('#app-value')?.innerHTML).toEqual('1')
+
+		act(() => {
+			node
+				.querySelector('#button-remove-sub')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+
+		expect(node.querySelector('#sub-value')?.innerHTML).toEqual(undefined)
+		expect(node.querySelector('#app-value')?.innerHTML).toEqual('1')
+
+		act(() => {
+			node
+				.querySelector('#app-button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+
+		expect(node.querySelector('#sub-value')?.innerHTML).toEqual(undefined)
+		expect(node.querySelector('#app-value')?.innerHTML).toEqual('2')
+	})
+
 	test('selector and shadowEqual with return state can reduce the rerender times', () => {
 		let renderCount = 0
 
