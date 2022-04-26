@@ -150,8 +150,8 @@ describe('useGlobalModel worked:', () => {
 			},
 		})
 		const App = () => {
-			const [state, actions] = useGlobalModel(views, function (_, views) {
-				return views.test()
+			const [state, actions] = useGlobalModel(views, function (stateAndViews) {
+				return stateAndViews.test()
 			})
 
 			return (
@@ -183,13 +183,10 @@ describe('useGlobalModel worked:', () => {
 		expect(node.querySelector('#value')?.innerHTML).toEqual('1')
 	})
 	test('selector worked:', async () => {
-		const countSelector = function (
-			state: countSelectorParameters[0],
-			views: countSelectorParameters[1]
-		) {
+		const countSelector = function (stateAndViews: countSelectorParameters) {
 			return {
-				v: state.value,
-				t: views.test(2),
+				v: stateAndViews.value,
+				t: stateAndViews.test(2),
 			}
 		}
 		const App = () => {
@@ -252,10 +249,10 @@ describe('useGlobalModel worked:', () => {
 		const App = () => {
 			const [state, actions] = useGlobalModel(
 				newModel,
-				function (state, views) {
+				function (stateAndViews) {
 					return {
-						v: state.value,
-						t: views.test(),
+						v: stateAndViews.value,
+						t: stateAndViews.test(),
 					}
 				}
 			)
@@ -970,5 +967,62 @@ describe('createContainer:', () => {
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
 		modelManager.get(countModel).add(1)
+	})
+	test('modelManager changed state change should be changed directly:', () => {
+		const { Provider: LocalProvider, useSharedModel } = createContainer()
+
+		const SubApp = () => {
+			const [state, actions] = useSharedModel(countModel)
+
+			return (
+				<>
+					<div id="state">{state.value}</div>
+					<button id="button" type="button" onClick={() => actions.add()}>
+						add
+					</button>
+				</>
+			)
+		}
+
+		const modelManager0 = redox()
+		const modelManager1 = redox()
+
+		const App = () => {
+			const [toggle, setToggle] = React.useState(true)
+			return (
+				<>
+					<button id="toggle" type="button" onClick={() => setToggle(!toggle)}>
+						toggle
+					</button>
+					<LocalProvider modelManager={toggle ? modelManager0 : modelManager1}>
+						<SubApp />
+					</LocalProvider>
+				</>
+			)
+		}
+
+		act(() => {
+			ReactDOM.render(<App></App>, node)
+		})
+
+		expect(node.querySelector('#state')?.innerHTML).toEqual('1')
+		act(() => {
+			node
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(node.querySelector('#state')?.innerHTML).toEqual('2')
+		act(() => {
+			node
+				.querySelector('#toggle')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(node.querySelector('#state')?.innerHTML).toEqual('1')
+		act(() => {
+			node
+				.querySelector('#toggle')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(node.querySelector('#state')?.innerHTML).toEqual('2')
 	})
 })

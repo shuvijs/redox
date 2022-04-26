@@ -80,8 +80,13 @@ export default function Views() {
 				changed, views will not be computed.
 			</div>
 			<div>
-				<div>computed by 'state.value1', views.v: {views.v}</div>
-				<div>computed by 'dependsState.domeDep.dome', views.d: {views.d}</div>
+				<div>
+					computed by 'state.value1', <strong>views.v: {views.v}</strong>
+				</div>
+				<div>
+					computed by 'dependsState.domeDep.dome',{' '}
+					<strong>views.d: {views.d}</strong>
+				</div>
 				<hr />
 			</div>
 			<button

@@ -5,6 +5,7 @@ import { listA } from '../models/listA'
 import { login } from '../models/login'
 
 function ListA() {
+	console.log('ListA rendered')
 	const [{ arr }, { addContentAsync, removeById }] = useModel(listA)
 	const [{ isLogin }] = useGlobalModel(login)
 	const [inputValue, setInputValue] = React.useState('')

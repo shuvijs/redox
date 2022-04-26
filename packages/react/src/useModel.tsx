@@ -1,9 +1,9 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
-import { redox } from '@shuvi/redox'
+import { redox, validate } from '@shuvi/redox'
 import type { IModelManager, RedoxStore, AnyModel } from '@shuvi/redox'
 import { createBatchManager } from './batchManager'
 import { shadowEqual } from './utils'
-import { IUseModel, ISelector } from './types'
+import { IUseModel, ISelector, ISelectorParams } from './types'
 
 function tuplify<T extends any[]>(...elements: T) {
 	return elements
@@ -18,7 +18,9 @@ function getStateOrViews<
 		return modelState
 	}
 	const ModelViews = redoxStore.$views
-	return selector(modelState, ModelViews)
+	const tempObj = Object.create(null) as ISelectorParams<IModel>
+	Object.assign(tempObj, modelState, ModelViews)
+	return selector(tempObj)
 }
 
 function getStateActions<
@@ -27,20 +29,6 @@ function getStateActions<
 >(model: IModel, modelManager: IModelManager, selector?: Selector) {
 	const redoxStore = modelManager._getRedox(model)
 	return tuplify(getStateOrViews(redoxStore, selector), redoxStore.$actions)
-}
-
-function initModel(
-	model: AnyModel,
-	modelManager: IModelManager,
-	batchManager: ReturnType<typeof createBatchManager>
-) {
-	if (!batchManager.hasInitModel(model)) {
-		batchManager.initModel(model)
-		const unSubscribe = modelManager.subscribe(model, function () {
-			batchManager.triggerSubscribe(model) // render self;
-		})
-		batchManager.destroyTask(unSubscribe)
-	}
 }
 
 const createUseModel =
@@ -52,29 +40,40 @@ const createUseModel =
 		model: IModel,
 		selector?: Selector
 	) => {
-		const initialValue = useMemo(() => {
-			initModel(model, modelManager, batchManager)
-			return getStateActions(model, modelManager, selector)
-		}, [])
+		const initialValue = useMemo(
+			function () {
+				return getStateActions(model, modelManager, selector)
+			},
+			[modelManager, batchManager]
+		)
 
 		const [modelValue, setModelValue] = useState(initialValue)
 
 		const lastValueRef = useRef<any>(initialValue)
 
-		useEffect(() => {
-			const fn = () => {
-				const newValue = getStateActions(model, modelManager, selector)
-				if (!shadowEqual(lastValueRef.current[0], newValue[0])) {
-					setModelValue(newValue as any)
-					lastValueRef.current = newValue
-				}
-			}
-			const unSubscribe = batchManager.addSubscribe(model, fn)
+		const isUpdate = useRef(false)
 
-			return () => {
-				unSubscribe()
-			}
-		}, [])
+		useEffect(
+			function () {
+				const fn = function () {
+					const newValue = getStateActions(model, modelManager, selector)
+					if (!shadowEqual(lastValueRef.current[0], newValue[0])) {
+						setModelValue(newValue as any)
+						lastValueRef.current = newValue
+					}
+				}
+				if (isUpdate.current) {
+					setModelValue(initialValue as any)
+				} else {
+					isUpdate.current = true
+				}
+				const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
+				return () => {
+					unSubscribe()
+				}
+			},
+			[modelManager, batchManager]
+		)
 
 		return modelValue
 	}
@@ -86,22 +85,26 @@ const useModel: IUseModel = <
 	model: IModel,
 	selector?: Selector
 ) => {
-	let [modelManager, batchManager] = useMemo(() => {
+	validate(() => [[!Boolean(model), `useModel param model is necessary`]])
+
+	let [modelManager, batchManager] = useMemo(function () {
 		return [redox(), createBatchManager()]
 	}, [])
 
-	const res = useMemo(() => createUseModel(modelManager, batchManager), [])(
-		model,
-		selector
-	)
+	const contextValue = useRef({
+		modelManager,
+		batchManager,
+	})
 
-	useEffect(() => {
-		return function () {
-			batchManager.destroy()
-		}
-	}, [])
-
-	return res
+	return useMemo(
+		function () {
+			return createUseModel(
+				contextValue.current.modelManager,
+				contextValue.current.batchManager
+			)
+		},
+		[contextValue.current.modelManager, contextValue.current.batchManager]
+	)(model, selector)
 }
 
-export { useModel, createUseModel, initModel, getStateActions }
+export { useModel, createUseModel, getStateActions }

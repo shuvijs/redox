@@ -191,6 +191,85 @@ describe('batchedUpdates worked:', () => {
 		expect(AppRenderCount).toBe(1)
 	})
 
+	test('component should render when other component unmount', () => {
+		function SubApp() {
+			const [{ value }, { addValue }] = useGlobalModel(countModel)
+
+			return (
+				<>
+					<div id="sub-value">{`${value}`}</div>
+					<div
+						id="sub-button"
+						onClick={() => {
+							addValue()
+						}}
+					>
+						trigger actions
+					</div>
+				</>
+			)
+		}
+
+		function App() {
+			const [state, setState] = React.useState(1)
+			const [{ value }, { addValue }] = useGlobalModel(countModel)
+			return (
+				<>
+					<div id="app-value">{`${value}`}</div>
+					<div
+						id="app-button"
+						onClick={() => {
+							addValue()
+						}}
+					>
+						trigger actions
+					</div>
+					<div
+						id="button-remove-sub"
+						onClick={() => {
+							setState(0)
+						}}
+					>
+						trigger actions
+					</div>
+					{state ? <SubApp /> : null}
+				</>
+			)
+		}
+
+		const modelManager = redox()
+
+		act(() => {
+			ReactDOM.render(
+				<Provider modelManager={modelManager}>
+					<App />
+				</Provider>,
+				node
+			)
+		})
+
+		expect(node.querySelector('#sub-value')?.innerHTML).toEqual('1')
+		expect(node.querySelector('#app-value')?.innerHTML).toEqual('1')
+
+		act(() => {
+			node
+				.querySelector('#button-remove-sub')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+
+		expect(node.querySelector('#sub-value')?.innerHTML).toEqual(undefined)
+		expect(node.querySelector('#app-value')?.innerHTML).toEqual('1')
+
+		act(() => {
+			node
+				.querySelector('#app-button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+
+		expect(node.querySelector('#sub-value')?.innerHTML).toEqual(undefined)
+		expect(node.querySelector('#app-value')?.innerHTML).toEqual('2')
+	})
+
 	test('selector and shadowEqual with return state can reduce the rerender times', () => {
 		let renderCount = 0
 
@@ -198,9 +277,9 @@ describe('batchedUpdates worked:', () => {
 			renderCount += 1
 			const [{ value }, { addValue1 }] = useGlobalModel(
 				countModel,
-				(state, _views) => {
+				(stateAndViews) => {
 					return {
-						value: state.value,
+						value: stateAndViews.value,
 					}
 				}
 			)
@@ -288,9 +367,9 @@ describe('batchedUpdates worked:', () => {
 
 		function App() {
 			parentRenderCount += 1
-			const [{ test }, _] = useGlobalModel(appModel, function (_state, views) {
+			const [{ test }, _] = useGlobalModel(appModel, function (stateAndViews) {
 				return {
-					test: views.test(),
+					test: stateAndViews.test(),
 				}
 			})
 
@@ -326,5 +405,87 @@ describe('batchedUpdates worked:', () => {
 		expect(childRenderCount).toBe(2)
 		expect(node.querySelector('#test')?.innerHTML).toEqual('test:4')
 		expect(node.querySelector('#value')?.innerHTML).toEqual('value:2')
+	})
+
+	test('depends model case render depend and beDepend subscribe component should batch in one time render', () => {
+		let parentRenderCount = 0
+		let childRenderCount = 0
+
+		const appModel = defineModel(
+			{
+				name: 'appModel',
+				state: {
+					value: 2,
+				},
+				reducers: {
+					add(state) {
+						state.value += 1
+					},
+				},
+				effects: {
+					makeCall() {
+						this.$dep.countModel.addValue() // depend case appModel render
+						this.add()
+					},
+				},
+			},
+			[countModel]
+		)
+
+		function SubApp() {
+			childRenderCount++
+			const [{ value }, _] = useGlobalModel(countModel)
+
+			return (
+				<>
+					<div id="SubApp">{value}</div>
+				</>
+			)
+		}
+
+		function App() {
+			parentRenderCount += 1
+			const [{ value }, { makeCall }] = useGlobalModel(appModel)
+
+			return (
+				<div>
+					<div id="App">{value}</div>
+					<button
+						id="button"
+						onClick={() => {
+							makeCall()
+						}}
+					>
+						addValue
+					</button>
+					<SubApp />
+				</div>
+			)
+		}
+
+		act(() => {
+			ReactDOM.render(
+				<Provider>
+					<App />
+				</Provider>,
+				node
+			)
+		})
+
+		expect(parentRenderCount).toBe(1)
+		expect(childRenderCount).toBe(1)
+
+		expect(node.querySelector('#SubApp')?.innerHTML).toEqual('1')
+		expect(node.querySelector('#App')?.innerHTML).toEqual('2')
+
+		act(() => {
+			node
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(parentRenderCount).toBe(2)
+		expect(childRenderCount).toBe(2)
+		expect(node.querySelector('#SubApp')?.innerHTML).toEqual('2')
+		expect(node.querySelector('#App')?.innerHTML).toEqual('3')
 	})
 })

@@ -1,17 +1,26 @@
 import { unstable_batchedUpdates } from 'react-dom'
-import type { AnyModel } from '@shuvi/redox'
+import type { AnyModel, IModelManager } from '@shuvi/redox'
 
 const createBatchManager = () => {
 	// Models are in using now
-	const usingModelsMap = new Map<AnyModel, Set<() => void>>()
+	const modelBindRender = new Map<AnyModel, Set<() => void>>()
+	const modelManagerUnSub = new Map<AnyModel, () => void>()
 
 	// add models to listen
-	const addSubscribe = function (model: AnyModel, fn: () => void) {
-		let modelsFnSet = usingModelsMap.get(model)
+	const addSubscribe = function (
+		model: AnyModel,
+		modelManager: IModelManager,
+		fn: () => void
+	) {
+		let modelsFnSet = modelBindRender.get(model)
 		if (!modelsFnSet) {
 			modelsFnSet = new Set()
 			modelsFnSet.add(fn)
-			usingModelsMap.set(model, modelsFnSet)
+			const unSubscribe = modelManager.subscribe(model, function () {
+				triggerSubscribe(model) // render self;
+			})
+			modelBindRender.set(model, modelsFnSet)
+			modelManagerUnSub.set(model, unSubscribe)
 		} else {
 			modelsFnSet.add(fn)
 		}
@@ -22,18 +31,24 @@ const createBatchManager = () => {
 
 	// remove models to listen
 	const removeSubscribe = function (model: AnyModel, fn: () => void) {
-		let modelsFnSet = usingModelsMap.get(model)
-		if (!modelsFnSet) {
-			return
+		let modelsFnSet = modelBindRender.get(model)
+		if (modelsFnSet) {
+			modelsFnSet.delete(fn)
+			if (modelsFnSet.size === 0 && modelManagerUnSub.has(model)) {
+				modelBindRender.delete(model)
+				const UnSubFn = modelManagerUnSub.get(model)
+				if (UnSubFn) {
+					UnSubFn()
+					modelManagerUnSub.delete(model)
+				}
+			}
 		}
-		modelsFnSet.clear()
-		modelsFnSet.delete(fn)
 	}
 
 	// listen to models in using
 	const triggerSubscribe = function (model: AnyModel) {
 		const updateList: (() => void)[] = Array.from(
-			usingModelsMap.get(model) || []
+			modelBindRender.get(model) || []
 		)
 
 		unstable_batchedUpdates(() => {
@@ -47,39 +62,8 @@ const createBatchManager = () => {
 		})
 	}
 
-	const hasInitModel = function (model: AnyModel) {
-		return !!usingModelsMap.get(model)
-	}
-
-	const initModel = function (model: AnyModel) {
-		usingModelsMap.set(model, new Set())
-	}
-
-	const tasks = new Set<() => void>()
-
-	const destroyTask = function (fn: () => void) {
-		tasks.add(fn)
-	}
-
-	const destroy = function () {
-		for (const task of tasks) {
-			task()
-		}
-		tasks.clear()
-		for (const modelSet of usingModelsMap.values()) {
-			modelSet.clear()
-		}
-		usingModelsMap.clear()
-	}
-
 	return {
 		addSubscribe,
-		destroyTask,
-		removeSubscribe,
-		triggerSubscribe,
-		hasInitModel,
-		initModel,
-		destroy,
 	}
 }
 

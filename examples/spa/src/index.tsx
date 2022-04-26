@@ -4,7 +4,8 @@ import App from './App'
 import { Provider } from '@shuvi/redox-react'
 
 ReactDOM.render(
-	<Provider>
+	// @ts-ignore
+	<Provider p="global">
 		<App></App>
 	</Provider>,
 	document.getElementById('root')
