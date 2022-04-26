@@ -9,13 +9,10 @@ import { act } from 'react-dom/test-utils'
 import { useModel, Provider, useGlobalModel } from '../src'
 import { sleep, countModel, countSelectorParameters } from './models'
 
-const countSelector = function (
-	state: countSelectorParameters[0],
-	views: countSelectorParameters[1]
-) {
+const countSelector = function (stateAndViews: countSelectorParameters) {
 	return {
-		v: state.value,
-		t: views.test(2),
+		v: stateAndViews.value,
+		t: stateAndViews.test(2),
 	}
 }
 
@@ -154,8 +151,8 @@ describe('useModel worked:', () => {
 			},
 		})
 		const App = () => {
-			const [state, actions] = useModel(views, function (_, views) {
-				return views.test()
+			const [state, actions] = useModel(views, function (stateAndViews) {
+				return stateAndViews.test()
 			})
 
 			return (
@@ -245,10 +242,10 @@ describe('useModel worked:', () => {
 		)
 
 		const App = () => {
-			const [state, actions] = useModel(newModel, function (state, views) {
+			const [state, actions] = useModel(newModel, function (stateAndViews) {
 				return {
-					v: state.value,
-					t: views.test(),
+					v: stateAndViews.value,
+					t: stateAndViews.test(),
 				}
 			})
 

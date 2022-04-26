@@ -4,17 +4,15 @@ import { useModel, ISelectorParams } from '@shuvi/redox-react'
 import { listB } from '../models/listB'
 export type selectorParameters = ISelectorParams<typeof listB>
 
-const selector = function (
-	state: selectorParameters[0],
-	views: selectorParameters[1]
-) {
+const selector = function (stateAndViews: selectorParameters) {
 	return {
-		arr: state.arr,
-		current: views.current(),
+		arr: stateAndViews.arr,
+		current: stateAndViews.current(),
 	}
 }
 
 function ListB() {
+	console.log('ListB rendered')
 	const [{ arr, current }, { addContentAsync, choose }] = useModel(
 		listB,
 		selector

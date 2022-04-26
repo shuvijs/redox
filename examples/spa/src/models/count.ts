@@ -10,7 +10,7 @@ export const count = defineModel({
 		},
 	},
 	effects: {
-		async incrementAsync() {
+		async addAsync() {
 			await delay(2)
 			this.add(1)
 		},
