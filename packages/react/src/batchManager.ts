@@ -3,7 +3,7 @@ import type { AnyModel, IModelManager } from '@shuvi/redox'
 
 const createBatchManager = () => {
 	// Models are in using now
-	const usingModelsMap = new Map<AnyModel, Set<() => void>>()
+	const modelBindRender = new Map<AnyModel, Set<() => void>>()
 	const modelManagerUnSub = new Map<AnyModel, () => void>()
 
 	// add models to listen
@@ -12,14 +12,14 @@ const createBatchManager = () => {
 		modelManager: IModelManager,
 		fn: () => void
 	) {
-		let modelsFnSet = usingModelsMap.get(model)
+		let modelsFnSet = modelBindRender.get(model)
 		if (!modelsFnSet) {
 			modelsFnSet = new Set()
 			modelsFnSet.add(fn)
 			const unSubscribe = modelManager.subscribe(model, function () {
 				triggerSubscribe(model) // render self;
 			})
-			usingModelsMap.set(model, modelsFnSet)
+			modelBindRender.set(model, modelsFnSet)
 			modelManagerUnSub.set(model, unSubscribe)
 		} else {
 			modelsFnSet.add(fn)
@@ -31,22 +31,26 @@ const createBatchManager = () => {
 
 	// remove models to listen
 	const removeSubscribe = function (model: AnyModel, fn: () => void) {
-		let modelsFnSet = usingModelsMap.get(model)
+		let modelsFnSet = modelBindRender.get(model)
 		if (modelsFnSet) {
 			modelsFnSet.delete(fn)
-		}
-		if (modelsFnSet?.size === 0 && modelManagerUnSub.has(model)) {
-			usingModelsMap.delete(model)
-			const UnSubFn = modelManagerUnSub.get(model)
-			UnSubFn!()
-			modelManagerUnSub.delete(model)
+			if (modelsFnSet.size === 0 && modelManagerUnSub.has(model)) {
+				modelBindRender.delete(model)
+				const UnSubFn = modelManagerUnSub.get(model)
+				if (UnSubFn) {
+					UnSubFn()
+					modelManagerUnSub.delete(model)
+				}
+				console.log('modelBindRender: ', modelBindRender)
+				console.log('modelManagerUnSub: ', modelBindRender)
+			}
 		}
 	}
 
 	// listen to models in using
 	const triggerSubscribe = function (model: AnyModel) {
 		const updateList: (() => void)[] = Array.from(
-			usingModelsMap.get(model) || []
+			modelBindRender.get(model) || []
 		)
 
 		unstable_batchedUpdates(() => {

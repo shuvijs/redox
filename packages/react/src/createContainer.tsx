@@ -43,14 +43,13 @@ const createContainer = function () {
 
 		const [contextValue, setContextValue] = useState(memoContext)
 
-		const isUpdate = useRef(false)
+		const modelManagerPos = useRef(propsModelManager) // for hmr
 
 		useEffect(
 			function () {
-				if (isUpdate.current) {
+				if (modelManagerPos.current !== propsModelManager) {
+					modelManagerPos.current = propsModelManager
 					setContextValue(memoContext)
-				} else {
-					isUpdate.current = true
 				}
 			},
 			[propsModelManager]
