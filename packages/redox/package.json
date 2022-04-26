@@ -30,9 +30,6 @@
     "immer": "9.0.6",
     "tiny-invariant": "1.2.0"
   },
-  "peerDependencies": {
-    "redux": ">=4"
-  },
   "authors": [],
   "bugs": {
     "url": "https://github.com/shuvijs/redox/issues"
