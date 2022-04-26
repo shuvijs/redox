@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { redox } from '@shuvi/redox'
-import { LocalProviderA, LocalProviderB, A, B, C } from './Isolation'
+import { LocalProviderA, LocalProviderB, A, B } from './useSharedModels'
 
 const modelManager0 = redox()
 const modelManager1 = redox()

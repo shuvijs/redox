@@ -96,7 +96,7 @@ const useModel: IUseModel = <
 		batchManager,
 	})
 
-	const res = useMemo(
+	return useMemo(
 		function () {
 			return createUseModel(
 				contextValue.current.modelManager,
@@ -105,8 +105,6 @@ const useModel: IUseModel = <
 		},
 		[contextValue.current.modelManager, contextValue.current.batchManager]
 	)(model, selector)
-
-	return res
 }
 
 export { useModel, createUseModel, getStateActions }
