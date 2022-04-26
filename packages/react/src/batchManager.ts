@@ -41,8 +41,6 @@ const createBatchManager = () => {
 					UnSubFn()
 					modelManagerUnSub.delete(model)
 				}
-				console.log('modelBindRender: ', modelBindRender)
-				console.log('modelManagerUnSub: ', modelBindRender)
 			}
 		}
 	}
