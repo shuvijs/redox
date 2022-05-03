@@ -121,7 +121,8 @@ export class RedoxStore<IModel extends AnyModel> {
 		const reducer = createModelReducer(model)
 		this.currentReducer = reducer
 		this.currentState =
-			this._cache._getInitialState(this.model.name) || model.state
+			(this.model.name && this._cache._getInitialState(this.model.name)) ||
+			model.state
 		this.isDispatching = false
 		this.dispatch({ type: ActionTypes.INIT })
 
