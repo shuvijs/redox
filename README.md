@@ -22,7 +22,7 @@ Redox-react is a decentralized store management solution base on redox, All stor
 
   - **producer** is `defineModel`
     The model like react component, which can be run separately or combined through the second parameter `depend`
-  - **consumer** is `usexxModel` eg `useModel` `useGlobalModel` `useSharedModel` `useStaticModel`
+  - **consumer** is `usexxModel` eg `useModel` `useRootModel` `useSharedModel` `useRootStaticModel`
     xxModel consumes the model in the Provider context, and only creates the store when it is called.
 
 ## `defineModel`
@@ -148,7 +148,7 @@ const [views, actions] = useModel(user, selector);
 
 Always completely separate context
 
-### `useGlobalModel`
+### `useRootModel`
 
 Global `Provider` context, you can get the global context anywhere, even if the component is unmount, the state will not be destroyed.
 
@@ -168,7 +168,7 @@ All the models in same `Provider` can be shared by each other. `useModel, useSta
 
 ### `useStaticModel`
 
-`useStaticModel` is similar to `useSharedModel` adn `useGlobalModel`, the different is that, `useStaticModel` will not rerender on state changed.
+`useStaticModel` is similar to `useSharedModel`, the different is that, `useStaticModel` will not rerender on state changed.
 
 > `useStaticModel` not support [Destructuring Assignment](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment). no error eg `const [state, _] = useStaticModel(model)`
 

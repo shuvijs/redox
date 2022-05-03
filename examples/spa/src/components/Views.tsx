@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { defineModel } from '@shuvi/redox'
-import { useGlobalModel, ISelectorParams } from '@shuvi/redox-react'
+import { useRootModel, ISelectorParams } from '@shuvi/redox-react'
 
 const otherDep = defineModel({
 	name: 'otherDep',
@@ -68,9 +68,9 @@ const selector = function (stateAndViews: userSelectorParameters) {
 
 export default function Views() {
 	const [index, setIndex] = useState(0)
-	const [stateOther, actionsOther] = useGlobalModel(otherDep)
-	const [stateDome, actionsDome] = useGlobalModel(domeDep)
-	const [views, actions] = useGlobalModel(user, selector)
+	const [stateOther, actionsOther] = useRootModel(otherDep)
+	const [stateDome, actionsDome] = useRootModel(domeDep)
+	const [views, actions] = useRootModel(user, selector)
 
 	return (
 		<div>

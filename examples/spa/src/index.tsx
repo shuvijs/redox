@@ -1,12 +1,11 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import App from './App'
-import { Provider } from '@shuvi/redox-react'
+import { RootProvider } from '@shuvi/redox-react'
 
 ReactDOM.render(
-	// @ts-ignore
-	<Provider p="global">
+	<RootProvider>
 		<App></App>
-	</Provider>,
+	</RootProvider>,
 	document.getElementById('root')
 )
