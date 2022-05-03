@@ -58,6 +58,7 @@ describe('useModel worked:', () => {
 		})
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
+
 	test('immer worked:', async () => {
 		const immer = defineModel({
 			name: 'immer',
@@ -99,6 +100,7 @@ describe('useModel worked:', () => {
 		})
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
+
 	test('effect worked:', async () => {
 		const App = () => {
 			const [state, actions] = useModel(countModel)
@@ -130,6 +132,7 @@ describe('useModel worked:', () => {
 		await sleep(250)
 		expect(node.querySelector('#value')?.innerHTML).toEqual('3')
 	})
+
 	test('views worked:', async () => {
 		let viewComputedTime = 0
 		const views = defineModel({
@@ -183,6 +186,7 @@ describe('useModel worked:', () => {
 		expect(viewComputedTime).toBe(1)
 		expect(node.querySelector('#value')?.innerHTML).toEqual('1')
 	})
+
 	test('selector worked:', async () => {
 		const App = () => {
 			const [state, actions] = useModel(countModel, countSelector)
@@ -216,6 +220,7 @@ describe('useModel worked:', () => {
 		expect(node.querySelector('#v')?.innerHTML).toEqual('3')
 		expect(node.querySelector('#t')?.innerHTML).toEqual('5')
 	})
+
 	test('depends worked:', async () => {
 		const newModel = defineModel(
 			{
@@ -279,6 +284,7 @@ describe('useModel worked:', () => {
 		expect(node.querySelector('#v')?.innerHTML).toEqual('2')
 		expect(node.querySelector('#t')?.innerHTML).toEqual('4')
 	})
+
 	describe('selector only run init and state changed:', () => {
 		test('inlined selector:', async () => {
 			let selectorRunCount = 0
@@ -329,6 +335,7 @@ describe('useModel worked:', () => {
 			})
 			expect(selectorRunCount).toBe(2)
 		})
+
 		test('selector outside:', async () => {
 			let selectorRunCount = 0
 			const countSelector = function () {
@@ -374,6 +381,7 @@ describe('useModel worked:', () => {
 			expect(selectorRunCount).toBe(2)
 		})
 	})
+
 	test('useModel useRootModel is isolation:', async () => {
 		const App = () => {
 			const [state, actions] = useRootModel(countModel)
@@ -411,6 +419,7 @@ describe('useModel worked:', () => {
 		expect(node.querySelector('#value')?.innerHTML).toEqual('3')
 		expect(node.querySelector('#value1')?.innerHTML).toEqual('1')
 	})
+
 	test('useModel self is isolation:', async () => {
 		const App = () => {
 			const [state, actions] = useModel(countModel)

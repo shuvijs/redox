@@ -75,6 +75,7 @@ describe('typings:', () => {
 		}
 		type temp = typeof countSelectorTemp
 	})
+
 	test('useModel state and action:', () => {
 		function App() {
 			const [state, action] = useModel(count)
@@ -127,6 +128,7 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
+
 	test('useRootModel state and action:', () => {
 		function App() {
 			const [state, action] = useRootModel(count)
@@ -141,6 +143,7 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
+
 	test('useRootModel state and action with selector inline:', () => {
 		function App() {
 			const [state, action] = useRootModel(count, function (stateAndViews) {
@@ -160,6 +163,7 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
+
 	test('useRootModel state and action with selector:', () => {
 		function App() {
 			const [state, action] = useRootModel(count, countSelector)
@@ -177,6 +181,7 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
+
 	test('useRootStaticModel state and action:', () => {
 		function App() {
 			const [state, action] = useRootStaticModel(count)
@@ -191,6 +196,7 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
+
 	test('useRootStaticModel state and action with selector inline:', () => {
 		function App() {
 			const [state, action] = useRootStaticModel(
@@ -213,6 +219,7 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
+
 	test('useRootStaticModel state and action with selector:', () => {
 		function App() {
 			const [state, action] = useRootStaticModel(count, countSelector)

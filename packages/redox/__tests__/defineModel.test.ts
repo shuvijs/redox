@@ -26,6 +26,7 @@ describe('defineModel worked:', () => {
 				const modelA = defineModel()
 			}).toThrow()
 		})
+
 		test('name is not necessary', () => {
 			expect(() => {
 				const modelA = defineModel(
@@ -61,6 +62,7 @@ describe('defineModel worked:', () => {
 				)
 			}).toThrow()
 		})
+
 		test('state should be object', () => {
 			expect(() => {
 				const modelA = defineModel({
@@ -71,6 +73,7 @@ describe('defineModel worked:', () => {
 				})
 			}).toThrow()
 		})
+
 		test('reducers should be object', () => {
 			expect(() => {
 				const modelA = defineModel({
@@ -81,6 +84,7 @@ describe('defineModel worked:', () => {
 				})
 			}).toThrow()
 		})
+
 		test('reducer should be function', () => {
 			expect(() => {
 				const modelA = defineModel({
@@ -93,6 +97,7 @@ describe('defineModel worked:', () => {
 				})
 			}).toThrow()
 		})
+
 		test('effects should be object', () => {
 			expect(() => {
 				const modelA = defineModel({
@@ -104,6 +109,7 @@ describe('defineModel worked:', () => {
 				})
 			}).toThrow()
 		})
+
 		test('effect should be function', () => {
 			expect(() => {
 				const modelA = defineModel({
@@ -117,6 +123,7 @@ describe('defineModel worked:', () => {
 				})
 			}).toThrow()
 		})
+
 		test('views should be object', () => {
 			expect(() => {
 				const modelA = defineModel({
@@ -128,6 +135,7 @@ describe('defineModel worked:', () => {
 				})
 			}).toThrow()
 		})
+
 		test('view should be function', () => {
 			expect(() => {
 				const modelA = defineModel({
@@ -141,6 +149,7 @@ describe('defineModel worked:', () => {
 				})
 			}).toThrow()
 		})
+
 		test('not allow repeat key state views', () => {
 			expect(() => {
 				const model = defineModel({
@@ -155,6 +164,7 @@ describe('defineModel worked:', () => {
 				})
 			}).toThrow()
 		})
+
 		test('not allow repeat key reducers effects views', () => {
 			expect(() => {
 				const model = defineModel({
@@ -181,6 +191,7 @@ describe('defineModel worked:', () => {
 				})
 			}).toThrow()
 		})
+
 		test('depends should be array or undefined', () => {
 			expect(() => {
 				const modelA = defineModel(

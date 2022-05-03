@@ -7,6 +7,7 @@ describe('redox worked:', () => {
 		const managerB = redox()
 		expect(managerA).not.toBe(managerB)
 	})
+
 	test('initialState worked', () => {
 		manager = redox({
 			count: {
@@ -28,6 +29,7 @@ describe('redox worked:', () => {
 		store.increment(1)
 		expect(store.$state()).toEqual({ value: 2 })
 	})
+
 	test('depends will be initial auto', () => {
 		manager = redox()
 		const depend = defineModel({
@@ -242,6 +244,7 @@ describe('redox worked:', () => {
 		beforeEach(() => {
 			manager = redox()
 		})
+
 		test('subscribes and unsubscribes should work', () => {
 			let firstCount = 0
 			const first = defineModel({
@@ -287,6 +290,7 @@ describe('redox worked:', () => {
 			secondStore.addOne(5)
 			expect(secondCount).toBe(1)
 		})
+
 		test('depends store changed trigger beDepends listener', () => {
 			let dependCount = 0
 			let storeCount = 0

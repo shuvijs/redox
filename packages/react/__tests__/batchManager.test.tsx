@@ -92,6 +92,7 @@ describe('batchedUpdates worked:', () => {
 		})
 		expect(AppRenderCount).toBe(2)
 	})
+
 	test('it can trigger component render outside of component', () => {
 		let AppRenderCount = 0
 
