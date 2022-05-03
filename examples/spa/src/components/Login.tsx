@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useGlobalModel, ISelectorParams } from '@shuvi/redox-react'
+import { useRootModel, ISelectorParams } from '@shuvi/redox-react'
 
 import { login, currentUser } from '../models/login'
 
@@ -14,12 +14,12 @@ const currentUserSelector = function (
 }
 
 function Login() {
-	const [{ isLogin }, { toggleLogin }] = useGlobalModel(login)
-	const [{ userInfo }, _] = useGlobalModel(currentUser, currentUserSelector)
+	const [{ isLogin }, { toggleLogin }] = useRootModel(login)
+	const [{ userInfo }, _] = useRootModel(currentUser, currentUserSelector)
 	return (
 		<div>
 			<h3>
-				useGlobalModel isLogin: {isLogin.toString()}, currentUser: {userInfo}
+				useRootModel isLogin: {isLogin.toString()}, currentUser: {userInfo}
 			</h3>
 			<button onClick={() => toggleLogin()}>toggleLogin</button>
 			<hr />

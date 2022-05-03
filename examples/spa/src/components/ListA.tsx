@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useModel, useGlobalModel } from '@shuvi/redox-react'
+import { useModel, useRootModel } from '@shuvi/redox-react'
 
 import { listA } from '../models/listA'
 import { login } from '../models/login'
@@ -7,7 +7,7 @@ import { login } from '../models/login'
 function ListA() {
 	console.log('ListA rendered')
 	const [{ arr }, { addContentAsync, removeById }] = useModel(listA)
-	const [{ isLogin }] = useGlobalModel(login)
+	const [{ isLogin }] = useRootModel(login)
 	const [inputValue, setInputValue] = React.useState('')
 	return (
 		<div>

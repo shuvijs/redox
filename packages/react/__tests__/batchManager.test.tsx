@@ -6,7 +6,7 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { defineModel, redox } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
-import { useModel, Provider, useGlobalModel } from '../src'
+import { useModel, RootProvider, useRootModel } from '../src'
 
 const countModel = defineModel({
 	name: 'countModel',
@@ -53,7 +53,7 @@ describe('batchedUpdates worked:', () => {
 		function App() {
 			AppRenderCount += 1
 			const [{ value: globalValue }, { addValue: globalAddValue }] =
-				useGlobalModel(countModel)
+				useRootModel(countModel)
 			const [{ value }, { addValue }] = useModel(countModel)
 			const [{ value1 }, { addValue1 }] = useModel(countModel)
 
@@ -76,9 +76,9 @@ describe('batchedUpdates worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -97,7 +97,7 @@ describe('batchedUpdates worked:', () => {
 
 		function App() {
 			AppRenderCount += 1
-			const [{ value: globalValue }, _] = useGlobalModel(countModel)
+			const [{ value: globalValue }, _] = useRootModel(countModel)
 
 			return (
 				<>
@@ -111,9 +111,9 @@ describe('batchedUpdates worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<Provider modelManager={modelManager}>
+				<RootProvider modelManager={modelManager}>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -133,7 +133,7 @@ describe('batchedUpdates worked:', () => {
 		function SubApp() {
 			AppRenderCount += 1
 			const [{ value: globalValue }, { addValue: globalAddValue }] =
-				useGlobalModel(countModel)
+				useRootModel(countModel)
 
 			return (
 				<>
@@ -172,9 +172,9 @@ describe('batchedUpdates worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<Provider modelManager={modelManager}>
+				<RootProvider modelManager={modelManager}>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -193,7 +193,7 @@ describe('batchedUpdates worked:', () => {
 
 	test('component should render when other component unmount', () => {
 		function SubApp() {
-			const [{ value }, { addValue }] = useGlobalModel(countModel)
+			const [{ value }, { addValue }] = useRootModel(countModel)
 
 			return (
 				<>
@@ -212,7 +212,7 @@ describe('batchedUpdates worked:', () => {
 
 		function App() {
 			const [state, setState] = React.useState(1)
-			const [{ value }, { addValue }] = useGlobalModel(countModel)
+			const [{ value }, { addValue }] = useRootModel(countModel)
 			return (
 				<>
 					<div id="app-value">{`${value}`}</div>
@@ -241,9 +241,9 @@ describe('batchedUpdates worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<Provider modelManager={modelManager}>
+				<RootProvider modelManager={modelManager}>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -275,7 +275,7 @@ describe('batchedUpdates worked:', () => {
 
 		function App() {
 			renderCount += 1
-			const [{ value }, { addValue1 }] = useGlobalModel(
+			const [{ value }, { addValue1 }] = useRootModel(
 				countModel,
 				(stateAndViews) => {
 					return {
@@ -302,9 +302,9 @@ describe('batchedUpdates worked:', () => {
 		const modelManager = redox()
 		act(() => {
 			ReactDOM.render(
-				<Provider modelManager={modelManager}>
+				<RootProvider modelManager={modelManager}>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -348,7 +348,7 @@ describe('batchedUpdates worked:', () => {
 		function SubApp() {
 			childRenderCount += 1
 
-			const [{ value }, { addValue }] = useGlobalModel(countModel)
+			const [{ value }, { addValue }] = useRootModel(countModel)
 
 			return (
 				<>
@@ -367,7 +367,7 @@ describe('batchedUpdates worked:', () => {
 
 		function App() {
 			parentRenderCount += 1
-			const [{ test }, _] = useGlobalModel(appModel, function (stateAndViews) {
+			const [{ test }, _] = useRootModel(appModel, function (stateAndViews) {
 				return {
 					test: stateAndViews.test(),
 				}
@@ -383,9 +383,9 @@ describe('batchedUpdates worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -434,7 +434,7 @@ describe('batchedUpdates worked:', () => {
 
 		function SubApp() {
 			childRenderCount++
-			const [{ value }, _] = useGlobalModel(countModel)
+			const [{ value }, _] = useRootModel(countModel)
 
 			return (
 				<>
@@ -445,7 +445,7 @@ describe('batchedUpdates worked:', () => {
 
 		function App() {
 			parentRenderCount += 1
-			const [{ value }, { makeCall }] = useGlobalModel(appModel)
+			const [{ value }, { makeCall }] = useRootModel(appModel)
 
 			return (
 				<div>
@@ -465,9 +465,9 @@ describe('batchedUpdates worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})

@@ -6,8 +6,8 @@ import * as React from 'react'
 import { defineModel } from '@shuvi/redox'
 import {
 	useModel,
-	useGlobalModel,
-	useStaticModel,
+	useRootModel,
+	useRootStaticModel,
 	ISelectorParams,
 } from '../src'
 
@@ -127,9 +127,9 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
-	test('useGlobalModel state and action:', () => {
+	test('useRootModel state and action:', () => {
 		function App() {
-			const [state, action] = useGlobalModel(count)
+			const [state, action] = useRootModel(count)
 			state.value
 			state.s
 			action.addValue()
@@ -141,9 +141,9 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
-	test('useGlobalModel state and action with selector inline:', () => {
+	test('useRootModel state and action with selector inline:', () => {
 		function App() {
-			const [state, action] = useGlobalModel(count, function (stateAndViews) {
+			const [state, action] = useRootModel(count, function (stateAndViews) {
 				return {
 					n: stateAndViews.value,
 					viewS: stateAndViews.viewString(),
@@ -160,9 +160,9 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
-	test('useGlobalModel state and action with selector:', () => {
+	test('useRootModel state and action with selector:', () => {
 		function App() {
-			const [state, action] = useGlobalModel(count, countSelector)
+			const [state, action] = useRootModel(count, countSelector)
 			state.n
 			state.v
 			state.s
@@ -177,9 +177,9 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
-	test('useStaticModel state and action:', () => {
+	test('useRootStaticModel state and action:', () => {
 		function App() {
-			const [state, action] = useStaticModel(count)
+			const [state, action] = useRootStaticModel(count)
 			state.value
 			state.s
 			action.addValue()
@@ -191,14 +191,17 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
-	test('useStaticModel state and action with selector inline:', () => {
+	test('useRootStaticModel state and action with selector inline:', () => {
 		function App() {
-			const [state, action] = useStaticModel(count, function (stateAndViews) {
-				return {
-					n: stateAndViews.value,
-					viewS: stateAndViews.viewString(),
+			const [state, action] = useRootStaticModel(
+				count,
+				function (stateAndViews) {
+					return {
+						n: stateAndViews.value,
+						viewS: stateAndViews.viewString(),
+					}
 				}
-			})
+			)
 			state.n
 			state.viewS
 			action.addValue()
@@ -210,9 +213,9 @@ describe('typings:', () => {
 			return <></>
 		}
 	})
-	test('useStaticModel state and action with selector:', () => {
+	test('useRootStaticModel state and action with selector:', () => {
 		function App() {
-			const [state, action] = useStaticModel(count, countSelector)
+			const [state, action] = useRootStaticModel(count, countSelector)
 			state.n
 			state.v
 			state.s

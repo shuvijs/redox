@@ -6,7 +6,7 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { defineModel } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
-import { useModel, Provider, useGlobalModel } from '../src'
+import { useModel, RootProvider, useRootModel } from '../src'
 import { sleep, countModel, countSelectorParameters } from './models'
 
 const countSelector = function (stateAndViews: countSelectorParameters) {
@@ -43,9 +43,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -84,9 +84,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -114,9 +114,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -166,9 +166,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -199,9 +199,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -261,9 +261,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -308,9 +308,9 @@ describe('useModel worked:', () => {
 			}
 			act(() => {
 				ReactDOM.render(
-					<Provider>
+					<RootProvider>
 						<App />
-					</Provider>,
+					</RootProvider>,
 					node
 				)
 			})
@@ -352,9 +352,9 @@ describe('useModel worked:', () => {
 			}
 			act(() => {
 				ReactDOM.render(
-					<Provider>
+					<RootProvider>
 						<App />
-					</Provider>,
+					</RootProvider>,
 					node
 				)
 			})
@@ -374,9 +374,9 @@ describe('useModel worked:', () => {
 			expect(selectorRunCount).toBe(2)
 		})
 	})
-	test('useModel useGlobalModel is isolation:', async () => {
+	test('useModel useRootModel is isolation:', async () => {
 		const App = () => {
-			const [state, actions] = useGlobalModel(countModel)
+			const [state, actions] = useRootModel(countModel)
 			const [state1, actions1] = useModel(countModel)
 
 			return (
@@ -394,9 +394,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -431,9 +431,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
