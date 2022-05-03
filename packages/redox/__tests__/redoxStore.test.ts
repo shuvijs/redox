@@ -61,10 +61,13 @@ describe('redox worked:', () => {
 
 		const store = manager.get(count)
 		store.dependAdd()
-		expect(manager.getChangedState()).toEqual({ depend: { depend: 1 } })
+		expect(manager.getSnapshot()).toEqual({
+			count: { value: 0 },
+			depend: { depend: 1 },
+		})
 	})
 
-	test('getChangedState only collect changed state', () => {
+	test('getSnapshot only collect changed state', () => {
 		manager = redox()
 		const count0 = defineModel({
 			name: 'count0',
@@ -90,7 +93,10 @@ describe('redox worked:', () => {
 		expect(store0.$state()).toEqual({ value: 0 })
 		expect(store1.$state()).toEqual({ value: 0 })
 		store0.increment(1)
-		expect(manager.getChangedState()).toEqual({ count0: { value: 1 } })
+		expect(manager.getSnapshot()).toEqual({
+			count0: { value: 1 },
+			count1: { value: 0 },
+		})
 	})
 
 	test('destroy without error ', () => {
@@ -210,18 +216,32 @@ describe('redox worked:', () => {
 		const countStore = manager.get(count)
 		const domeStore = manager.get(dome)
 
-		expect(manager.getChangedState()).toEqual({})
+		expect(manager.getSnapshot()).toEqual({
+			count: {
+				value: 0,
+			},
+			dome: {
+				number: 1,
+			},
+		})
 		expect(manager.get(user).d()).toEqual({ number: 1 })
 		expect(manager.get(user).one()).toEqual(1)
 		expect(manager.get(user).s(2)).toEqual('state.id=>1, args=>2,views.one=>1')
 		countStore.increment(1)
 		domeStore.add(2)
-		expect(manager.getChangedState()).toEqual({
+		expect(manager.getSnapshot()).toEqual({
 			count: {
 				value: 1,
 			},
 			dome: {
 				number: 3,
+			},
+			other: {
+				other: ['other'],
+			},
+			'user-other_dome': {
+				id: 1,
+				name: 'haha',
 			},
 		})
 		expect(manager.get(user).d()).toEqual({ number: 3 })
