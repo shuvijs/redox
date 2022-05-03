@@ -7,7 +7,7 @@ describe('typings', () => {
 			manager = redox()
 		})
 
-		it('$state typescript', () => {
+		test('$state typescript', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {
@@ -22,7 +22,7 @@ describe('typings', () => {
 			expect(state).toEqual({ value: 0 })
 		})
 
-		it('reducers get custom $state typescript', () => {
+		test('reducers get custom $state typescript', () => {
 			const model = defineModel({
 				name: 'model',
 				state: [] as customType[],
@@ -39,7 +39,7 @@ describe('typings', () => {
 			expect(state).toEqual([])
 		})
 
-		it('reducers typescript', () => {
+		test('reducers typescript', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {
@@ -98,7 +98,7 @@ describe('typings', () => {
 			store.twoAny([])
 		})
 
-		it('effects typescript', () => {
+		test('effects typescript', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {},
@@ -147,7 +147,7 @@ describe('typings', () => {
 			store.argsAny([], {})
 		})
 
-		it('effects return async typescript', () => {
+		test('effects return async typescript', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {},
@@ -201,7 +201,7 @@ describe('typings', () => {
 			console.log('argsAny: ', argsAny)
 		})
 
-		it('views typescript', () => {
+		test('views typescript', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {},
@@ -256,7 +256,7 @@ describe('typings', () => {
 			store.argsAny([])
 		})
 
-		it('no reducers effects views typescript', () => {
+		test('no reducers effects views typescript', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {
@@ -277,7 +277,7 @@ describe('typings', () => {
 			manager = redox()
 		})
 
-		it('reducers get custom $state typescript in function', () => {
+		test('reducers get custom $state typescript in function', () => {
 			const _model = defineModel({
 				name: 'model',
 				state: [] as customType[],
@@ -290,7 +290,7 @@ describe('typings', () => {
 			console.log('_model: ', _model)
 		})
 
-		it('effects this typescript $state', () => {
+		test('effects this typescript $state', () => {
 			const model = defineModel({
 				name: 'model',
 				state: [] as customType[],
@@ -306,7 +306,7 @@ describe('typings', () => {
 			console.log('model: ', model)
 		})
 
-		it('effects this typescript with reducers, call reducers', () => {
+		test('effects this typescript with reducers, call reducers', () => {
 			const model = defineModel({
 				name: 'model',
 				state: { value: 0 },
@@ -366,7 +366,8 @@ describe('typings', () => {
 			})
 			console.log('model: ', model)
 		})
-		it('effects this typescript with effects, call self', () => {
+
+		test('effects this typescript with effects, call self', () => {
 			const model = defineModel({
 				name: 'model',
 				state: { value: 0 },
@@ -412,7 +413,8 @@ describe('typings', () => {
 			})
 			console.log('model: ', model)
 		})
-		it('effects this typescript with effects, call views', () => {
+
+		test('effects this typescript with effects, call views', () => {
 			const model = defineModel({
 				name: 'model',
 				state: { value: 0 },
@@ -470,7 +472,7 @@ describe('typings', () => {
 			console.log('model: ', model)
 		})
 
-		it('effects this typescript no depends', () => {
+		test('effects this typescript no depends', () => {
 			const model = defineModel({
 				name: 'model',
 				state: [] as customType[],
@@ -526,7 +528,7 @@ describe('typings', () => {
 			},
 		})
 
-		it('effects this typescript with depends', () => {
+		test('effects this typescript with depends', () => {
 			const model = defineModel(
 				{
 					name: 'model',
@@ -552,7 +554,7 @@ describe('typings', () => {
 			console.log('model: ', model)
 		})
 
-		it('views this typescript in function, call self', () => {
+		test('views this typescript in function, call self', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {},
@@ -597,7 +599,8 @@ describe('typings', () => {
 				},
 			})
 		})
-		it('views typescript no depends', () => {
+
+		test('views typescript no depends', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {},
@@ -611,7 +614,8 @@ describe('typings', () => {
 				},
 			})
 		})
-		it('views typescript with depends', () => {
+
+		test('views typescript with depends', () => {
 			const model = defineModel(
 				{
 					name: 'model',

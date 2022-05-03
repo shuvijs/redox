@@ -57,6 +57,7 @@ describe('useRootModel worked:', () => {
 		})
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
+
 	test('immer worked:', async () => {
 		const immer = defineModel({
 			name: 'immer',
@@ -98,6 +99,7 @@ describe('useRootModel worked:', () => {
 		})
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
+
 	test('effect worked:', async () => {
 		const App = () => {
 			const [state, actions] = useRootModel(countModel)
@@ -129,6 +131,7 @@ describe('useRootModel worked:', () => {
 		await sleep(250)
 		expect(node.querySelector('#value')?.innerHTML).toEqual('3')
 	})
+
 	test('views worked:', async () => {
 		let viewComputedTime = 0
 		const views = defineModel({
@@ -182,6 +185,7 @@ describe('useRootModel worked:', () => {
 		expect(viewComputedTime).toBe(1)
 		expect(node.querySelector('#value')?.innerHTML).toEqual('1')
 	})
+
 	test('selector worked:', async () => {
 		const countSelector = function (stateAndViews: countSelectorParameters) {
 			return {
@@ -221,6 +225,7 @@ describe('useRootModel worked:', () => {
 		expect(node.querySelector('#v')?.innerHTML).toEqual('3')
 		expect(node.querySelector('#t')?.innerHTML).toEqual('5')
 	})
+
 	test('depends worked:', async () => {
 		const newModel = defineModel(
 			{
@@ -284,6 +289,7 @@ describe('useRootModel worked:', () => {
 		expect(node.querySelector('#v')?.innerHTML).toEqual('2')
 		expect(node.querySelector('#t')?.innerHTML).toEqual('4')
 	})
+
 	describe('selector only run init and state changed:', () => {
 		test('inlined selector:', async () => {
 			let selectorRunCount = 0
@@ -328,6 +334,7 @@ describe('useRootModel worked:', () => {
 			})
 			expect(selectorRunCount).toBe(2)
 		})
+
 		test('selector outside:', async () => {
 			let selectorRunCount = 0
 			const countSelector = function () {
@@ -373,6 +380,7 @@ describe('useRootModel worked:', () => {
 			expect(selectorRunCount).toBe(2)
 		})
 	})
+
 	test('useRootModel should keep state same ref:', async () => {
 		let AppState: any = null
 		let AppState1: any = null
@@ -422,6 +430,7 @@ describe('useRootModel worked:', () => {
 		expect(AppState === AppState1).toBeTruthy()
 		expect(AppState === SubAppState).toBeTruthy()
 	})
+
 	test('useRootModel should keep actions same ref:', async () => {
 		let AppActions: any = null
 		let AppActions1: any = null
@@ -471,6 +480,7 @@ describe('useRootModel worked:', () => {
 		expect(AppActions === AppActions1).toBeTruthy()
 		expect(AppActions === SubAppActions).toBeTruthy()
 	})
+
 	test('useRootModel should keep state no care component unmount or not:', async () => {
 		const SubApp = () => {
 			const [state, actions] = useRootModel(countModel)
@@ -620,6 +630,7 @@ describe('RootProvider worked:', () => {
 		})
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
+
 	test('RootProvider worked with modelManager props:', () => {
 		const App = () => {
 			const [state] = useRootModel(countModel)
@@ -645,6 +656,7 @@ describe('RootProvider worked:', () => {
 		modelManager.get(countModel).add(1)
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
+
 	test('RootProvider worked with modelManager props and initial state:', () => {
 		const App = () => {
 			const [state] = useRootModel(countModel)
@@ -686,6 +698,7 @@ describe('createContainer:', () => {
 		expect(_useSharedModel).toBeTruthy()
 		expect(_useStaticModel).toBeTruthy()
 	})
+
 	test('Local RootProvider and useSharedModel should work:', () => {
 		const { Provider: LocalProvider, useSharedModel } = createContainer()
 
@@ -719,6 +732,7 @@ describe('createContainer:', () => {
 		})
 		expect(node.querySelector('#state')?.innerHTML).toEqual('2')
 	})
+
 	test('nest useSharedModel should get it own RootProvider:', () => {
 		const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
 			createContainer()
@@ -791,6 +805,7 @@ describe('createContainer:', () => {
 		expect(node.querySelector('#stateCA')?.innerHTML).toEqual('2')
 		expect(node.querySelector('#stateCB')?.innerHTML).toEqual('1')
 	})
+
 	test('each container should be isolation:', () => {
 		const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
 			createContainer()
@@ -840,6 +855,7 @@ describe('createContainer:', () => {
 		expect(node.querySelector('#stateA1')?.innerHTML).toEqual('2')
 		expect(node.querySelector('#stateA2')?.innerHTML).toEqual('1')
 	})
+
 	test('share same modelManager can connect containers', () => {
 		const modelManager = redox()
 		const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
@@ -913,6 +929,7 @@ describe('createContainer:', () => {
 		expect(node.querySelector('#stateCA')?.innerHTML).toEqual('2')
 		expect(node.querySelector('#stateCB')?.innerHTML).toEqual('2')
 	})
+
 	test('when container unmount state change should not throw an error:', () => {
 		const { Provider: LocalProvider, useSharedModel } = createContainer()
 
@@ -965,6 +982,7 @@ describe('createContainer:', () => {
 		})
 		modelManager.get(countModel).add(1)
 	})
+
 	test('modelManager changed state change should be changed directly:', () => {
 		const { Provider: LocalProvider, useSharedModel } = createContainer()
 
