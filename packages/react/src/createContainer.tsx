@@ -69,6 +69,8 @@ const createContainer = function () {
 
 		validate(() => [
 			[!Boolean(model), `useModel param model is necessary`],
+			[!model.name, 'model "name" is required and can\'t be empty !'],
+			[typeof model.name !== 'string', 'model "name" must be string !'],
 			[
 				!Boolean(context),
 				`You should wrap your Component in createContainer().Provider.`,
@@ -94,6 +96,8 @@ const createContainer = function () {
 
 		validate(() => [
 			[!Boolean(model), `useModel param model is necessary`],
+			[!model.name, 'model "name" is required and can\'t be empty !'],
+			[typeof model.name !== 'string', 'model "name" must be string !'],
 			[
 				!Boolean(context),
 				'You should wrap your Component in createContainer().Provider.',

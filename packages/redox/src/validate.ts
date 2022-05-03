@@ -47,10 +47,6 @@ export const validateModel = (model: AnyModel): void => {
 	validate(() => [
 		[!model, 'model config is required'],
 		[
-			typeof model.name !== 'string' || !model.name,
-			'model "name[string]"  is required and can\'t be empty !',
-		],
-		[
 			typeof model.state !== 'object',
 			'model "state" is required and it should be object !',
 		],

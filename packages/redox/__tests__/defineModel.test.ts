@@ -26,7 +26,7 @@ describe('defineModel worked:', () => {
 				const modelA = defineModel()
 			}).toThrow()
 		})
-		test('name is necessary', () => {
+		test('name is not necessary', () => {
 			expect(() => {
 				const modelA = defineModel(
 					// @ts-ignore
@@ -35,7 +35,7 @@ describe('defineModel worked:', () => {
 						reducers: {},
 					}
 				)
-			}).toThrow()
+			}).not.toThrow()
 		})
 
 		test('reducers is necessary', () => {

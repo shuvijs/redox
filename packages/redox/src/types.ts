@@ -219,7 +219,7 @@ export interface Model<
 	E extends Effects,
 	V extends Views<S, MC>
 > {
-	name: N
+	name?: N
 	state: S
 	reducers: R
 	effects?: E &
