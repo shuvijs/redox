@@ -34,7 +34,7 @@ export type IModelManager = {
 	_getRedox<IModel extends AnyModel>(model: IModel): RedoxStore<IModel>
 	subscribe(model: AnyModel, fn: () => any): unSubscribe
 	_getInitialState: (name: string) => State | undefined
-	getChangedState(): { [X: string]: State }
+	getSnapshot(): { [X: string]: State }
 	destroy(): void
 }
 
@@ -66,14 +66,10 @@ export function redox(initialState?: Record<string, State>): IModelManager {
 			return redoxStore.subscribe(fn)
 		},
 		// only get change state
-		getChangedState() {
-			const allState = {} as ReturnType<IModelManager['getChangedState']>
+		getSnapshot() {
+			const allState = {} as ReturnType<IModelManager['getSnapshot']>
 			for (const [key, store] of cacheMap.entries()) {
-				const initialState = store.model.state
-				const getStateRes = store.$state()
-				if (initialState !== getStateRes) {
-					allState[key] = getStateRes
-				}
+				allState[key] = store.$state()
 			}
 			return allState
 		},
