@@ -27,6 +27,116 @@ afterEach(() => {
 })
 
 describe('useRootModel worked:', () => {
+	describe('useRootModel valid:', () => {
+		test('valid name is required:', async () => {
+			const tempModel = defineModel({
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.render(
+						<RootProvider>
+							<App />
+						</RootProvider>,
+						node
+					)
+				})
+			}).toThrow()
+		})
+
+		test('valid name should not be empty:', async () => {
+			const tempModel = defineModel({
+				name: '',
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.render(
+						<RootProvider>
+							<App />
+						</RootProvider>,
+						node
+					)
+				})
+			}).toThrow()
+		})
+
+		test('valid useRootModel should has parent RootProvider:', async () => {
+			const tempModel = defineModel({
+				name: 'tempModel',
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.render(<App />, node)
+				})
+			}).toThrow()
+		})
+	})
+
 	test('reducer worked:', async () => {
 		const App = () => {
 			const [state, actions] = useRootModel(countModel)
@@ -539,6 +649,116 @@ describe('useRootModel worked:', () => {
 })
 
 describe('useRootStaticModel worked:', () => {
+	describe('useRootStaticModel valid:', () => {
+		test('valid name is required:', async () => {
+			const tempModel = defineModel({
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootStaticModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.render(
+						<RootProvider>
+							<App />
+						</RootProvider>,
+						node
+					)
+				})
+			}).toThrow()
+		})
+
+		test('valid name should not be empty:', async () => {
+			const tempModel = defineModel({
+				name: '',
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootStaticModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.render(
+						<RootProvider>
+							<App />
+						</RootProvider>,
+						node
+					)
+				})
+			}).toThrow()
+		})
+
+		test('valid useRootStaticModel should has parent RootProvider:', async () => {
+			const tempModel = defineModel({
+				name: 'tempModel',
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootStaticModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.render(<App />, node)
+				})
+			}).toThrow()
+		})
+	})
+
 	test('useRootStaticModel should update value, but not rendered', () => {
 		let renderTime = 0
 		let currentCount = 0
