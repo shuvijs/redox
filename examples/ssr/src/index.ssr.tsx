@@ -42,7 +42,7 @@ router.use(
 		const template = readFileSync('build/index.html')
 			.toString()
 			.replace(/%BASE_HREF%/g, process.env.BASE_HREF || '')
-			.replace(/%CLIENT_ENV%/g, JSON.stringify(modelManager.getChangedState()))
+			.replace(/%CLIENT_ENV%/g, JSON.stringify(modelManager.getSnapshot()))
 
 		const [head, tail] = template.split('%ROOT%')
 		const stream = renderToNodeStream(<App modelManager={modelManager} />)
