@@ -28,6 +28,47 @@ afterEach(() => {
 })
 
 describe('useModel worked:', () => {
+	test('no model name worked:', async () => {
+		const tempModel = defineModel({
+			state: {
+				value: 1,
+			},
+			reducers: {
+				add(state, payload: number = 1) {
+					state.value += payload
+				},
+			},
+		})
+		const App = () => {
+			const [state, actions] = useModel(tempModel)
+
+			return (
+				<>
+					<div id="value">{state.value}</div>
+					<button id="button" type="button" onClick={() => actions.add()}>
+						add
+					</button>
+				</>
+			)
+		}
+		act(() => {
+			ReactDOM.render(
+				<RootProvider>
+					<App />
+				</RootProvider>,
+				node
+			)
+		})
+
+		expect(node.querySelector('#value')?.innerHTML).toEqual('1')
+		act(() => {
+			node
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
+	})
+
 	test('reducer worked:', async () => {
 		const App = () => {
 			const [state, actions] = useModel(countModel)
