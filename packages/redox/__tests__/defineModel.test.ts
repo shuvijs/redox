@@ -4,6 +4,7 @@ let manager: ReturnType<typeof redox>
 
 beforeEach(() => {
 	manager = redox()
+	process.env.NODE_ENV = 'development'
 })
 
 describe('defineModel worked:', () => {

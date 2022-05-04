@@ -85,7 +85,9 @@ const useModel: IUseModel = <
 	model: IModel,
 	selector?: Selector
 ) => {
-	validate(() => [[!Boolean(model), `useModel param model is necessary`]])
+	if (process.env.NODE_ENV === 'development') {
+		validate(() => [[!Boolean(model), `useModel param model is necessary`]])
+	}
 
 	let [modelManager, batchManager] = useMemo(function () {
 		return [redox(), createBatchManager()]

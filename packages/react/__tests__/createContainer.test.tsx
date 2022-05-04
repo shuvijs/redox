@@ -17,6 +17,7 @@ import { sleep, countModel, countSelectorParameters } from './models'
 
 let node: HTMLDivElement
 beforeEach(() => {
+	process.env.NODE_ENV = 'development'
 	node = document.createElement('div')
 	document.body.appendChild(node)
 })
