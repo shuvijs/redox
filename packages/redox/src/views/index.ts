@@ -267,12 +267,14 @@ export const createViews = <IModel extends AnyModel>(
 	const model = redoxStore.model
 	const views = model.views
 	if (views) {
-		validate(() => [
-			[
-				!isObject(views),
-				`model.views should be object, now is ${typeof views}`,
-			],
-		])
+		if (process.env.NODE_ENV === 'development') {
+			validate(() => [
+				[
+					!isObject(views),
+					`model.views should be object, now is ${typeof views}`,
+				],
+			])
+		}
 		const proxyObj = {} as RedoxViews<IModel>
 		;(Object.keys(views) as Array<keyof IModel['views']>).forEach(
 			(viewsKey) => {

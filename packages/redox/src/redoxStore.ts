@@ -142,40 +142,44 @@ export class RedoxStore<IModel extends AnyModel> {
 	}
 
 	subscribe = (listener: () => void) => {
-		validate(() => [
-			[
-				typeof listener !== 'function',
-				`Expected the listener to be a function`,
-			],
-			[
-				this.isDispatching,
-				'You may not call store.subscribe() while the reducer is executing.',
-			],
-		])
+		if (process.env.NODE_ENV === 'development') {
+			validate(() => [
+				[
+					typeof listener !== 'function',
+					`Expected the listener to be a function`,
+				],
+				[
+					this.isDispatching,
+					'You may not call store.subscribe() while the reducer is executing.',
+				],
+			])
+		}
 
 		this.listeners.add(listener)
 
 		return () => {
-			validate(() => [
-				[
-					this.isDispatching,
-					'You may not unsubscribe from a store listener while the reducer is executing. ',
-				],
-			])
+			if (process.env.NODE_ENV === 'development') {
+				validate(() => [
+					[
+						this.isDispatching,
+						'You may not unsubscribe from a store listener while the reducer is executing. ',
+					],
+				])
+			}
 
 			this.listeners.delete(listener)
 		}
 	}
 
 	dispatch: ReduxDispatch = (action) => {
-		if (typeof action.type === 'undefined') {
-			throw new Error(
-				'Actions may not have an undefined "type" property. You may have misspelled an action type string constant.'
-			)
-		}
-
-		if (this.isDispatching) {
-			throw new Error('Reducers may not dispatch actions.')
+		if (process.env.NODE_ENV === 'development') {
+			validate(() => [
+				[
+					typeof action.type === 'undefined',
+					'Actions may not have an undefined "type" property. You may have misspelled an action type string constant.',
+				],
+				[this.isDispatching, 'Reducers may not dispatch actions.'],
+			])
 		}
 
 		let nextState
