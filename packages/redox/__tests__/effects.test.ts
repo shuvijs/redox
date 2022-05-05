@@ -360,8 +360,8 @@ describe('effects worked:', () => {
 				},
 			},
 			views: {
-				valueAddOne(state, _dependState, args: number = 0) {
-					return state.value + 1 + args
+				valueAddOne(args: number = 0) {
+					return this.value + 1 + args
 				},
 			},
 		})
@@ -384,8 +384,8 @@ describe('effects worked:', () => {
 				},
 			},
 			views: {
-				valueAddOne(state, _dependState, args: number = 0) {
-					return state.value + 1 + args
+				valueAddOne(args: number = 0) {
+					return this.value + 1 + args
 				},
 			},
 		})
@@ -511,8 +511,8 @@ describe('effects worked:', () => {
 					}),
 				},
 				views: {
-					double(state) {
-						return state.value * 2
+					double() {
+						return this.value * 2
 					},
 				},
 			})
@@ -548,8 +548,8 @@ describe('effects worked:', () => {
 					}),
 				},
 				views: {
-					double(state) {
-						return state.value * 2
+					double() {
+						return this.value * 2
 					},
 				},
 			})
@@ -602,8 +602,8 @@ describe('effects worked:', () => {
 					}),
 				},
 				views: {
-					double(state) {
-						return state.value * 2
+					double() {
+						return this.value * 2
 					},
 				},
 			})
