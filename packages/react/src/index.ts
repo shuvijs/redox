@@ -1,13 +1,13 @@
 import createContainer from './createContainer'
 import { useModel } from './useModel'
 const {
-	Provider: RootProvider,
+	Provider: RedoxRoot,
 	useSharedModel: useRootModel,
 	useStaticModel: useRootStaticModel,
 } = createContainer()
 
 export {
-	RootProvider,
+	RedoxRoot,
 	useRootModel,
 	useRootStaticModel,
 	useModel,
