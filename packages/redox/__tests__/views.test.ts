@@ -31,9 +31,9 @@ describe('views worked:', () => {
 				},
 			},
 			views: {
-				first_view(state) {
+				first_view() {
 					firstComputeTimes++
-					return state.first_Object.first_a.arr[0]
+					return this.first_Object.first_a.arr[0]
 				},
 			},
 		})
@@ -43,6 +43,7 @@ describe('views worked:', () => {
 
 		expect(firstComputeTimes).toBe(0)
 
+		viewsValue = firstStore.name
 		viewsValue = firstStore.first_view()
 		expect(firstComputeTimes).toBe(1)
 		expect(firstStore.first_view()).toEqual(viewsValue)
@@ -73,9 +74,9 @@ describe('views worked:', () => {
 				},
 			},
 			views: {
-				first_c_view(state) {
+				first_c_view() {
 					firstComputeTimes++
-					return state.first_Object.a.b.c
+					return this.first_Object.a.b.c
 				},
 			},
 		})
@@ -126,9 +127,9 @@ describe('views worked:', () => {
 				},
 			},
 			views: {
-				first_c_view: (state, _dependsState, args) => {
+				first_c_view(args: string) {
 					firstComputeTimes++
-					return state.first_Object.a.b.c + args
+					return this.first_Object.a.b.c + args
 				},
 			},
 		})
@@ -212,18 +213,18 @@ describe('views worked:', () => {
 					},
 				},
 				views: {
-					first_a_view(state) {
-						return state.first_a.arr[0]
+					first_a_view() {
+						return this.first_a.arr[0]
 					},
-					first_b_view(state) {
-						return state.first_b.number
+					first_b_view() {
+						return this.first_b.number
 					},
-					first_c_view(state, dependsState): number {
+					first_c_view(): number {
 						firstCViewComputeTimes += 1
 						const first_b_view = this.first_b_view
-						const number = state.first_b.number
+						const number = this.first_b.number
 						const first_a_view = this.first_a_view
-						const second = dependsState.second.second_Object.second_b.number
+						const second = this.$dep.second.second_Object.second_b.number
 						return first_b_view + number + first_a_view + second
 					},
 					first_view(): number {
@@ -304,9 +305,9 @@ describe('views worked:', () => {
 				},
 			},
 			views: {
-				first_view(state) {
+				first_view() {
 					firstComputeTimes++
-					return state.first_Object.first_a.arr[0]
+					return this.first_Object.first_a.arr[0]
 				},
 			},
 		})
@@ -337,11 +338,11 @@ describe('views worked:', () => {
 					},
 				},
 				views: {
-					second_view(state, dependsState) {
+					second_view(): number {
 						secondComputeTimes++
 						return (
-							dependsState.first.first_Object.first_a.arr[0] +
-							state.second_Object.second_b.number
+							this.$dep.first.first_Object.first_a.arr[0] +
+							this.second_Object.second_b.number
 						)
 					},
 					// other: (state, dependsState)=>{

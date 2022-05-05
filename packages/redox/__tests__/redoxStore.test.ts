@@ -190,24 +190,24 @@ describe('redox worked:', () => {
 					},
 				},
 				views: {
-					d(state, dependsState): { number: number } {
-						console.log(state.id)
-						const a = dependsState.other
-						console.log(dependsState.dome.number)
+					d(): { number: number } {
+						console.log(this.id)
+						const a = this.$dep.other
+						console.log(this.$dep.dome.number)
 						console.log(a.other[0])
 						console.log('d computed')
-						return dependsState.dome
+						return this.$dep.dome
 					},
-					one(_state, dependsState): number {
-						return dependsState.dome.number
+					one(): number {
+						return this.$dep.dome.number
 					},
-					s(state, _dependsState, args): string {
+					s(args: any): string {
 						// console.log('views', state, rootState, views, args);
 						// console.log('this', this)
 						// console.log('this', views.one)
 						// return state.id * args;
 						console.log('double computed')
-						return `state.id=>${state.id}, args=>${args},views.one=>${this.one}`
+						return `state.id=>${this.id}, args=>${args},views.one=>${this.one}`
 					},
 				},
 			},

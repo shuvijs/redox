@@ -37,7 +37,10 @@ export interface ReduxDispatch<A extends ReduxAction = AnyAction> {
 
 /** ************************** modal-start *************************** */
 
-export type State = Record<string, any>
+export type State = {
+	[K: string]: any
+}
+
 export interface Action<TPayload = any> extends ReduxAction<string> {
 	payload?: TPayload
 }
@@ -76,14 +79,10 @@ export type Effects = {
 	[x: string]: Effect
 }
 
-type View<S, RM extends ModelCollection> = (
-	state: S,
-	dependsState: StateOfStoreCollection<RM>,
-	args: any
-) => unknown
+type View = (...args: any[]) => any
 
-export type Views<S, RM extends ModelCollection> = {
-	[key: string]: View<S, RM>
+export type Views = {
+	[key: string]: View
 }
 
 export type ModelCollection = Record<string, AnyModel>
@@ -94,6 +93,12 @@ type MiniStoreOfStoreCollection<MC extends ModelCollection> = {
 
 type StateOfStoreCollection<MC extends ModelCollection> = {
 	[K in keyof MC]: MC[K]['state']
+}
+
+type ViewOfStoreCollection<MC extends ModelCollection> = {
+	[K in keyof MC]: MC[K]['views'] extends infer V
+		? { [KV in keyof V]: V[KV] extends View ? ReturnType<V[KV]> : never }
+		: never
 }
 
 type noExist = { [X: string | number | symbol]: never }
@@ -217,7 +222,7 @@ export interface Model<
 	MC extends ModelCollection,
 	R extends Reducers<S>,
 	E extends Effects,
-	V extends Views<S, MC>
+	V extends Views
 > {
 	name?: N
 	state: S
@@ -228,13 +233,17 @@ export interface Model<
 					$dep: MiniStoreOfStoreCollection<MC>
 				} & DispatchOfModelByProps<S, R, E>
 		>
-	views?: V & ThisType<ViewsObj<V>>
+	views?: V &
+		ThisType<
+			S &
+				ViewsObj<V> & {
+					$dep: StateOfStoreCollection<MC> & ViewOfStoreCollection<MC>
+				}
+		>
 	_depends?: Depends
 }
 
-type ViewsObj<V> = V extends Views<any, any>
-	? { [K in keyof V]: ReturnType<V[K]> }
-	: {}
+type ViewsObj<V> = V extends Views ? { [K in keyof V]: ReturnType<V[K]> } : {}
 
 export type AnyModel = Model<any, any, any, any, any, any>
 export type Depends = AnyModel[]
@@ -245,8 +254,8 @@ export type Depends = AnyModel[]
 
 export type Store<IModel extends AnyModel> = {
 	$state: () => IModel['state']
-} & DispatchOfModel<IModel> &
-	RedoxViews<IModel>
+} & RedoxViews<IModel['views']> &
+	DispatchOfModel<IModel>
 
 export type RedoxDispatcher<
 	IsEffect extends boolean,
@@ -260,41 +269,14 @@ export type RedoxDispatcher<
 	  ) => ReturnOfDispatcher<IsEffect, TReturn, TPayload[0]>
 	: (payload: TPayload[0]) => ReturnOfDispatcher<IsEffect, TReturn, TPayload[0]>
 
-export type RedoxViews<IModel extends AnyModel> = IModel extends Model<
-	any,
-	any,
-	any,
-	any,
-	any,
-	infer V
->
-	? V extends undefined
-		? {}
-		: transformViews<V>
-	: {}
+export type RedoxViews<Vs> = Vs extends Views ? transformViews<Vs> : {}
 
 type transformViews<V> = FilterIndex<V> extends infer FilterV
 	? keyof FilterV extends never
 		? {}
 		: {
-				[K in keyof FilterV]: ExtractParameterFromViews<FilterV[K]>
+				[K in keyof FilterV]: FilterV[K]
 		  }
 	: {}
-
-type ExtractParameterFromViews<TView> = TView extends (
-	...args: infer TArgs
-) => infer TReturn
-	? TArgs extends []
-		? () => TReturn
-		: TArgs[2] extends undefined
-		? () => TReturn
-		: TArgs extends [p0: any, p1: any, P2: any]
-		? (arg: TArgs[2]) => TReturn
-		: (
-				arg?: TArgs[2] extends undefined
-					? TArgs[2]
-					: Exclude<TArgs[2], undefined>
-		  ) => TReturn
-	: never
 
 /** ************************** store-end *************************** */

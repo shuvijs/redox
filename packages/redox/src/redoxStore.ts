@@ -264,7 +264,7 @@ export function createModelReducer<
 	MC extends ModelCollection,
 	R extends Reducers<S>,
 	E extends Effects,
-	V extends Views<S, MC>
+	V extends Views
 >(model: Model<N, S, MC, R, E, V>): ReduxReducer<S, Action> {
 	// select and run a reducer based on the incoming action
 	const reducer = (state: S = model.state, action: Action): S => {

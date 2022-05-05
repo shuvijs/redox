@@ -15,7 +15,7 @@ export const defineModel = <
 	R extends Reducers<S>,
 	E extends Effects,
 	MC extends MakeDeps<D>,
-	V extends Views<S, MC>,
+	V extends Views,
 	D extends any[] = []
 >(
 	modelOptions: Omit<Model<N, S, MC, R, E, V>, 'depends'>,
