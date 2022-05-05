@@ -6,7 +6,7 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { defineModel, redox } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
-import { useModel, RootProvider, useRootModel } from '../src'
+import { useModel, RedoxRoot, useRootModel } from '../src'
 
 const countModel = defineModel({
 	name: 'countModel',
@@ -76,9 +76,9 @@ describe('batchedUpdates worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -112,9 +112,9 @@ describe('batchedUpdates worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider modelManager={modelManager}>
+				<RedoxRoot modelManager={modelManager}>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -173,9 +173,9 @@ describe('batchedUpdates worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider modelManager={modelManager}>
+				<RedoxRoot modelManager={modelManager}>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -242,9 +242,9 @@ describe('batchedUpdates worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider modelManager={modelManager}>
+				<RedoxRoot modelManager={modelManager}>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -303,9 +303,9 @@ describe('batchedUpdates worked:', () => {
 		const modelManager = redox()
 		act(() => {
 			ReactDOM.render(
-				<RootProvider modelManager={modelManager}>
+				<RedoxRoot modelManager={modelManager}>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -384,9 +384,9 @@ describe('batchedUpdates worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -466,9 +466,9 @@ describe('batchedUpdates worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
