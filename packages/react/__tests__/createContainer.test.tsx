@@ -7,7 +7,7 @@ import * as ReactDOM from 'react-dom'
 import { defineModel, redox } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
 import {
-	RootProvider,
+	RedoxRoot,
 	createContainer,
 	useRootStaticModel,
 	useRootModel,
@@ -57,9 +57,9 @@ describe('useRootModel worked:', () => {
 			expect(() => {
 				act(() => {
 					ReactDOM.render(
-						<RootProvider>
+						<RedoxRoot>
 							<App />
-						</RootProvider>,
+						</RedoxRoot>,
 						node
 					)
 				})
@@ -95,16 +95,16 @@ describe('useRootModel worked:', () => {
 			expect(() => {
 				act(() => {
 					ReactDOM.render(
-						<RootProvider>
+						<RedoxRoot>
 							<App />
-						</RootProvider>,
+						</RedoxRoot>,
 						node
 					)
 				})
 			}).toThrow()
 		})
 
-		test('valid useRootModel should has parent RootProvider:', async () => {
+		test('valid useRootModel should has parent RedoxRoot:', async () => {
 			const tempModel = defineModel({
 				name: 'tempModel',
 				state: {
@@ -153,9 +153,9 @@ describe('useRootModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -195,9 +195,9 @@ describe('useRootModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -226,9 +226,9 @@ describe('useRootModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -279,9 +279,9 @@ describe('useRootModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -319,9 +319,9 @@ describe('useRootModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -382,9 +382,9 @@ describe('useRootModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -424,9 +424,9 @@ describe('useRootModel worked:', () => {
 			}
 			act(() => {
 				ReactDOM.render(
-					<RootProvider>
+					<RedoxRoot>
 						<App />
-					</RootProvider>,
+					</RedoxRoot>,
 					node
 				)
 			})
@@ -469,9 +469,9 @@ describe('useRootModel worked:', () => {
 			}
 			act(() => {
 				ReactDOM.render(
-					<RootProvider>
+					<RedoxRoot>
 						<App />
-					</RootProvider>,
+					</RedoxRoot>,
 					node
 				)
 			})
@@ -519,9 +519,9 @@ describe('useRootModel worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -569,9 +569,9 @@ describe('useRootModel worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -620,9 +620,9 @@ describe('useRootModel worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App></App>
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -679,9 +679,9 @@ describe('useRootStaticModel worked:', () => {
 			expect(() => {
 				act(() => {
 					ReactDOM.render(
-						<RootProvider>
+						<RedoxRoot>
 							<App />
-						</RootProvider>,
+						</RedoxRoot>,
 						node
 					)
 				})
@@ -717,16 +717,16 @@ describe('useRootStaticModel worked:', () => {
 			expect(() => {
 				act(() => {
 					ReactDOM.render(
-						<RootProvider>
+						<RedoxRoot>
 							<App />
-						</RootProvider>,
+						</RedoxRoot>,
 						node
 					)
 				})
 			}).toThrow()
 		})
 
-		test('valid useRootStaticModel should has parent RootProvider:', async () => {
+		test('valid useRootStaticModel should has parent RedoxRoot:', async () => {
 			const tempModel = defineModel({
 				name: 'tempModel',
 				state: {
@@ -792,9 +792,9 @@ describe('useRootStaticModel worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<StaticApp />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -820,8 +820,8 @@ describe('useRootStaticModel worked:', () => {
 	})
 })
 
-describe('RootProvider worked:', () => {
-	test('RootProvider worked with useRootModel:', () => {
+describe('RedoxRoot worked:', () => {
+	test('RedoxRoot worked with useRootModel:', () => {
 		const App = () => {
 			const [state, actions] = useRootModel(countModel)
 			return (
@@ -836,9 +836,9 @@ describe('RootProvider worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -852,7 +852,7 @@ describe('RootProvider worked:', () => {
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
 
-	test('RootProvider worked with modelManager props:', () => {
+	test('RedoxRoot worked with modelManager props:', () => {
 		const App = () => {
 			const [state] = useRootModel(countModel)
 			return (
@@ -866,9 +866,9 @@ describe('RootProvider worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider modelManager={modelManager}>
+				<RedoxRoot modelManager={modelManager}>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -878,7 +878,7 @@ describe('RootProvider worked:', () => {
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
 
-	test('RootProvider worked with modelManager props and initial state:', () => {
+	test('RedoxRoot worked with modelManager props and initial state:', () => {
 		const App = () => {
 			const [state] = useRootModel(countModel)
 			return (
@@ -896,9 +896,9 @@ describe('RootProvider worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<RootProvider modelManager={modelManager}>
+				<RedoxRoot modelManager={modelManager}>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -908,7 +908,7 @@ describe('RootProvider worked:', () => {
 })
 
 describe('createContainer:', () => {
-	test('createContainer should return RootProvider and useSharedModel, useRootStaticModel:', () => {
+	test('createContainer should return RedoxRoot and useSharedModel, useRootStaticModel:', () => {
 		const {
 			Provider: _Provider,
 			useSharedModel: _useSharedModel,
@@ -920,7 +920,7 @@ describe('createContainer:', () => {
 		expect(_useStaticModel).toBeTruthy()
 	})
 
-	test('Local RootProvider and useSharedModel should work:', () => {
+	test('Local RedoxRoot and useSharedModel should work:', () => {
 		const { Provider: LocalProvider, useSharedModel } = createContainer()
 
 		const SubApp = () => {
@@ -954,7 +954,7 @@ describe('createContainer:', () => {
 		expect(node.querySelector('#state')?.innerHTML).toEqual('2')
 	})
 
-	test('nest useSharedModel should get it own RootProvider:', () => {
+	test('nest useSharedModel should get it own RedoxRoot:', () => {
 		const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
 			createContainer()
 		const { Provider: LocalProviderB, useSharedModel: useSharedModelB } =

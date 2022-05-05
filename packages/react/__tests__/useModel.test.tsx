@@ -6,7 +6,7 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { defineModel } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
-import { useModel, RootProvider, useRootModel } from '../src'
+import { useModel, RedoxRoot, useRootModel } from '../src'
 import { sleep, countModel, countSelectorParameters } from './models'
 
 const countSelector = function (stateAndViews: countSelectorParameters) {
@@ -53,9 +53,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -84,9 +84,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -126,9 +126,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -157,9 +157,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -210,9 +210,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -244,9 +244,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -307,9 +307,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -355,9 +355,9 @@ describe('useModel worked:', () => {
 			}
 			act(() => {
 				ReactDOM.render(
-					<RootProvider>
+					<RedoxRoot>
 						<App />
-					</RootProvider>,
+					</RedoxRoot>,
 					node
 				)
 			})
@@ -400,9 +400,9 @@ describe('useModel worked:', () => {
 			}
 			act(() => {
 				ReactDOM.render(
-					<RootProvider>
+					<RedoxRoot>
 						<App />
-					</RootProvider>,
+					</RedoxRoot>,
 					node
 				)
 			})
@@ -443,9 +443,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
@@ -481,9 +481,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<RootProvider>
+				<RedoxRoot>
 					<App />
-				</RootProvider>,
+				</RedoxRoot>,
 				node
 			)
 		})
