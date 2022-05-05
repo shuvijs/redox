@@ -6,7 +6,7 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { defineModel } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
-import { useModel, Provider, useGlobalModel } from '../src'
+import { useModel, RootProvider, useRootModel } from '../src'
 import { sleep, countModel, countSelectorParameters } from './models'
 
 const countSelector = function (stateAndViews: countSelectorParameters) {
@@ -28,6 +28,47 @@ afterEach(() => {
 })
 
 describe('useModel worked:', () => {
+	test('no model name worked:', async () => {
+		const tempModel = defineModel({
+			state: {
+				value: 1,
+			},
+			reducers: {
+				add(state, payload: number = 1) {
+					state.value += payload
+				},
+			},
+		})
+		const App = () => {
+			const [state, actions] = useModel(tempModel)
+
+			return (
+				<>
+					<div id="value">{state.value}</div>
+					<button id="button" type="button" onClick={() => actions.add()}>
+						add
+					</button>
+				</>
+			)
+		}
+		act(() => {
+			ReactDOM.render(
+				<RootProvider>
+					<App />
+				</RootProvider>,
+				node
+			)
+		})
+
+		expect(node.querySelector('#value')?.innerHTML).toEqual('1')
+		act(() => {
+			node
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
+	})
+
 	test('reducer worked:', async () => {
 		const App = () => {
 			const [state, actions] = useModel(countModel)
@@ -43,9 +84,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -58,6 +99,7 @@ describe('useModel worked:', () => {
 		})
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
+
 	test('immer worked:', async () => {
 		const immer = defineModel({
 			name: 'immer',
@@ -84,9 +126,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -99,6 +141,7 @@ describe('useModel worked:', () => {
 		})
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
+
 	test('effect worked:', async () => {
 		const App = () => {
 			const [state, actions] = useModel(countModel)
@@ -114,9 +157,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -130,6 +173,7 @@ describe('useModel worked:', () => {
 		await sleep(250)
 		expect(node.querySelector('#value')?.innerHTML).toEqual('3')
 	})
+
 	test('views worked:', async () => {
 		let viewComputedTime = 0
 		const views = defineModel({
@@ -166,9 +210,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -183,6 +227,7 @@ describe('useModel worked:', () => {
 		expect(viewComputedTime).toBe(1)
 		expect(node.querySelector('#value')?.innerHTML).toEqual('1')
 	})
+
 	test('selector worked:', async () => {
 		const App = () => {
 			const [state, actions] = useModel(countModel, countSelector)
@@ -199,9 +244,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -216,6 +261,7 @@ describe('useModel worked:', () => {
 		expect(node.querySelector('#v')?.innerHTML).toEqual('3')
 		expect(node.querySelector('#t')?.innerHTML).toEqual('5')
 	})
+
 	test('depends worked:', async () => {
 		const newModel = defineModel(
 			{
@@ -261,9 +307,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -279,6 +325,7 @@ describe('useModel worked:', () => {
 		expect(node.querySelector('#v')?.innerHTML).toEqual('2')
 		expect(node.querySelector('#t')?.innerHTML).toEqual('4')
 	})
+
 	describe('selector only run init and state changed:', () => {
 		test('inlined selector:', async () => {
 			let selectorRunCount = 0
@@ -308,9 +355,9 @@ describe('useModel worked:', () => {
 			}
 			act(() => {
 				ReactDOM.render(
-					<Provider>
+					<RootProvider>
 						<App />
-					</Provider>,
+					</RootProvider>,
 					node
 				)
 			})
@@ -329,6 +376,7 @@ describe('useModel worked:', () => {
 			})
 			expect(selectorRunCount).toBe(2)
 		})
+
 		test('selector outside:', async () => {
 			let selectorRunCount = 0
 			const countSelector = function () {
@@ -352,9 +400,9 @@ describe('useModel worked:', () => {
 			}
 			act(() => {
 				ReactDOM.render(
-					<Provider>
+					<RootProvider>
 						<App />
-					</Provider>,
+					</RootProvider>,
 					node
 				)
 			})
@@ -374,9 +422,10 @@ describe('useModel worked:', () => {
 			expect(selectorRunCount).toBe(2)
 		})
 	})
-	test('useModel useGlobalModel is isolation:', async () => {
+
+	test('useModel useRootModel is isolation:', async () => {
 		const App = () => {
-			const [state, actions] = useGlobalModel(countModel)
+			const [state, actions] = useRootModel(countModel)
 			const [state1, actions1] = useModel(countModel)
 
 			return (
@@ -394,9 +443,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -411,6 +460,7 @@ describe('useModel worked:', () => {
 		expect(node.querySelector('#value')?.innerHTML).toEqual('3')
 		expect(node.querySelector('#value1')?.innerHTML).toEqual('1')
 	})
+
 	test('useModel self is isolation:', async () => {
 		const App = () => {
 			const [state, actions] = useModel(countModel)
@@ -431,9 +481,9 @@ describe('useModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})

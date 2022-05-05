@@ -1,11 +1,17 @@
 import createContainer from './createContainer'
 import { useModel } from './useModel'
 const {
-	Provider,
-	useSharedModel: useGlobalModel,
-	useStaticModel,
+	Provider: RootProvider,
+	useSharedModel: useRootModel,
+	useStaticModel: useRootStaticModel,
 } = createContainer()
 
-export { Provider, useGlobalModel, createContainer, useStaticModel, useModel }
+export {
+	RootProvider,
+	useRootModel,
+	useRootStaticModel,
+	useModel,
+	createContainer,
+}
 
 export { ISelectorParams } from './types'

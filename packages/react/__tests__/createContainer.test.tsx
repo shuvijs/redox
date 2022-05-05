@@ -7,16 +7,17 @@ import * as ReactDOM from 'react-dom'
 import { defineModel, redox } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
 import {
-	Provider,
+	RootProvider,
 	createContainer,
-	useStaticModel,
-	useGlobalModel,
+	useRootStaticModel,
+	useRootModel,
 } from '../src'
 
 import { sleep, countModel, countSelectorParameters } from './models'
 
 let node: HTMLDivElement
 beforeEach(() => {
+	process.env.NODE_ENV = 'development'
 	node = document.createElement('div')
 	document.body.appendChild(node)
 })
@@ -26,10 +27,120 @@ afterEach(() => {
 	;(node as unknown as null) = null
 })
 
-describe('useGlobalModel worked:', () => {
+describe('useRootModel worked:', () => {
+	describe('useRootModel valid:', () => {
+		test('valid name is required:', async () => {
+			const tempModel = defineModel({
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.render(
+						<RootProvider>
+							<App />
+						</RootProvider>,
+						node
+					)
+				})
+			}).toThrow()
+		})
+
+		test('valid name should not be empty:', async () => {
+			const tempModel = defineModel({
+				name: '',
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.render(
+						<RootProvider>
+							<App />
+						</RootProvider>,
+						node
+					)
+				})
+			}).toThrow()
+		})
+
+		test('valid useRootModel should has parent RootProvider:', async () => {
+			const tempModel = defineModel({
+				name: 'tempModel',
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.render(<App />, node)
+				})
+			}).toThrow()
+		})
+	})
+
 	test('reducer worked:', async () => {
 		const App = () => {
-			const [state, actions] = useGlobalModel(countModel)
+			const [state, actions] = useRootModel(countModel)
 
 			return (
 				<>
@@ -42,9 +153,9 @@ describe('useGlobalModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -57,6 +168,7 @@ describe('useGlobalModel worked:', () => {
 		})
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
+
 	test('immer worked:', async () => {
 		const immer = defineModel({
 			name: 'immer',
@@ -70,7 +182,7 @@ describe('useGlobalModel worked:', () => {
 			},
 		})
 		const App = () => {
-			const [state, actions] = useGlobalModel(immer)
+			const [state, actions] = useRootModel(immer)
 
 			return (
 				<>
@@ -83,9 +195,9 @@ describe('useGlobalModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -98,9 +210,10 @@ describe('useGlobalModel worked:', () => {
 		})
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
+
 	test('effect worked:', async () => {
 		const App = () => {
-			const [state, actions] = useGlobalModel(countModel)
+			const [state, actions] = useRootModel(countModel)
 
 			return (
 				<>
@@ -113,9 +226,9 @@ describe('useGlobalModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -129,6 +242,7 @@ describe('useGlobalModel worked:', () => {
 		await sleep(250)
 		expect(node.querySelector('#value')?.innerHTML).toEqual('3')
 	})
+
 	test('views worked:', async () => {
 		let viewComputedTime = 0
 		const views = defineModel({
@@ -150,7 +264,7 @@ describe('useGlobalModel worked:', () => {
 			},
 		})
 		const App = () => {
-			const [state, actions] = useGlobalModel(views, function (stateAndViews) {
+			const [state, actions] = useRootModel(views, function (stateAndViews) {
 				return stateAndViews.test()
 			})
 
@@ -165,9 +279,9 @@ describe('useGlobalModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -182,6 +296,7 @@ describe('useGlobalModel worked:', () => {
 		expect(viewComputedTime).toBe(1)
 		expect(node.querySelector('#value')?.innerHTML).toEqual('1')
 	})
+
 	test('selector worked:', async () => {
 		const countSelector = function (stateAndViews: countSelectorParameters) {
 			return {
@@ -190,7 +305,7 @@ describe('useGlobalModel worked:', () => {
 			}
 		}
 		const App = () => {
-			const [state, actions] = useGlobalModel(countModel, countSelector)
+			const [state, actions] = useRootModel(countModel, countSelector)
 
 			return (
 				<>
@@ -204,9 +319,9 @@ describe('useGlobalModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -221,6 +336,7 @@ describe('useGlobalModel worked:', () => {
 		expect(node.querySelector('#v')?.innerHTML).toEqual('3')
 		expect(node.querySelector('#t')?.innerHTML).toEqual('5')
 	})
+
 	test('depends worked:', async () => {
 		const newModel = defineModel(
 			{
@@ -247,15 +363,12 @@ describe('useGlobalModel worked:', () => {
 		)
 
 		const App = () => {
-			const [state, actions] = useGlobalModel(
-				newModel,
-				function (stateAndViews) {
-					return {
-						v: stateAndViews.value,
-						t: stateAndViews.test(),
-					}
+			const [state, actions] = useRootModel(newModel, function (stateAndViews) {
+				return {
+					v: stateAndViews.value,
+					t: stateAndViews.test(),
 				}
-			)
+			})
 
 			return (
 				<>
@@ -269,9 +382,9 @@ describe('useGlobalModel worked:', () => {
 		}
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -287,11 +400,12 @@ describe('useGlobalModel worked:', () => {
 		expect(node.querySelector('#v')?.innerHTML).toEqual('2')
 		expect(node.querySelector('#t')?.innerHTML).toEqual('4')
 	})
+
 	describe('selector only run init and state changed:', () => {
 		test('inlined selector:', async () => {
 			let selectorRunCount = 0
 			const App = () => {
-				const [_state, actions] = useGlobalModel(countModel, function () {
+				const [_state, actions] = useRootModel(countModel, function () {
 					selectorRunCount++
 					return 1
 				})
@@ -310,9 +424,9 @@ describe('useGlobalModel worked:', () => {
 			}
 			act(() => {
 				ReactDOM.render(
-					<Provider>
+					<RootProvider>
 						<App />
-					</Provider>,
+					</RootProvider>,
 					node
 				)
 			})
@@ -331,6 +445,7 @@ describe('useGlobalModel worked:', () => {
 			})
 			expect(selectorRunCount).toBe(2)
 		})
+
 		test('selector outside:', async () => {
 			let selectorRunCount = 0
 			const countSelector = function () {
@@ -338,7 +453,7 @@ describe('useGlobalModel worked:', () => {
 				return 1
 			}
 			const App = () => {
-				const [_state, actions] = useGlobalModel(countModel, countSelector)
+				const [_state, actions] = useRootModel(countModel, countSelector)
 				const [_index, setIndex] = React.useState(0)
 
 				return (
@@ -354,9 +469,9 @@ describe('useGlobalModel worked:', () => {
 			}
 			act(() => {
 				ReactDOM.render(
-					<Provider>
+					<RootProvider>
 						<App />
-					</Provider>,
+					</RootProvider>,
 					node
 				)
 			})
@@ -376,12 +491,13 @@ describe('useGlobalModel worked:', () => {
 			expect(selectorRunCount).toBe(2)
 		})
 	})
-	test('useGlobalModel should keep state same ref:', async () => {
+
+	test('useRootModel should keep state same ref:', async () => {
 		let AppState: any = null
 		let AppState1: any = null
 		const App = () => {
-			const [state, actions] = useGlobalModel(countModel)
-			const [state1, _actions1] = useGlobalModel(countModel)
+			const [state, actions] = useRootModel(countModel)
+			const [state1, _actions1] = useRootModel(countModel)
 			AppState = state
 			AppState1 = state1
 			return (
@@ -396,16 +512,16 @@ describe('useGlobalModel worked:', () => {
 		}
 		let SubAppState: any = null
 		function SubApp() {
-			const [state, _actions] = useGlobalModel(countModel)
+			const [state, _actions] = useRootModel(countModel)
 			SubAppState = state
 			return <></>
 		}
 
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -425,12 +541,13 @@ describe('useGlobalModel worked:', () => {
 		expect(AppState === AppState1).toBeTruthy()
 		expect(AppState === SubAppState).toBeTruthy()
 	})
-	test('useGlobalModel should keep actions same ref:', async () => {
+
+	test('useRootModel should keep actions same ref:', async () => {
 		let AppActions: any = null
 		let AppActions1: any = null
 		const App = () => {
-			const [state, actions] = useGlobalModel(countModel)
-			const [_state1, actions1] = useGlobalModel(countModel)
+			const [state, actions] = useRootModel(countModel)
+			const [_state1, actions1] = useRootModel(countModel)
 			AppActions = actions
 			AppActions1 = actions1
 			return (
@@ -445,16 +562,16 @@ describe('useGlobalModel worked:', () => {
 		}
 		let SubAppActions: any = null
 		function SubApp() {
-			const [_state, actions] = useGlobalModel(countModel)
+			const [_state, actions] = useRootModel(countModel)
 			SubAppActions = actions
 			return <></>
 		}
 
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -474,9 +591,10 @@ describe('useGlobalModel worked:', () => {
 		expect(AppActions === AppActions1).toBeTruthy()
 		expect(AppActions === SubAppActions).toBeTruthy()
 	})
-	test('useGlobalModel should keep state no care component unmount or not:', async () => {
+
+	test('useRootModel should keep state no care component unmount or not:', async () => {
 		const SubApp = () => {
-			const [state, actions] = useGlobalModel(countModel)
+			const [state, actions] = useRootModel(countModel)
 
 			return (
 				<>
@@ -502,9 +620,9 @@ describe('useGlobalModel worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App></App>
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -531,15 +649,125 @@ describe('useGlobalModel worked:', () => {
 	})
 })
 
-describe('useStaticModel worked:', () => {
-	test('useStaticModel should update value, but not rendered', () => {
+describe('useRootStaticModel worked:', () => {
+	describe('useRootStaticModel valid:', () => {
+		test('valid name is required:', async () => {
+			const tempModel = defineModel({
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootStaticModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.render(
+						<RootProvider>
+							<App />
+						</RootProvider>,
+						node
+					)
+				})
+			}).toThrow()
+		})
+
+		test('valid name should not be empty:', async () => {
+			const tempModel = defineModel({
+				name: '',
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootStaticModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.render(
+						<RootProvider>
+							<App />
+						</RootProvider>,
+						node
+					)
+				})
+			}).toThrow()
+		})
+
+		test('valid useRootStaticModel should has parent RootProvider:', async () => {
+			const tempModel = defineModel({
+				name: 'tempModel',
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootStaticModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.render(<App />, node)
+				})
+			}).toThrow()
+		})
+	})
+
+	test('useRootStaticModel should update value, but not rendered', () => {
 		let renderTime = 0
 		let currentCount = 0
 
 		const StaticApp = () => {
 			renderTime += 1
 
-			const [state, dispatch] = useStaticModel(countModel)
+			const [state, dispatch] = useRootStaticModel(countModel)
 
 			currentCount = state.value
 
@@ -564,9 +792,9 @@ describe('useStaticModel worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<StaticApp />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -592,10 +820,10 @@ describe('useStaticModel worked:', () => {
 	})
 })
 
-describe('Provider worked:', () => {
-	test('Provider worked with useGlobalModel:', () => {
+describe('RootProvider worked:', () => {
+	test('RootProvider worked with useRootModel:', () => {
 		const App = () => {
-			const [state, actions] = useGlobalModel(countModel)
+			const [state, actions] = useRootModel(countModel)
 			return (
 				<>
 					<div id="value">{state.value}</div>
@@ -608,9 +836,9 @@ describe('Provider worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<Provider>
+				<RootProvider>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -623,9 +851,10 @@ describe('Provider worked:', () => {
 		})
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
-	test('Provider worked with modelManager props:', () => {
+
+	test('RootProvider worked with modelManager props:', () => {
 		const App = () => {
-			const [state] = useGlobalModel(countModel)
+			const [state] = useRootModel(countModel)
 			return (
 				<>
 					<div id="value">{state.value}</div>
@@ -637,9 +866,9 @@ describe('Provider worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<Provider modelManager={modelManager}>
+				<RootProvider modelManager={modelManager}>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -648,9 +877,10 @@ describe('Provider worked:', () => {
 		modelManager.get(countModel).add(1)
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
-	test('Provider worked with modelManager props and initial state:', () => {
+
+	test('RootProvider worked with modelManager props and initial state:', () => {
 		const App = () => {
-			const [state] = useGlobalModel(countModel)
+			const [state] = useRootModel(countModel)
 			return (
 				<>
 					<div id="value">{state.value}</div>
@@ -666,9 +896,9 @@ describe('Provider worked:', () => {
 
 		act(() => {
 			ReactDOM.render(
-				<Provider modelManager={modelManager}>
+				<RootProvider modelManager={modelManager}>
 					<App />
-				</Provider>,
+				</RootProvider>,
 				node
 			)
 		})
@@ -678,7 +908,7 @@ describe('Provider worked:', () => {
 })
 
 describe('createContainer:', () => {
-	test('createContainer should return Provider and useSharedModel, useStaticModel:', () => {
+	test('createContainer should return RootProvider and useSharedModel, useRootStaticModel:', () => {
 		const {
 			Provider: _Provider,
 			useSharedModel: _useSharedModel,
@@ -689,7 +919,8 @@ describe('createContainer:', () => {
 		expect(_useSharedModel).toBeTruthy()
 		expect(_useStaticModel).toBeTruthy()
 	})
-	test('Local Provider and useSharedModel should work:', () => {
+
+	test('Local RootProvider and useSharedModel should work:', () => {
 		const { Provider: LocalProvider, useSharedModel } = createContainer()
 
 		const SubApp = () => {
@@ -722,7 +953,8 @@ describe('createContainer:', () => {
 		})
 		expect(node.querySelector('#state')?.innerHTML).toEqual('2')
 	})
-	test('nest useSharedModel should get it own provider:', () => {
+
+	test('nest useSharedModel should get it own RootProvider:', () => {
 		const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
 			createContainer()
 		const { Provider: LocalProviderB, useSharedModel: useSharedModelB } =
@@ -794,6 +1026,7 @@ describe('createContainer:', () => {
 		expect(node.querySelector('#stateCA')?.innerHTML).toEqual('2')
 		expect(node.querySelector('#stateCB')?.innerHTML).toEqual('1')
 	})
+
 	test('each container should be isolation:', () => {
 		const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
 			createContainer()
@@ -843,6 +1076,7 @@ describe('createContainer:', () => {
 		expect(node.querySelector('#stateA1')?.innerHTML).toEqual('2')
 		expect(node.querySelector('#stateA2')?.innerHTML).toEqual('1')
 	})
+
 	test('share same modelManager can connect containers', () => {
 		const modelManager = redox()
 		const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
@@ -916,6 +1150,7 @@ describe('createContainer:', () => {
 		expect(node.querySelector('#stateCA')?.innerHTML).toEqual('2')
 		expect(node.querySelector('#stateCB')?.innerHTML).toEqual('2')
 	})
+
 	test('when container unmount state change should not throw an error:', () => {
 		const { Provider: LocalProvider, useSharedModel } = createContainer()
 
@@ -968,6 +1203,7 @@ describe('createContainer:', () => {
 		})
 		modelManager.get(countModel).add(1)
 	})
+
 	test('modelManager changed state change should be changed directly:', () => {
 		const { Provider: LocalProvider, useSharedModel } = createContainer()
 

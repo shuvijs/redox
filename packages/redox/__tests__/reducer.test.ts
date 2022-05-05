@@ -198,6 +198,7 @@ describe('reducer worked:', () => {
 		beforeEach(() => {
 			manager = redox()
 		})
+
 		test('should return a promise from an effect', () => {
 			const count = defineModel({
 				name: 'count',

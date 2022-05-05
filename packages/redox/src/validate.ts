@@ -25,31 +25,25 @@ export const ifDefinedIsFunction = <T>(func: T): boolean =>
  * Redox-related libraries.
  */
 const validate = (runValidations: () => Validation[]): void => {
-	if (process.env.NODE_ENV !== 'production') {
-		const validations = runValidations()
-		const errors: string[] = []
+	const validations = runValidations()
+	const errors: string[] = []
 
-		validations.forEach((validation) => {
-			const isInvalid = validation[0]
-			const errorMessage = validation[1]
-			if (isInvalid) {
-				errors.push(errorMessage)
-			}
-		})
-
-		if (errors.length > 0) {
-			throw new Error(errors.join(', '))
+	validations.forEach((validation) => {
+		const isInvalid = validation[0]
+		const errorMessage = validation[1]
+		if (isInvalid) {
+			errors.push(errorMessage)
 		}
+	})
+
+	if (errors.length > 0) {
+		throw new Error(errors.join(', '))
 	}
 }
 
 export const validateModel = (model: AnyModel): void => {
 	validate(() => [
 		[!model, 'model config is required'],
-		[
-			typeof model.name !== 'string' || !model.name,
-			'model "name[string]"  is required and can\'t be empty !',
-		],
 		[
 			typeof model.state !== 'object',
 			'model "state" is required and it should be object !',

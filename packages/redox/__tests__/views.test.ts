@@ -48,6 +48,7 @@ describe('views worked:', () => {
 		expect(firstStore.first_view()).toEqual(viewsValue)
 		expect(firstComputeTimes).toBe(1)
 	})
+
 	test('works with immer reducer', () => {
 		let firstComputeTimes = 0
 		const first = defineModel({
@@ -98,6 +99,7 @@ describe('views worked:', () => {
 		expect(firstComputeTimes).toBe(2)
 		expect(viewsValue).toBe('d')
 	})
+
 	test('computed when args changed', () => {
 		let firstComputeTimes = 0
 		const first = defineModel({
@@ -149,6 +151,7 @@ describe('views worked:', () => {
 		expect(firstComputeTimes).toBe(3)
 		expect(viewsValue).toBe('dz')
 	})
+
 	test('works with views call self', () => {
 		let firstViewComputeTimes = 0
 		let firstCViewComputeTimes = 0
@@ -273,6 +276,7 @@ describe('views worked:', () => {
 		expect(firstViewComputeTimes).toBe(3)
 		expect(firstCViewComputeTimes).toBe(3)
 	})
+
 	test('should computed when depends changed', () => {
 		let firstComputeTimes = 0
 		const first = defineModel({
