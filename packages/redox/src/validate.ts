@@ -42,17 +42,19 @@ const validate = (runValidations: () => Validation[]): void => {
 }
 
 export const validateModel = (model: AnyModel): void => {
-	validate(() => [
-		[!model, 'model config is required'],
-		[
-			typeof model.state !== 'object',
-			'model "state" is required and it should be object !',
-		],
-		[
-			typeof model.reducers === 'undefined',
-			'model "reducers" is required and it should be object !',
-		],
-	])
+	if (process.env.NODE_ENV === 'development') {
+		validate(() => [
+			[!model, 'model config is required'],
+			[
+				typeof model.state !== 'object',
+				'model "state" is required and it should be object !',
+			],
+			[
+				typeof model.reducers === 'undefined',
+				'model "reducers" is required and it should be object !',
+			],
+		])
+	}
 	const keys = new Set<string>(Object.keys(model.state))
 	validateProperty(model, 'views', keys, 'check state and views')
 	keys.clear()
@@ -70,23 +72,29 @@ function validateProperty(
 ) {
 	const target = model[prop] as any
 	if (target) {
-		validate(() => [
-			[typeof target !== 'object', `model.${prop} should be object !`],
-		])
+		if (process.env.NODE_ENV === 'development') {
+			validate(() => [
+				[typeof target !== 'object', `model.${prop} should be object !`],
+			])
+		}
 		for (const Key of Object.keys(target)) {
 			if (keys.has(Key)) {
 				keys.clear()
-				validate(() => [
-					[true, `${extraTip + ','}repeat key "${Key}" in model.${prop} !`],
-				])
+				if (process.env.NODE_ENV === 'development') {
+					validate(() => [
+						[true, `${extraTip + ','}repeat key "${Key}" in model.${prop} !`],
+					])
+				}
 				break
 			} else {
-				validate(() => [
-					[
-						typeof target[Key] !== 'function',
-						`model.${prop} "${Key}" should be function !`,
-					],
-				])
+				if (process.env.NODE_ENV === 'development') {
+					validate(() => [
+						[
+							typeof target[Key] !== 'function',
+							`model.${prop} "${Key}" should be function !`,
+						],
+					])
+				}
 				keys.add(Key)
 			}
 		}
