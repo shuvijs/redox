@@ -1,11 +1,11 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import App from './App'
-import { RootProvider } from '@shuvi/redox-react'
+import { RedoxRoot } from '@shuvi/redox-react'
 
 ReactDOM.render(
-	<RootProvider>
+	<RedoxRoot>
 		<App></App>
-	</RootProvider>,
+	</RedoxRoot>,
 	document.getElementById('root')
 )
