@@ -66,14 +66,17 @@ const createContainer = function () {
 		selector?: Selector
 	) => {
 		const context = useContext(Context)
-
-		validate(() => [
-			[!Boolean(model), `useModel param model is necessary`],
-			[
-				!Boolean(context),
-				`You should wrap your Component in createContainer().Provider.`,
-			],
-		])
+		if (process.env.NODE_ENV === 'development') {
+			validate(() => [
+				[!Boolean(model), `useModel param model is necessary`],
+				[!model.name, 'model "name" is required and can\'t be empty !'],
+				[typeof model.name !== 'string', 'model "name" must be string !'],
+				[
+					!Boolean(context),
+					`You should wrap your Component in createContainer().Provider.`,
+				],
+			])
+		}
 
 		const { modelManager, batchManager } = context
 
@@ -91,14 +94,17 @@ const createContainer = function () {
 		selector?: Selector
 	) => {
 		const context = useContext(Context)
-
-		validate(() => [
-			[!Boolean(model), `useModel param model is necessary`],
-			[
-				!Boolean(context),
-				'You should wrap your Component in createContainer().Provider.',
-			],
-		])
+		if (process.env.NODE_ENV === 'development') {
+			validate(() => [
+				[!Boolean(model), `useModel param model is necessary`],
+				[!model.name, 'model "name" is required and can\'t be empty !'],
+				[typeof model.name !== 'string', 'model "name" must be string !'],
+				[
+					!Boolean(context),
+					'You should wrap your Component in createContainer().Provider.',
+				],
+			])
+		}
 
 		const { modelManager, batchManager } = context
 		const initialValue = useMemo(() => {

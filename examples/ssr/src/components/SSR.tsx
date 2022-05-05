@@ -1,12 +1,12 @@
 import * as React from 'react'
-import { useGlobalModel } from '@shuvi/redox-react'
+import { useRootModel } from '@shuvi/redox-react'
 
 import { test } from '../models/test'
 import { count } from '../models/count'
 
 function Count() {
-	const [{ value }, { increment, incrementAsync }] = useGlobalModel(count)
-	const [{ value: testString }, _] = useGlobalModel(test)
+	const [{ value }, { increment, incrementAsync }] = useRootModel(count)
+	const [{ value: testString }, _] = useRootModel(test)
 	return (
 		<div>
 			<h1>SSR data form server</h1>

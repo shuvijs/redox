@@ -1,5 +1,5 @@
 import React from 'react'
-import { Provider } from '@shuvi/redox-react'
+import { RootProvider } from '@shuvi/redox-react'
 import SSR from './components/SSR'
 import Basic from './components/Basic'
 import Views from './components/Views'
@@ -10,13 +10,13 @@ import type { IModelManager } from '@shuvi/redox'
 function App(props: { modelManager?: IModelManager }) {
 	return (
 		<>
-			<Provider {...props}>
+			<RootProvider {...props}>
 				<SSR />
 				<Basic />
 				<Views />
 				<List />
 				<Repeat />
-			</Provider>
+			</RootProvider>
 		</>
 	)
 }

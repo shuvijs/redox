@@ -34,7 +34,7 @@ export type IModelManager = {
 	_getRedox<IModel extends AnyModel>(model: IModel): RedoxStore<IModel>
 	subscribe(model: AnyModel, fn: () => any): unSubscribe
 	_getInitialState: (name: string) => State | undefined
-	getChangedState(): { [X: string]: State }
+	getSnapshot(): { [X: string]: State }
 	destroy(): void
 }
 
@@ -66,14 +66,10 @@ export function redox(initialState?: Record<string, State>): IModelManager {
 			return redoxStore.subscribe(fn)
 		},
 		// only get change state
-		getChangedState() {
-			const allState = {} as ReturnType<IModelManager['getChangedState']>
+		getSnapshot() {
+			const allState = {} as ReturnType<IModelManager['getSnapshot']>
 			for (const [key, store] of cacheMap.entries()) {
-				const initialState = store.model.state
-				const getStateRes = store.$state()
-				if (initialState !== getStateRes) {
-					allState[key] = getStateRes
-				}
+				allState[key] = store.$state()
 			}
 			return allState
 		},
@@ -121,7 +117,8 @@ export class RedoxStore<IModel extends AnyModel> {
 		const reducer = createModelReducer(model)
 		this.currentReducer = reducer
 		this.currentState =
-			this._cache._getInitialState(this.model.name) || model.state
+			(this.model.name && this._cache._getInitialState(this.model.name)) ||
+			model.state
 		this.isDispatching = false
 		this.dispatch({ type: ActionTypes.INIT })
 
@@ -145,40 +142,44 @@ export class RedoxStore<IModel extends AnyModel> {
 	}
 
 	subscribe = (listener: () => void) => {
-		validate(() => [
-			[
-				typeof listener !== 'function',
-				`Expected the listener to be a function`,
-			],
-			[
-				this.isDispatching,
-				'You may not call store.subscribe() while the reducer is executing.',
-			],
-		])
+		if (process.env.NODE_ENV === 'development') {
+			validate(() => [
+				[
+					typeof listener !== 'function',
+					`Expected the listener to be a function`,
+				],
+				[
+					this.isDispatching,
+					'You may not call store.subscribe() while the reducer is executing.',
+				],
+			])
+		}
 
 		this.listeners.add(listener)
 
 		return () => {
-			validate(() => [
-				[
-					this.isDispatching,
-					'You may not unsubscribe from a store listener while the reducer is executing. ',
-				],
-			])
+			if (process.env.NODE_ENV === 'development') {
+				validate(() => [
+					[
+						this.isDispatching,
+						'You may not unsubscribe from a store listener while the reducer is executing. ',
+					],
+				])
+			}
 
 			this.listeners.delete(listener)
 		}
 	}
 
 	dispatch: ReduxDispatch = (action) => {
-		if (typeof action.type === 'undefined') {
-			throw new Error(
-				'Actions may not have an undefined "type" property. You may have misspelled an action type string constant.'
-			)
-		}
-
-		if (this.isDispatching) {
-			throw new Error('Reducers may not dispatch actions.')
+		if (process.env.NODE_ENV === 'development') {
+			validate(() => [
+				[
+					typeof action.type === 'undefined',
+					'Actions may not have an undefined "type" property. You may have misspelled an action type string constant.',
+				],
+				[this.isDispatching, 'Reducers may not dispatch actions.'],
+			])
 		}
 
 		let nextState
