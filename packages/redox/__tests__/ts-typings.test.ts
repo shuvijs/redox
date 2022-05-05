@@ -582,8 +582,7 @@ describe('typings', () => {
 				reducers: {},
 				views: {
 					none() {
-						const str = this.a.b
-						return str
+						return this.a.b
 					},
 				},
 			})
