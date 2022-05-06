@@ -132,11 +132,13 @@ describe('reducer worked:', () => {
 			]
 			const todoModel = defineModel({
 				name: 'todo',
-				state: todo,
+				state: {
+					value: todo,
+				},
 				reducers: {
 					done(state) {
-						state.push({ todo: 'Tweet about it', done: false })
-						state[1].done = true
+						state.value.push({ todo: 'Tweet about it', done: false })
+						state.value[1].done = true
 					},
 				},
 			})
@@ -147,10 +149,10 @@ describe('reducer worked:', () => {
 			const newState = store.$state()
 
 			expect(todo.length).toBe(2)
-			expect(newState).toHaveLength(3)
+			expect(newState.value).toHaveLength(3)
 
 			expect(todo[1].done).toBe(false)
-			expect(newState[1].done).toEqual(true)
+			expect(newState.value[1].done).toEqual(true)
 		})
 	})
 

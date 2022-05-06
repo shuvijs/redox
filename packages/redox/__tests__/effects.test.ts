@@ -47,7 +47,7 @@ describe('effects worked:', () => {
 				},
 			},
 			effects: {
-				setString(arg0, arg1: string) {
+				setString(arg0: any, arg1: string) {
 					this.set(JSON.stringify(arg0) + JSON.stringify(arg1))
 				},
 			},
@@ -64,7 +64,7 @@ describe('effects worked:', () => {
 				},
 			},
 			effects: {
-				setString(arg0, arg1: string, arg2: { three: string }) {
+				setString(arg0: any, arg1: string, arg2: { three: string }) {
 					this.set(
 						JSON.stringify(arg0) + JSON.stringify(arg1) + JSON.stringify(arg2)
 					)
@@ -84,7 +84,7 @@ describe('effects worked:', () => {
 			},
 			effects: {
 				setString(
-					arg0,
+					arg0: any,
 					arg1: string,
 					arg2: { three: string },
 					arg3?: { four: string }
