@@ -148,14 +148,18 @@ describe('redox worked:', () => {
 		const otherCount = defineModel(
 			{
 				name: 'other|count',
-				state: [] as string[],
+				state: {
+					value: [] as string[],
+				},
 				reducers: {
 					add: (state, step: string) => {
-						return [...state, step]
+						return {
+							value: [...state.value, step],
+						}
 					},
 				},
 				effects: {
-					useCount(_payload) {
+					useCount(_payload: any) {
 						const countState = this.$dep.count.$state()
 						this.add(countState.value.toString())
 					},
@@ -253,7 +257,7 @@ describe('redox worked:', () => {
 		const otherCountStore = manager.get(otherCount)
 		otherCountStore.useCount(undefined)
 
-		expect(otherCountStore.$state()).toEqual(['1'])
+		expect(otherCountStore.$state()).toEqual({ value: ['1'] })
 
 		expect(() => {
 			manager.destroy()

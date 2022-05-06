@@ -38,7 +38,8 @@ export interface ReduxDispatch<A extends ReduxAction = AnyAction> {
 /** ************************** modal-start *************************** */
 
 export type State = {
-	[K: string]: any
+	[x: string]: any
+	[y: number]: never
 }
 
 export interface Action<TPayload = any> extends ReduxAction<string> {
@@ -73,10 +74,8 @@ export type ExtractRedoxDispatcherFromReducer<TState, TReducer> =
 			: RedoxDispatcher<false, ExtractParameterFromReducer<TRest>, never>
 		: never
 
-export type Effect = (...args: any[]) => any
-
 export type Effects = {
-	[x: string]: Effect
+	[x: string]: Function
 }
 
 export type Views = {
@@ -124,13 +123,11 @@ export type DispatcherOfReducers<S, R> = R extends undefined
 	  }
 	: never
 
-export type DispatcherOfEffects<E> = E extends Record<string, Effect>
-	? E extends Effects
-		? FilterIndex<E> extends infer FilterE
-			? {
-					[K in keyof FilterE]: FilterE[K]
-			  }
-			: {}
+export type DispatcherOfEffects<E> = E extends Effects
+	? FilterIndex<E> extends infer FilterE
+		? {
+				[K in keyof FilterE]: FilterE[K]
+		  }
 		: {}
 	: {}
 

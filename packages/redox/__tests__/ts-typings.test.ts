@@ -25,7 +25,9 @@ describe('typings', () => {
 		test('reducers get custom $state typescript', () => {
 			const model = defineModel({
 				name: 'model',
-				state: [] as customType[],
+				state: {
+					value: [] as customType[],
+				},
 				reducers: {
 					a(state) {
 						return state
@@ -36,7 +38,7 @@ describe('typings', () => {
 			const store = manager.get(model)
 
 			const state = store.$state()
-			expect(state).toEqual([])
+			expect(state).toEqual({ value: [] })
 		})
 
 		test('reducers typescript', () => {
@@ -119,12 +121,17 @@ describe('typings', () => {
 						console.log('args: ', args)
 						return 'argsCustom' as const
 					},
-					more(args0: string, args1: number, _args2: customType, depends?) {
+					more(
+						args0: string,
+						args1: number,
+						_args2: customType,
+						depends?: any
+					) {
 						console.log('args: ', args0, args1)
 						console.log('dependsState: ', depends)
 						return 'more' as const
 					},
-					argsAny(args: any, depends) {
+					argsAny(args: any, depends: any) {
 						console.log('args: ', args)
 						console.log('dependsState: ', depends)
 						return 'argsAny' as const
@@ -172,13 +179,13 @@ describe('typings', () => {
 						args0: string,
 						args1: number,
 						_args2: customType,
-						depends?
+						depends?: any
 					) {
 						console.log('args: ', args0, args1)
 						console.log('dependsState: ', depends)
 						return 'more' as const
 					},
-					async argsAny(args: any, depends) {
+					async argsAny(args: any, depends: any) {
 						console.log('args: ', args)
 						console.log('dependsState: ', depends)
 						return 'argsAny' as const
@@ -269,7 +276,9 @@ describe('typings', () => {
 		test('reducers get custom $state typescript in function', () => {
 			const _model = defineModel({
 				name: 'model',
-				state: [] as customType[],
+				state: {
+					value: [] as customType[],
+				},
 				reducers: {
 					a(state) {
 						return state
@@ -282,13 +291,13 @@ describe('typings', () => {
 		test('effects this typescript $state', () => {
 			const model = defineModel({
 				name: 'model',
-				state: [] as customType[],
+				state: {
+					value: [] as customType[],
+				},
 				reducers: {},
 				effects: {
 					none() {
-						const state = this.$state()
-						console.log('state: ', state)
-						return 'none' as const
+						return this.$state()
 					},
 				},
 			})
@@ -369,10 +378,13 @@ describe('typings', () => {
 						const argsOptional = await this.argsOptional()
 						const argsCustom = await this.argsCustom('custom')
 						const argsAny = await this.argsAny({}, 1)
-						return 'none' as const
+						return await this.stateType()
 					},
-					async one(state: string) {
-						console.log('state: ', state)
+					async stateType() {
+						return this.$state().value
+					},
+					async one(args: string) {
+						console.log('state: ', args)
 						return 'one' as const
 					},
 					async argsOptional(args?: string) {
@@ -387,20 +399,21 @@ describe('typings', () => {
 						args0: string,
 						args1: number,
 						_args2: customType,
-						depends?
+						depends?: any
 					) {
 						console.log('args: ', args0, args1)
 						console.log('dependsState: ', depends)
 						return 'more' as const
 					},
-					async argsAny(args: any, depends) {
+					async argsAny(args: any, depends: any) {
 						console.log('args: ', args)
 						console.log('dependsState: ', depends)
 						return 'argsAny' as const
 					},
 				},
 			})
-			console.log('model: ', model)
+			const store = manager.get(model)
+			const temp = store.stateType()
 		})
 
 		test('effects this typescript with effects, call views', () => {
@@ -453,7 +466,9 @@ describe('typings', () => {
 		test('effects this typescript no depends', () => {
 			const model = defineModel({
 				name: 'model',
-				state: [] as customType[],
+				state: {
+					value: [] as customType[],
+				},
 				reducers: {},
 				effects: {
 					none() {
@@ -514,10 +529,12 @@ describe('typings', () => {
 			const model = defineModel(
 				{
 					name: 'model',
-					state: [] as customType[],
+					state: {
+						value: [] as customType[],
+					},
 					reducers: {},
 					effects: {
-						none() {
+						async none() {
 							this.$dep.depend0.$state()
 							this.$dep.depend0.depend0Reducer()
 							this.$dep.depend0.depend0Effect('')
@@ -526,20 +543,20 @@ describe('typings', () => {
 							this.$dep.depend1.depend1Reducer(1)
 							this.$dep.depend1.depend1Effect(1)
 							this.$dep.depend1.depend1View()
-							// this.$dep.a
-							return 'none' as const
+							return await this.$dep.depend0.depend0Effect('')
 						},
 					},
 				},
 				[depend0, depend1]
 			)
-			console.log('model: ', model)
+			const store = manager.get(model)
+			const temp = store.none()
 		})
 
 		test('views this typescript in function, call self', () => {
 			const model = defineModel({
 				name: 'model',
-				state: {},
+				state: { value: 0 },
 				reducers: {},
 				views: {
 					none() {
@@ -548,7 +565,7 @@ describe('typings', () => {
 						this.argsCustom
 						this.argsAny
 						this.argsMore
-						return 'none' as const
+						return this.value
 					},
 					argsOptional(args?: string) {
 						console.log('args: ', args)
@@ -569,23 +586,8 @@ describe('typings', () => {
 					},
 				},
 			})
-		})
-
-		test('views this typescript in function, call state', () => {
-			const model = defineModel({
-				name: 'model',
-				state: {
-					a: {
-						b: '',
-					},
-				},
-				reducers: {},
-				views: {
-					none() {
-						return this.a.b
-					},
-				},
-			})
+			const store = manager.get(model)
+			const temp = store.none()
 		})
 
 		test('views typescript no depends', () => {
@@ -611,14 +613,16 @@ describe('typings', () => {
 						none() {
 							const depend0Value = this.$dep.depend0.value[0]
 							const depend1Value = this.$dep.depend1.value[0]
-							const depend0View = this.$dep.depend0.depend0View
-							const depend1View = this.$dep.depend1.depend1View
-							return 'none' as const
+							const depend0View = this.$dep.depend0.depend0View()
+							const depend1View = this.$dep.depend1.depend1View()
+							return depend1View
 						},
 					},
 				},
 				[depend0, depend1]
 			)
+			const store = manager.get(model)
+			const temp = store.none()
 		})
 	})
 })
