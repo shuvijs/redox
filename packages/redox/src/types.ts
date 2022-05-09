@@ -37,7 +37,11 @@ export interface ReduxDispatch<A extends ReduxAction = AnyAction> {
 
 /** ************************** modal-start *************************** */
 
-export type State = Record<string, any>
+export type State = {
+	[x: string]: any
+	[y: number]: never
+}
+
 export interface Action<TPayload = any> extends ReduxAction<string> {
 	payload?: TPayload
 }
@@ -70,20 +74,12 @@ export type ExtractRedoxDispatcherFromReducer<TState, TReducer> =
 			: RedoxDispatcher<false, ExtractParameterFromReducer<TRest>, never>
 		: never
 
-export type Effect = (...args: any[]) => any
-
 export type Effects = {
-	[x: string]: Effect
+	[x: string]: Function
 }
 
-type View<S, RM extends ModelCollection> = (
-	state: S,
-	dependsState: StateOfStoreCollection<RM>,
-	args: any
-) => unknown
-
-export type Views<S, RM extends ModelCollection> = {
-	[key: string]: View<S, RM>
+export type Views = {
+	[key: string]: Function
 }
 
 export type ModelCollection = Record<string, AnyModel>
@@ -94,6 +90,10 @@ type MiniStoreOfStoreCollection<MC extends ModelCollection> = {
 
 type StateOfStoreCollection<MC extends ModelCollection> = {
 	[K in keyof MC]: MC[K]['state']
+}
+
+type ViewOfStoreCollection<MC extends ModelCollection> = {
+	[K in keyof MC]: RedoxViews<MC[K]['views']>
 }
 
 type noExist = { [X: string | number | symbol]: never }
@@ -123,13 +123,11 @@ export type DispatcherOfReducers<S, R> = R extends undefined
 	  }
 	: never
 
-export type DispatcherOfEffects<E> = E extends Record<string, Effect>
-	? E extends Effects
-		? FilterIndex<E> extends infer FilterE
-			? {
-					[K in keyof FilterE]: FilterE[K]
-			  }
-			: {}
+export type DispatcherOfEffects<E> = E extends Effects
+	? FilterIndex<E> extends infer FilterE
+		? {
+				[K in keyof FilterE]: FilterE[K]
+		  }
 		: {}
 	: {}
 
@@ -217,24 +215,26 @@ export interface Model<
 	MC extends ModelCollection,
 	R extends Reducers<S>,
 	E extends Effects,
-	V extends Views<S, MC>
+	V extends Views
 > {
 	name?: N
 	state: S
 	reducers: R
 	effects?: E &
 		ThisType<
-			{ $state: () => S } & transformViews<V> & {
+			{ $state: () => S } & RedoxViews<V> & {
 					$dep: MiniStoreOfStoreCollection<MC>
 				} & DispatchOfModelByProps<S, R, E>
 		>
-	views?: V & ThisType<ViewsObj<V>>
+	views?: V &
+		ThisType<
+			S &
+				RedoxViews<V> & {
+					$dep: StateOfStoreCollection<MC> & ViewOfStoreCollection<MC>
+				}
+		>
 	_depends?: Depends
 }
-
-type ViewsObj<V> = V extends Views<any, any>
-	? { [K in keyof V]: ReturnType<V[K]> }
-	: {}
 
 export type AnyModel = Model<any, any, any, any, any, any>
 export type Depends = AnyModel[]
@@ -245,8 +245,8 @@ export type Depends = AnyModel[]
 
 export type Store<IModel extends AnyModel> = {
 	$state: () => IModel['state']
-} & DispatchOfModel<IModel> &
-	RedoxViews<IModel>
+} & RedoxViews<IModel['views']> &
+	DispatchOfModel<IModel>
 
 export type RedoxDispatcher<
 	IsEffect extends boolean,
@@ -260,41 +260,8 @@ export type RedoxDispatcher<
 	  ) => ReturnOfDispatcher<IsEffect, TReturn, TPayload[0]>
 	: (payload: TPayload[0]) => ReturnOfDispatcher<IsEffect, TReturn, TPayload[0]>
 
-export type RedoxViews<IModel extends AnyModel> = IModel extends Model<
-	any,
-	any,
-	any,
-	any,
-	any,
-	infer V
->
-	? V extends undefined
-		? {}
-		: transformViews<V>
-	: {}
-
-type transformViews<V> = FilterIndex<V> extends infer FilterV
-	? keyof FilterV extends never
-		? {}
-		: {
-				[K in keyof FilterV]: ExtractParameterFromViews<FilterV[K]>
-		  }
-	: {}
-
-type ExtractParameterFromViews<TView> = TView extends (
-	...args: infer TArgs
-) => infer TReturn
-	? TArgs extends []
-		? () => TReturn
-		: TArgs[2] extends undefined
-		? () => TReturn
-		: TArgs extends [p0: any, p1: any, P2: any]
-		? (arg: TArgs[2]) => TReturn
-		: (
-				arg?: TArgs[2] extends undefined
-					? TArgs[2]
-					: Exclude<TArgs[2], undefined>
-		  ) => TReturn
-	: never
+export type RedoxViews<V> = {
+	[K in keyof V]: V[K] extends (...args: any) => any ? V[K] : never
+}
 
 /** ************************** store-end *************************** */

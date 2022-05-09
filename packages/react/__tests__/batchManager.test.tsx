@@ -29,8 +29,8 @@ const countModel = defineModel({
 		},
 	},
 	views: {
-		test(state, _dependsState, args): number {
-			return state.value + args
+		test(args: number) {
+			return this.value + args
 		},
 	},
 })
@@ -338,8 +338,8 @@ describe('batchedUpdates worked:', () => {
 				reducers: {},
 				views: {
 					// for test depend changed
-					test(_s, dependState) {
-						return dependState.countModel.value * 2
+					test() {
+						return this.$dep.countModel.value * 2
 					},
 				},
 			},

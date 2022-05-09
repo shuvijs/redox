@@ -4,49 +4,711 @@ beforeEach(() => {
 	manager = redox()
 })
 describe('views worked:', () => {
-	test('compute view can automatic collect the state which view used', () => {
-		let firstComputeTimes = 0
-		const first = defineModel({
-			name: 'first',
-			state: {
-				first_Object: {
-					first_a: {
-						arr: [1, 2, 3],
-					},
-					first_b: {
-						number: 1,
+	describe('automatic collect the what view used:', () => {
+		test('return fixed value', () => {
+			let fixedComputeTimes = 0
+			const fixed = defineModel({
+				name: 'fixed',
+				state: {
+					value: 0,
+				},
+				reducers: {
+					change() {
+						return {
+							value: 1,
+						}
 					},
 				},
-			},
-			reducers: {
-				changedB: (state) => {
-					return {
-						first_Object: {
-							first_a: state.first_Object.first_a,
-							first_b: {
-								number: 2,
+				views: {
+					fixedView() {
+						fixedComputeTimes++
+						return 1
+					},
+				},
+			})
+			const store = manager.get(fixed)
+
+			let viewsValue
+
+			expect(fixedComputeTimes).toBe(0)
+
+			viewsValue = store.fixedView()
+			expect(fixedComputeTimes).toBe(1)
+			store.change()
+			expect(store.fixedView() === viewsValue).toBeTruthy
+			expect(fixedComputeTimes).toBe(1)
+		})
+
+		test('return sample value', () => {
+			let sampleComputeTimes = 0
+			const sample = defineModel({
+				name: 'sample',
+				state: {
+					value: 0,
+					value1: 1,
+				},
+				reducers: {
+					change(state) {
+						return {
+							...state,
+							value: 1,
+						}
+					},
+				},
+				views: {
+					sampleView() {
+						sampleComputeTimes++
+						return this.value1
+					},
+				},
+			})
+			const store = manager.get(sample)
+
+			let viewsValue
+
+			expect(sampleComputeTimes).toBe(0)
+
+			viewsValue = store.sampleView()
+			expect(sampleComputeTimes).toBe(1)
+			store.change()
+			expect(store.sampleView() === viewsValue).toBeTruthy
+			expect(sampleComputeTimes).toBe(1)
+		})
+
+		test('return sample value with call property breaks', () => {
+			let sampleComputeTimes = 0
+			const sample = defineModel({
+				name: 'sample',
+				state: {
+					value: 0,
+					value1: {
+						a: {
+							b: 'b',
+						},
+					},
+				},
+				reducers: {
+					change(state) {
+						return {
+							...state,
+							value: 1,
+						}
+					},
+				},
+				views: {
+					sampleView() {
+						const value1 = this.value1
+						sampleComputeTimes++
+						const a = value1.a
+						return a.b
+					},
+				},
+			})
+			const store = manager.get(sample)
+
+			let viewsValue
+
+			expect(sampleComputeTimes).toBe(0)
+
+			viewsValue = store.sampleView()
+			expect(sampleComputeTimes).toBe(1)
+			store.change()
+			expect(store.sampleView() === viewsValue).toBeTruthy
+			expect(sampleComputeTimes).toBe(1)
+		})
+
+		test('return obj value', () => {
+			let objComputeTimes = 0
+			const obj = defineModel({
+				name: 'obj',
+				state: {
+					value: 0,
+					value1: {
+						a: {
+							b: 'b',
+						},
+					},
+				},
+				reducers: {
+					change(state) {
+						return {
+							...state,
+							value: 1,
+						}
+					},
+				},
+				views: {
+					objView() {
+						objComputeTimes++
+						return this.value1.a
+					},
+				},
+			})
+			const store = manager.get(obj)
+
+			let viewsValue
+
+			expect(objComputeTimes).toBe(0)
+
+			viewsValue = store.objView()
+			expect(objComputeTimes).toBe(1)
+			store.change()
+			expect(store.objView() === viewsValue).toBeTruthy
+			expect(objComputeTimes).toBe(1)
+		})
+
+		test('return obj value with call property breaks', () => {
+			let objComputeTimes = 0
+			const obj = defineModel({
+				name: 'obj',
+				state: {
+					value: 0,
+					value1: {
+						a: {
+							b: 'b',
+						},
+					},
+				},
+				reducers: {
+					change(state) {
+						return {
+							...state,
+							value: 1,
+						}
+					},
+				},
+				views: {
+					objView() {
+						const value1 = this.value1
+						objComputeTimes++
+						this.value1.a.b
+						return value1.a
+					},
+				},
+			})
+			const store = manager.get(obj)
+
+			let viewsValue
+
+			expect(objComputeTimes).toBe(0)
+
+			viewsValue = store.objView()
+			expect(objComputeTimes).toBe(1)
+			store.change()
+			expect(store.objView() === viewsValue).toBeTruthy
+			expect(objComputeTimes).toBe(1)
+		})
+
+		test('call self view', () => {
+			let selfViewComputeTimes = 0
+			const selfView = defineModel({
+				name: 'selfView',
+				state: {
+					value: 0,
+					value1: {
+						a: {
+							b: 'b',
+						},
+					},
+				},
+				reducers: {
+					change(state) {
+						return {
+							...state,
+							value: 1,
+						}
+					},
+				},
+				views: {
+					selfView() {
+						const value1 = this.value1
+						selfViewComputeTimes++
+						return value1.a
+					},
+					objView() {
+						return this.selfView()
+					},
+				},
+			})
+			const store = manager.get(selfView)
+
+			let viewsValue
+
+			expect(selfViewComputeTimes).toBe(0)
+
+			viewsValue = store.objView()
+			expect(selfViewComputeTimes).toBe(1)
+			store.change()
+			expect(store.objView() === viewsValue).toBeTruthy
+			expect(selfViewComputeTimes).toBe(1)
+		})
+
+		test('call self view with call property breaks', () => {
+			let selfViewComputeTimes = 0
+			const selfView = defineModel({
+				name: 'selfView',
+				state: {
+					value: 0,
+					value1: {
+						a: {
+							b: 'b',
+						},
+					},
+				},
+				reducers: {
+					change(state) {
+						return {
+							...state,
+							value: 1,
+						}
+					},
+				},
+				views: {
+					selfView() {
+						const value1 = this.value1
+						selfViewComputeTimes++
+						this.value1.a
+						return value1.a
+					},
+					objView() {
+						const selfView = this.selfView()
+						return selfView.b
+					},
+				},
+			})
+			const store = manager.get(selfView)
+
+			let viewsValue
+
+			expect(selfViewComputeTimes).toBe(0)
+
+			viewsValue = store.objView()
+			expect(selfViewComputeTimes).toBe(1)
+			store.change()
+			expect(store.objView() === viewsValue).toBeTruthy
+			expect(selfViewComputeTimes).toBe(1)
+		})
+
+		test('call self view many times', () => {
+			let selfViewComputeTimes = 0
+			const selfView = defineModel({
+				name: 'selfView',
+				state: {
+					value: 0,
+					value1: {
+						a: {
+							b: 'b',
+						},
+					},
+				},
+				reducers: {
+					change(state) {
+						return {
+							...state,
+							value: 1,
+						}
+					},
+				},
+				views: {
+					selfView() {
+						const value1 = this.value1
+						selfViewComputeTimes++
+						return value1.a
+					},
+					objView() {
+						this.selfView()
+						return this.selfView()
+					},
+				},
+			})
+			const store = manager.get(selfView)
+
+			let viewsValue
+
+			expect(selfViewComputeTimes).toBe(0)
+
+			viewsValue = store.objView()
+			expect(selfViewComputeTimes).toBe(1)
+			store.change()
+			expect(store.objView() === viewsValue).toBeTruthy
+			expect(selfViewComputeTimes).toBe(1)
+		})
+	})
+
+	describe('arguments changed trigger view computed:', () => {
+		test('optional parameters changed view should computed', () => {
+			let viewComputeTimes = 0
+			const view = defineModel({
+				name: 'view',
+				state: {
+					value: 1,
+				},
+				reducers: {},
+				views: {
+					call(n: number = 0) {
+						viewComputeTimes++
+						return this.value + n
+					},
+				},
+			})
+			const store = manager.get(view)
+
+			expect(viewComputeTimes).toBe(0)
+
+			expect(store.call()).toBe(1)
+			expect(viewComputeTimes).toBe(1)
+			expect(store.call()).toBe(1)
+			expect(viewComputeTimes).toBe(1)
+
+			expect(store.call(1)).toBe(2)
+			expect(viewComputeTimes).toBe(2)
+		})
+
+		test('object reference parameters changed view should computed', () => {
+			let viewComputeTimes = 0
+			const view = defineModel({
+				name: 'view',
+				state: {
+					value: 1,
+				},
+				reducers: {},
+				views: {
+					call(obj: { n: number }) {
+						viewComputeTimes++
+						return this.value + obj.n
+					},
+				},
+			})
+			const store = manager.get(view)
+
+			expect(viewComputeTimes).toBe(0)
+
+			expect(store.call({ n: 0 })).toBe(1)
+			expect(viewComputeTimes).toBe(1)
+			expect(store.call({ n: 0 })).toBe(1)
+			expect(viewComputeTimes).toBe(2)
+		})
+
+		test('object reference parameters not changed view should not computed', () => {
+			let viewComputeTimes = 0
+			let n = { n: 0 }
+			const view = defineModel({
+				name: 'view',
+				state: {
+					value: 1,
+				},
+				reducers: {},
+				views: {
+					call(obj: { n: number }) {
+						viewComputeTimes++
+						return this.value + obj.n
+					},
+				},
+			})
+			const store = manager.get(view)
+
+			expect(viewComputeTimes).toBe(0)
+
+			expect(store.call(n)).toBe(1)
+			expect(viewComputeTimes).toBe(1)
+			expect(store.call(n)).toBe(1)
+			expect(viewComputeTimes).toBe(1)
+		})
+
+		test('call self view if parameters changed view should computed', () => {
+			let viewComputeTimes = 0
+			const view = defineModel({
+				name: 'view',
+				state: {
+					value: 1,
+				},
+				reducers: {},
+				views: {
+					selfView(n: number = 0) {
+						viewComputeTimes++
+						return this.value + n
+					},
+					call() {
+						this.selfView()
+						return this.selfView(0)
+					},
+				},
+			})
+			const store = manager.get(view)
+
+			expect(viewComputeTimes).toBe(0)
+
+			expect(store.call()).toBe(1)
+			expect(viewComputeTimes).toBe(2)
+		})
+	})
+
+	describe('worked with depends:', () => {
+		describe('depends state changed, if the view not use the property of state it should not computed', () => {
+			test('depends return sample value', () => {
+				const depend = defineModel({
+					name: 'depend',
+					state: {
+						value: 0,
+						value1: 1,
+					},
+					reducers: {
+						change(state) {
+							return {
+								...state,
+								value: 1,
+							}
+						},
+					},
+				})
+				let sampleComputeTimes = 0
+				const sample = defineModel(
+					{
+						name: 'sample',
+						state: {},
+						reducers: {},
+						views: {
+							call() {
+								sampleComputeTimes++
+								return this.$dep.depend.value1
 							},
 						},
-					}
-				},
-			},
-			views: {
-				first_view(state) {
-					firstComputeTimes++
-					return state.first_Object.first_a.arr[0]
-				},
-			},
+					},
+					[depend]
+				)
+				const store = manager.get(sample)
+
+				let viewsValue
+
+				expect(sampleComputeTimes).toBe(0)
+
+				viewsValue = store.call()
+				expect(sampleComputeTimes).toBe(1)
+				manager.get(depend).change()
+				expect(store.call() === viewsValue).toBeTruthy
+				expect(sampleComputeTimes).toBe(1)
+			})
+
+			test('depends return object value', () => {
+				const depend = defineModel({
+					name: 'depend',
+					state: {
+						value: 0,
+						value1: {
+							a: {
+								b: 'b',
+							},
+						},
+					},
+					reducers: {
+						change(state) {
+							return {
+								...state,
+								value: 1,
+							}
+						},
+					},
+				})
+				let sampleComputeTimes = 0
+				const sample = defineModel(
+					{
+						name: 'sample',
+						state: {},
+						reducers: {},
+						views: {
+							call() {
+								sampleComputeTimes++
+								return this.$dep.depend.value1.a
+							},
+						},
+					},
+					[depend]
+				)
+				const store = manager.get(sample)
+
+				let viewsValue
+
+				expect(sampleComputeTimes).toBe(0)
+
+				viewsValue = store.call()
+				expect(sampleComputeTimes).toBe(1)
+				manager.get(depend).change()
+				expect(store.call() === viewsValue).toBeTruthy
+				expect(sampleComputeTimes).toBe(1)
+			})
+
+			test('depends return object value with call property breaks', () => {
+				const depend = defineModel({
+					name: 'depend',
+					state: {
+						value: 0,
+						value1: {
+							a: {
+								b: 'b',
+							},
+						},
+					},
+					reducers: {
+						change(state) {
+							return {
+								...state,
+								value: 1,
+							}
+						},
+					},
+				})
+				let sampleComputeTimes = 0
+				const sample = defineModel(
+					{
+						name: 'sample',
+						state: {},
+						reducers: {},
+						views: {
+							call() {
+								const value1 = this.$dep.depend.value1
+								sampleComputeTimes++
+								this.$dep.depend.value1.a.b
+								return value1.a
+							},
+						},
+					},
+					[depend]
+				)
+				const store = manager.get(sample)
+
+				let viewsValue
+
+				expect(sampleComputeTimes).toBe(0)
+
+				viewsValue = store.call()
+				expect(sampleComputeTimes).toBe(1)
+				manager.get(depend).change()
+				expect(store.call() === viewsValue).toBeTruthy
+				expect(sampleComputeTimes).toBe(1)
+			})
 		})
-		const firstStore = manager.get(first)
 
-		let viewsValue
+		test('depends view arguments not changed depend view should not computed', () => {
+			let dependComputeTimes = 0
+			const depend = defineModel({
+				name: 'depend',
+				state: {
+					value: 0,
+					value1: 1,
+				},
+				reducers: {},
+				views: {
+					dependView(n: number) {
+						dependComputeTimes++
+						return this.value1 + n
+					},
+				},
+			})
+			const sample = defineModel(
+				{
+					name: 'sample',
+					state: {},
+					reducers: {},
+					views: {
+						call() {
+							this.$dep.depend.dependView(1)
+							return this.$dep.depend.dependView(1)
+						},
+					},
+				},
+				[depend]
+			)
+			const store = manager.get(sample)
 
-		expect(firstComputeTimes).toBe(0)
+			let viewsValue
 
-		viewsValue = firstStore.first_view()
-		expect(firstComputeTimes).toBe(1)
-		expect(firstStore.first_view()).toEqual(viewsValue)
-		expect(firstComputeTimes).toBe(1)
+			expect(dependComputeTimes).toBe(0)
+
+			viewsValue = store.call()
+			expect(dependComputeTimes).toBe(1)
+			expect(store.call() === viewsValue).toBeTruthy
+			expect(dependComputeTimes).toBe(1)
+		})
+
+		test('depends view arguments changed depend view should computed', () => {
+			let dependComputeTimes = 0
+			const depend = defineModel({
+				name: 'depend',
+				state: {
+					value: 0,
+					value1: 1,
+				},
+				reducers: {},
+				views: {
+					dependView(n: number) {
+						dependComputeTimes++
+						return this.value1 + n
+					},
+				},
+			})
+			const sample = defineModel(
+				{
+					name: 'sample',
+					state: {},
+					reducers: {},
+					views: {
+						call() {
+							this.$dep.depend.dependView(1)
+							return this.$dep.depend.dependView(2)
+						},
+					},
+				},
+				[depend]
+			)
+			const store = manager.get(sample)
+
+			let viewsValue
+
+			expect(dependComputeTimes).toBe(0)
+
+			viewsValue = store.call()
+			expect(dependComputeTimes).toBe(2)
+		})
+
+		test('depends view arguments reference changed depend view should computed', () => {
+			let dependComputeTimes = 0
+			const depend = defineModel({
+				name: 'depend',
+				state: {
+					value: 0,
+					value1: 1,
+				},
+				reducers: {},
+				views: {
+					dependView(n: { n: number }) {
+						dependComputeTimes++
+						return this.value1 + n.n
+					},
+				},
+			})
+			const sample = defineModel(
+				{
+					name: 'sample',
+					state: {},
+					reducers: {},
+					views: {
+						call() {
+							this.$dep.depend.dependView({ n: 1 })
+							return this.$dep.depend.dependView({ n: 1 })
+						},
+					},
+				},
+				[depend]
+			)
+			const store = manager.get(sample)
+
+			let viewsValue
+
+			expect(dependComputeTimes).toBe(0)
+
+			viewsValue = store.call()
+			expect(dependComputeTimes).toBe(2)
+		})
 	})
 
 	test('works with immer reducer', () => {
@@ -73,9 +735,9 @@ describe('views worked:', () => {
 				},
 			},
 			views: {
-				first_c_view(state) {
+				first_c_view() {
 					firstComputeTimes++
-					return state.first_Object.a.b.c
+					return this.first_Object.a.b.c
 				},
 			},
 		})
@@ -98,292 +760,5 @@ describe('views worked:', () => {
 		viewsValue = firstStore.first_c_view()
 		expect(firstComputeTimes).toBe(2)
 		expect(viewsValue).toBe('d')
-	})
-
-	test('computed when args changed', () => {
-		let firstComputeTimes = 0
-		const first = defineModel({
-			name: 'first',
-			state: {
-				first_Object: {
-					a: {
-						b: {
-							c: 'c',
-						},
-					},
-				},
-			},
-			reducers: {
-				changedB: (state) => {
-					state.first_Object.a.b = {
-						c: 'c',
-					}
-					return state
-				},
-				changedC: (state) => {
-					state.first_Object.a.b.c = 'd'
-					return state
-				},
-			},
-			views: {
-				first_c_view: (state, _dependsState, args) => {
-					firstComputeTimes++
-					return state.first_Object.a.b.c + args
-				},
-			},
-		})
-
-		const firstStore = manager.get(first)
-
-		let viewsValue
-
-		expect(firstComputeTimes).toBe(0)
-		viewsValue = firstStore.first_c_view('z')
-		expect(firstComputeTimes).toBe(1)
-		expect(viewsValue).toBe('cz')
-
-		viewsValue = firstStore.first_c_view('v')
-		expect(firstComputeTimes).toBe(2)
-		expect(viewsValue).toBe('cv')
-
-		firstStore.changedC()
-		viewsValue = firstStore.first_c_view('z')
-		expect(firstComputeTimes).toBe(3)
-		expect(viewsValue).toBe('dz')
-	})
-
-	test('works with views call self', () => {
-		let firstViewComputeTimes = 0
-		let firstCViewComputeTimes = 0
-		const second = defineModel({
-			name: 'second',
-			state: {
-				second_Object: {
-					second_a: {
-						arr: [1, 2, 3],
-					},
-					second_b: {
-						number: 1,
-					},
-				},
-			},
-			reducers: {
-				changedB(state) {
-					return {
-						second_Object: {
-							second_a: state.second_Object.second_a,
-							second_b: {
-								number: 2,
-							},
-						},
-					}
-				},
-				changedArr(state) {
-					return {
-						second_Object: {
-							second_a: {
-								arr: [2, 3, 4],
-							},
-							second_b: state.second_Object.second_b,
-						},
-					}
-				},
-			},
-		})
-		const first = defineModel(
-			{
-				name: 'first',
-				state: {
-					first_a: {
-						arr: [1, 2, 3],
-					},
-					first_b: {
-						number: 1,
-					},
-				},
-				reducers: {
-					changedNumber: (state) => {
-						return {
-							...state,
-							first_b: {
-								number: 2,
-							},
-						}
-					},
-				},
-				views: {
-					first_a_view(state) {
-						return state.first_a.arr[0]
-					},
-					first_b_view(state) {
-						return state.first_b.number
-					},
-					first_c_view(state, dependsState): number {
-						firstCViewComputeTimes += 1
-						const first_b_view = this.first_b_view
-						const number = state.first_b.number
-						const first_a_view = this.first_a_view
-						const second = dependsState.second.second_Object.second_b.number
-						return first_b_view + number + first_a_view + second
-					},
-					first_view(): number {
-						firstViewComputeTimes += 1
-						return this.first_a_view + this.first_c_view
-					},
-				},
-			},
-			[second]
-		)
-
-		const firstStore = manager.get(first)
-		const secondStore = manager.get(second)
-
-		let viewsValue
-
-		expect(firstViewComputeTimes).toBe(0)
-		expect(firstCViewComputeTimes).toBe(0)
-
-		viewsValue = firstStore.first_view()
-		firstStore.first_c_view()
-		expect(viewsValue).toBe(5)
-		expect(firstViewComputeTimes).toBe(1)
-		expect(firstCViewComputeTimes).toBe(1)
-
-		viewsValue = firstStore.first_view()
-		firstStore.first_c_view()
-		expect(viewsValue).toBe(5)
-		expect(firstViewComputeTimes).toBe(1)
-		expect(firstCViewComputeTimes).toBe(1)
-
-		firstStore.changedNumber()
-
-		viewsValue = firstStore.first_view()
-		expect(viewsValue).toBe(7)
-		expect(firstViewComputeTimes).toBe(2)
-		expect(firstCViewComputeTimes).toBe(2)
-
-		secondStore.changedB()
-
-		viewsValue = firstStore.first_view()
-		expect(viewsValue).toBe(8)
-		expect(firstViewComputeTimes).toBe(3)
-		expect(firstCViewComputeTimes).toBe(3)
-
-		secondStore.changedArr()
-
-		viewsValue = firstStore.first_view()
-		expect(viewsValue).toBe(8)
-		expect(firstViewComputeTimes).toBe(3)
-		expect(firstCViewComputeTimes).toBe(3)
-	})
-
-	test('should computed when depends changed', () => {
-		let firstComputeTimes = 0
-		const first = defineModel({
-			name: 'first',
-			state: {
-				first_Object: {
-					first_a: {
-						arr: [1, 2, 3],
-					},
-					first_b: {
-						number: 1,
-					},
-				},
-			},
-			reducers: {
-				changedB: (state) => {
-					return {
-						first_Object: {
-							first_a: state.first_Object.first_a,
-							first_b: {
-								number: 2,
-							},
-						},
-					}
-				},
-			},
-			views: {
-				first_view(state) {
-					firstComputeTimes++
-					return state.first_Object.first_a.arr[0]
-				},
-			},
-		})
-		let secondComputeTimes = 0
-		const second = defineModel(
-			{
-				name: 'second',
-				state: {
-					second_Object: {
-						second_a: {
-							arr: [1, 2, 3],
-						},
-						second_b: {
-							number: 1,
-						},
-					},
-				},
-				reducers: {
-					changedB: (state) => {
-						return {
-							second_Object: {
-								second_a: state.second_Object.second_a,
-								second_b: {
-									number: 2,
-								},
-							},
-						}
-					},
-				},
-				views: {
-					second_view(state, dependsState) {
-						secondComputeTimes++
-						return (
-							dependsState.first.first_Object.first_a.arr[0] +
-							state.second_Object.second_b.number
-						)
-					},
-					// other: (state, dependsState)=>{
-					// }
-				},
-			},
-			[first]
-		)
-
-		const firstStore = manager.get(first)
-		const secondStore = manager.get(second)
-
-		let viewsValue
-
-		expect(firstComputeTimes).toBe(0)
-		expect(secondComputeTimes).toBe(0)
-
-		viewsValue = secondStore.second_view()
-		firstStore.first_view()
-		expect(secondComputeTimes).toBe(1)
-		expect(firstComputeTimes).toBe(1)
-		expect(viewsValue).toBe(2)
-
-		viewsValue = secondStore.second_view()
-		firstStore.first_view()
-		expect(secondComputeTimes).toBe(1)
-		expect(firstComputeTimes).toBe(1)
-		expect(viewsValue).toBe(2)
-
-		firstStore.changedB()
-
-		viewsValue = secondStore.second_view()
-		firstStore.first_view()
-		expect(secondComputeTimes).toBe(1)
-		expect(firstComputeTimes).toBe(1)
-		expect(viewsValue).toBe(2)
-
-		secondStore.changedB()
-
-		viewsValue = secondStore.second_view()
-
-		expect(secondComputeTimes).toBe(2)
-		expect(viewsValue).toBe(3)
 	})
 })

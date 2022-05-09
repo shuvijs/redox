@@ -24,8 +24,8 @@ export const fetchA = defineModel(
 			},
 		},
 		views: {
-			isLoading(_, dependState) {
-				return dependState.loading.isLoading
+			isLoading() {
+				return this.$dep.loading.isLoading
 			},
 		},
 	},
@@ -52,8 +52,8 @@ export const fetchB = defineModel(
 			},
 		},
 		views: {
-			isLoading(_, dependState) {
-				return dependState.loading.isLoading
+			isLoading() {
+				return this.$dep.loading.isLoading
 			},
 		},
 	},

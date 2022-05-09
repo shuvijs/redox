@@ -103,7 +103,7 @@ export class RedoxStore<IModel extends AnyModel> {
 	public storeApi: Store<IModel>
 	public storeDepends: Record<string, Store<AnyModel>>
 	public $actions = {} as DispatchOfModel<IModel>
-	public $views = {} as RedoxViews<IModel>
+	public $views = {} as RedoxViews<IModel['views']>
 
 	private currentState: IModel['state']
 	private currentReducer: ReduxReducer<IModel['state']> | null
@@ -264,7 +264,7 @@ export function createModelReducer<
 	MC extends ModelCollection,
 	R extends Reducers<S>,
 	E extends Effects,
-	V extends Views<S, MC>
+	V extends Views
 >(model: Model<N, S, MC, R, E, V>): ReduxReducer<S, Action> {
 	// select and run a reducer based on the incoming action
 	const reducer = (state: S = model.state, action: Action): S => {
