@@ -103,7 +103,7 @@ export class RedoxStore<IModel extends AnyModel> {
 	public storeApi: Store<IModel>
 	public storeDepends: Record<string, Store<AnyModel>>
 	public $actions = {} as DispatchOfModel<IModel>
-	public $views = {} as RedoxViews<IModel>
+	public $views = {} as RedoxViews<IModel['views']>
 
 	private currentState: IModel['state']
 	private currentReducer: ReduxReducer<IModel['state']> | null

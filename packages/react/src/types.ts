@@ -2,10 +2,7 @@ import { RedoxStore, AnyModel } from '@shuvi/redox'
 
 type noExist = { [X: string | number | symbol]: never }
 
-type IState<IModel extends AnyModel> = ReturnType<
-	RedoxStore<IModel>['$state']
-> &
-	noExist
+type IState<IModel extends AnyModel> = ReturnType<RedoxStore<IModel>['$state']>
 
 type IViews<IModel extends AnyModel> = RedoxStore<IModel>['$views']
 type IActions<IModel extends AnyModel> = RedoxStore<IModel>['$actions']

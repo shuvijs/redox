@@ -229,15 +229,11 @@ export interface Model<
 	views?: V &
 		ThisType<
 			S &
-				ViewsObj<V> & {
+				RedoxViews<V> & {
 					$dep: StateOfStoreCollection<MC> & ViewOfStoreCollection<MC>
 				}
 		>
 	_depends?: Depends
-}
-
-type ViewsObj<V> = {
-	[K in keyof V]: V[K] extends (...args: any) => infer RT ? RT : never
 }
 
 export type AnyModel = Model<any, any, any, any, any, any>

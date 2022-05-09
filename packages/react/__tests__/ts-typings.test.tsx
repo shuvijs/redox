@@ -44,11 +44,11 @@ const count = defineModel({
 		},
 	},
 	views: {
-		viewNumber(state, _dependsState, args: number): number {
-			return state.value + args
+		viewNumber(args: number) {
+			return this.value + args
 		},
-		viewString(state, _dependsState, args?: customType) {
-			return state.s + args || ''
+		viewString(args?: customType) {
+			return this.s + args || ''
 		},
 	},
 })
