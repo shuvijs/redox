@@ -2,7 +2,6 @@ import type { RedoxStore } from '../redoxStore'
 import { createSelector } from './createSelector'
 import { RedoxViews, AnyModel } from '../types'
 import validate, { isObject } from '../validate'
-import { getDependsState } from '../utils'
 
 const objectToString = Object.prototype.toString
 
@@ -10,6 +9,18 @@ function isComplexObject(obj: any): boolean {
 	return objectToString.call(obj) === '[object Object]' || Array.isArray(obj)
 }
 
+/**
+ * ICompare is tree structure, view is store view arguments and result
+ *
+ * tree structure
+ * 1. first element is tree root
+ * 2. map key is tree node
+ * 3. map value is object {children: {xx:xx}}, xx is point other tree node(map key)
+ *
+ * view tree structure
+ * 1. map key is view function
+ * 2. map value is Map<arguments, result>
+ */
 interface ICompare {
 	tree: Map<
 		Record<string, any>,
@@ -17,48 +28,23 @@ interface ICompare {
 			children: Record<string, any>
 		}
 	>
+	view: Map<Function, Map<any[], any>>
 }
 
-interface IViewsCompare {
-	new: Map<string, any>
-	isCollectionKeys: boolean
-	stateCompare: ICompare
-	rootStateCompare: ICompare
-}
+const isProxy = Symbol('__isProxy')
+const getTarget = Symbol('__target')
 
 let isCollectionKeys = false
-
-const getProxyHandler = (viewsCompare: IViewsCompare) => {
-	const handler = {
-		get: function (
-			target: Record<string, (...args: any[]) => any>,
-			prop: string
-		) {
-			let result = target[prop]
-			if (typeof result === 'function') {
-				result = result()
-			}
-			if (viewsCompare.isCollectionKeys) {
-				if (!viewsCompare.new.has(prop)) {
-					viewsCompare.new.set(prop, result)
-				}
-				// if child views fn call, go on collects current scope used keys
-				isCollectionKeys = true
-				compareStatePos = viewsCompare.stateCompare
-				compareRootStatePos = viewsCompare.rootStateCompare
-			}
-			return result
-		},
-	}
-	return handler
-}
 
 function createProxyObjFactory() {
 	const proxyObjMap = new WeakMap<Record<string, any>, typeof Proxy>()
 	return function createProxyObj(
-		target: Record<string, any>,
+		target: Record<string | symbol, any>,
 		collection: typeof getStateCollection
 	) {
+		if (target[isProxy]) {
+			return target
+		}
 		if (proxyObjMap.has(target)) {
 			return proxyObjMap.get(target)
 		}
@@ -69,18 +55,28 @@ function createProxyObjFactory() {
 }
 
 const stateCreateProxyObj = createProxyObjFactory()
-const rootStateCreateProxyObj = createProxyObjFactory()
 
 let compareStatePos: ICompare
+
+function getRawValue(target: any) {
+	return isComplexObject(target)
+		? target[isProxy]
+			? target[getTarget]
+			: target
+		: target
+}
+
 const getStateCollection = () => {
 	return {
-		get(target: any, p: string): any {
+		get(target: any, p: string | symbol): any {
+			if (p === isProxy) return true
+			if (p === getTarget) return target
 			let result = target[p]
 			if (isCollectionKeys) {
 				const compareTree = compareStatePos.tree
-				if (compareTree.has(target)) {
-					const treeNode = compareTree.get(target)
-					treeNode && (treeNode!.children[p] = result)
+				const treeNode = compareTree.get(target)
+				if (treeNode) {
+					treeNode.children[p as string] = result
 				} else {
 					compareTree.set(target, {
 						children: {
@@ -88,174 +84,150 @@ const getStateCollection = () => {
 						},
 					})
 				}
-			}
-			if (isComplexObject(result)) {
-				result = stateCreateProxyObj(result, getStateCollection)
-			}
-			return result
-		},
-	}
-}
-
-let compareRootStatePos: ICompare
-const getRootStateCollection = () => {
-	return {
-		get(target: any, p: string): any {
-			let result = target[p]
-			if (isCollectionKeys) {
-				const compareTree = compareRootStatePos.tree
-				if (compareTree.has(target)) {
-					const treeNode = compareTree.get(target)
-					treeNode && (treeNode!.children[p] = result)
-				} else {
-					compareTree.set(target, {
-						children: {
-							[p]: result,
-						},
-					})
+				if (isComplexObject(result)) {
+					result = stateCreateProxyObj(result, getStateCollection)
+				}
+				// OwnProperty function should be a view
+				if (typeof result === 'function' && target.hasOwnProperty(p)) {
+					const view = result
+					const previousPos = compareStatePos
+					result = function (...args: any[]) {
+						// call view fn
+						let res = view(...args)
+						// if child views fn call, go on collects current scope used keys
+						isCollectionKeys = true
+						compareStatePos = previousPos
+						const compareView = compareStatePos.view
+						const viewNode = compareView.get(view)
+						if (!viewNode) {
+							compareView.set(view, new Map([[args, res]]))
+						} else {
+							viewNode.set(args, res)
+						}
+						return res
+					}
 				}
 			}
-			if (isComplexObject(result)) {
-				result = rootStateCreateProxyObj(result, getRootStateCollection)
-			}
 			return result
 		},
 	}
 }
 
-function createProxyViews(
-	proxyObj: Record<string, (args: any) => any>,
-	viewsCompare: IViewsCompare
-) {
-	return new Proxy<any>(proxyObj, getProxyHandler(viewsCompare))
-}
-
-function compareObject(obj: any, compareObj: any, tree: ICompare['tree']) {
-	if (!isComplexObject(obj)) {
-		return obj === compareObj
-	} else if (obj === compareObj) {
+/**
+ *
+ * @param prevObj
+ * @param compareObj
+ * @param tree
+ * @returns true: need computed, false: don't need computed, and use cached value
+ */
+function compareObject(prevObj: any, nextObj: any, compare: ICompare) {
+	if (!isComplexObject(prevObj)) {
+		// sample value like string number just call ===
+		return prevObj === nextObj
+	} else if (prevObj === nextObj) {
+		// view compare, call function with arguments and compare result
+		if (typeof prevObj === 'function') {
+			const viewMap = compare.view.get(prevObj)
+			if (viewMap) {
+				for (const [viewArg, viewRes] of viewMap.entries()) {
+					if (prevObj(...viewArg) !== viewRes) {
+						return false
+					}
+				}
+			}
+		}
 		// Object address has not changed, children are same
 		return true
 	}
-	if (!tree.has(obj)) {
-		return true
+	const treeNode = compare.tree.get(prevObj)
+	if (!treeNode) {
+		// not visit prevObj any key, just compare with ===
+		return prevObj === nextObj
 	}
-	const treeNode = tree.get(obj)
-	const children = treeNode!.children
-	const keys = Object.keys(children)
+	const child = treeNode!.children
+	const keys = Object.keys(child)
 	for (let i = 0; i < keys.length; i++) {
 		const key = keys[i]
-		const childrenObj = children[key]
-		if (!compareObject(childrenObj, compareObj[key], tree)) {
+		const childObj = child[key]
+		if (!compareObject(childObj, nextObj[key], compare)) {
 			return false
 		}
 	}
 	return true
 }
 
-// return false => need recomputed, true => use last cache
+/**
+ * compare is arguments changed
+ * @param next current arguments
+ * @param compare previous arguments, store as a tree, and collect what keys been used
+ * @returns false => need recomputed, true => use cache value
+ */
 function compareArguments(next: any, compare: ICompare) {
 	const tree = compare.tree
-	const root = Array.from(tree.keys())[0] // app get root object first so tree root is the Map first
+	const root = Array.from(tree.keys())[0] // the Map first is tree root
 	if (!root) {
 		// use nothings
 		return true
 	}
-	return compareObject(root, next, tree)
+	return compareObject(root, next, compare)
 }
 
 function cacheFactory(
-	fn: (...args: any[]) => any,
-	proxyObj: Record<string, (args: any) => any>
+	fn: (...args: any[]) => any
 	// _modelName: string, // just for debugging
 	// _viewsKey: any // just for debugging
 ) {
-	const stateCompare = {
+	const thisCompare: ICompare = {
 		tree: new Map(),
+		view: new Map(),
 	}
-
-	const rootStateCompare = {
-		tree: new Map(),
-	}
-
-	const viewsCompare = {
-		new: new Map<string, any>(),
-		viewsProxy: {},
-		isCollectionKeys: false,
-		stateCompare,
-		rootStateCompare,
-		// name: `${_modelName}-${_viewsKey}`
-	}
-
-	viewsCompare.viewsProxy = createProxyViews(proxyObj, viewsCompare)
 
 	return createSelector(
-		(state, rootState, otherArgs) => {
+		(thisPoint, otherArgs) => {
 			// reset compare
-			stateCompare.tree.clear()
-			rootStateCompare.tree.clear()
-			viewsCompare.new.clear()
+			thisCompare.tree.clear()
+			for (const view of thisCompare.view.values()) {
+				view.clear()
+			}
+			thisCompare.view.clear()
 
-			compareStatePos = stateCompare
-			const tempState = stateCreateProxyObj(state, getStateCollection)
-
-			compareRootStatePos = rootStateCompare
-			const tempRootStateProxy = rootStateCreateProxyObj(
-				rootState,
-				getRootStateCollection
-			)
+			compareStatePos = thisCompare
+			const thisPointProxy = stateCreateProxyObj(thisPoint, getStateCollection)
 
 			let tempOtherArgs = otherArgs
 
-			const tempViewsProxy = viewsCompare.viewsProxy
-
 			isCollectionKeys = true // just keep collection keys when fn call
-			viewsCompare.isCollectionKeys = true
-			const res = fn.call(
-				tempViewsProxy,
-				tempState,
-				tempRootStateProxy,
-				tempOtherArgs
-			)
+
+			let res = fn.apply(thisPointProxy, tempOtherArgs)
 			isCollectionKeys = false
-			viewsCompare.isCollectionKeys = false
 			// console.log(
-			//   'modelName=>',
-			//   _modelName,
-			// 	_viewsKey,
-			//   stateCompare,
-			//   rootStateCompare,
-			//   viewsCompare
-			// );
+			// 	'modelName=>',
+			// 	// _modelName,
+			// 	// _viewsKey,
+			// 	thisCompare
+			// )
+			res = getRawValue(res)
 			return res
 		},
 		{
+			// false => need recomputed, true => use cache value
 			equalityCheck: (prev: any, next: any, argsIndex: number) => {
-				let res = true
 				if (argsIndex === 0) {
 					// stateCompare
-					res = compareArguments(next, stateCompare)
+					return compareArguments(next, thisCompare)
 				} else if (argsIndex === 1) {
-					// rootStateCompare
-					res = compareArguments(next, rootStateCompare)
-				} else if (argsIndex === 2) {
 					// otherArgsCompare
-					if (prev !== next) {
-						res = false
+					if (prev.length !== next.length) {
+						return false
 					}
-					if (res) {
-						// viewsCompare
-						const proxyKeysMap = viewsCompare.new
-						const viewsProxy = viewsCompare.viewsProxy as Record<string, any>
-						for (const [key, value] of proxyKeysMap.entries()) {
-							if (value !== viewsProxy[key]) {
-								res = false
-								break
-							}
+					const len = prev.length
+					for (let i = 0; i < len; i++) {
+						if (prev[i] !== next[i]) {
+							return false
 						}
 					}
 				}
-				return res
+				return true
 			},
 		}
 	)
@@ -275,19 +247,42 @@ export const createViews = <IModel extends AnyModel>(
 				],
 			])
 		}
-		const proxyObj = {} as RedoxViews<IModel>
+		const proxyObj = {} as RedoxViews<IModel['views']>
 		;(Object.keys(views) as Array<keyof IModel['views']>).forEach(
 			(viewsKey) => {
-				const cacheFun = cacheFactory(views[viewsKey], proxyObj)
+				const cacheFun = cacheFactory(
+					views[viewsKey]
+					// model.name || '',
+					// viewsKey
+				)
 				// @ts-ignore
-				proxyObj[viewsKey] = function (args?: any) {
+				proxyObj[viewsKey] = function (...args: any[]) {
 					const state = redoxStore.$state()
-					// generate dependsState by dependencies
-					const dependsState = getDependsState(
-						model._depends,
-						redoxStore._cache
+					const view = redoxStore.$views
+					const selfStateAndView = Object.assign(
+						Object.create(null),
+						state,
+						view
 					)
-					return cacheFun(state, dependsState, args)
+					// generate dependsState by dependencies
+					let dependsStateAndView = {} as Record<string, any>
+					const depends = model._depends
+					if (depends) {
+						depends.forEach((depend) => {
+							const tempDependStateAndView = {}
+							const dependRedoxStore = redoxStore._cache._getRedox(depend)
+							dependsStateAndView[depend.name] = Object.assign(
+								tempDependStateAndView,
+								dependRedoxStore.$state(),
+								dependRedoxStore.$views
+							)
+						})
+					}
+					const thisPoint = {
+						...selfStateAndView,
+						$dep: dependsStateAndView,
+					}
+					return cacheFun(thisPoint, args)
 				}
 			}
 		)

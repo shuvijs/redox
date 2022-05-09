@@ -47,7 +47,7 @@ describe('effects worked:', () => {
 				},
 			},
 			effects: {
-				setString(arg0, arg1: string) {
+				setString(arg0: any, arg1: string) {
 					this.set(JSON.stringify(arg0) + JSON.stringify(arg1))
 				},
 			},
@@ -64,7 +64,7 @@ describe('effects worked:', () => {
 				},
 			},
 			effects: {
-				setString(arg0, arg1: string, arg2: { three: string }) {
+				setString(arg0: any, arg1: string, arg2: { three: string }) {
 					this.set(
 						JSON.stringify(arg0) + JSON.stringify(arg1) + JSON.stringify(arg2)
 					)
@@ -84,7 +84,7 @@ describe('effects worked:', () => {
 			},
 			effects: {
 				setString(
-					arg0,
+					arg0: any,
 					arg1: string,
 					arg2: { three: string },
 					arg3?: { four: string }
@@ -360,8 +360,8 @@ describe('effects worked:', () => {
 				},
 			},
 			views: {
-				valueAddOne(state, _dependState, args: number = 0) {
-					return state.value + 1 + args
+				valueAddOne(args: number = 0) {
+					return this.value + 1 + args
 				},
 			},
 		})
@@ -384,8 +384,8 @@ describe('effects worked:', () => {
 				},
 			},
 			views: {
-				valueAddOne(state, _dependState, args: number = 0) {
-					return state.value + 1 + args
+				valueAddOne(args: number = 0) {
+					return this.value + 1 + args
 				},
 			},
 		})
@@ -511,8 +511,8 @@ describe('effects worked:', () => {
 					}),
 				},
 				views: {
-					double(state) {
-						return state.value * 2
+					double() {
+						return this.value * 2
 					},
 				},
 			})
@@ -548,8 +548,8 @@ describe('effects worked:', () => {
 					}),
 				},
 				views: {
-					double(state) {
-						return state.value * 2
+					double() {
+						return this.value * 2
 					},
 				},
 			})
@@ -602,8 +602,8 @@ describe('effects worked:', () => {
 					}),
 				},
 				views: {
-					double(state) {
-						return state.value * 2
+					double() {
+						return this.value * 2
 					},
 				},
 			})

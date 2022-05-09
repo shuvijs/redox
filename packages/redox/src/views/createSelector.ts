@@ -6,22 +6,25 @@ type EqualityFn = (a: any, b: any, i: number) => boolean
 /** Any function with arguments */
 type UnknownFunction = (...args: any[]) => unknown
 
-type resultF<
-	State extends Record<string, any> = {},
-	RootState extends Record<string, any> = {},
-	OtherArgs = any
-> = (param1: State, param2: RootState, param3: OtherArgs) => any
+type IThisPoint = {
+	[K: string]: any
+	$dep: Record<string, any>
+}
+
+type resultF<thisPoint extends IThisPoint = { $dep: {} }, OtherArgs = any[]> = (
+	param1: thisPoint,
+	param3: OtherArgs
+) => any
 
 function createSelectorCreator<
 	/** A memoizer such as defaultMemoize that accepts a function + some possible options */
 	MemoizeFunction extends typeof defaultMemoize
 >(memoize: MemoizeFunction) {
 	const createSelector = <
-		State extends Record<string, any> = {},
-		RootState extends Record<string, any> = {},
-		OtherArgs = any
+		thisPoint extends IThisPoint = { $dep: {} },
+		OtherArgs = any[]
 	>(
-		resultFunc: resultF<State, RootState, OtherArgs>,
+		resultFunc: resultF<thisPoint, OtherArgs>,
 		memoizeOption: { equalityCheck: EqualityFn }
 	) => {
 		if (process.env.NODE_ENV === 'development') {
@@ -40,15 +43,10 @@ function createSelectorCreator<
 		const { equalityCheck } = memoizeOption
 
 		// If a selector is called with the exact same arguments we don't need to traverse our dependencies again.
-		const selector = memoize(function (
-			state: State,
-			rootState: RootState,
-			args: OtherArgs
-		) {
+		const selector = memoize(function (thisPoint: thisPoint, args: OtherArgs) {
 			// apply arguments instead of spreading for performance.
-			return resultFunc.call(null, state, rootState, args)
-		},
-		equalityCheck)
+			return resultFunc.call(null, thisPoint, args)
+		}, equalityCheck)
 
 		return selector
 	}

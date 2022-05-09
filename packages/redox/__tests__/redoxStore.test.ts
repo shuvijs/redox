@@ -148,14 +148,18 @@ describe('redox worked:', () => {
 		const otherCount = defineModel(
 			{
 				name: 'other|count',
-				state: [] as string[],
+				state: {
+					value: [] as string[],
+				},
 				reducers: {
 					add: (state, step: string) => {
-						return [...state, step]
+						return {
+							value: [...state.value, step],
+						}
 					},
 				},
 				effects: {
-					useCount(_payload) {
+					useCount(_payload: any) {
 						const countState = this.$dep.count.$state()
 						this.add(countState.value.toString())
 					},
@@ -190,24 +194,26 @@ describe('redox worked:', () => {
 					},
 				},
 				views: {
-					d(state, dependsState): { number: number } {
-						console.log(state.id)
-						const a = dependsState.other
-						console.log(dependsState.dome.number)
+					d(): { number: number } {
+						console.log(this.id)
+						const a = this.$dep.other
+						console.log(this.$dep.dome.number)
 						console.log(a.other[0])
 						console.log('d computed')
-						return dependsState.dome
+						return this.$dep.dome
 					},
-					one(_state, dependsState): number {
-						return dependsState.dome.number
+					one(): number {
+						return this.$dep.dome.number
 					},
-					s(state, _dependsState, args): string {
+					s(args: any): string {
 						// console.log('views', state, rootState, views, args);
 						// console.log('this', this)
 						// console.log('this', views.one)
 						// return state.id * args;
 						console.log('double computed')
-						return `state.id=>${state.id}, args=>${args},views.one=>${this.one}`
+						return `state.id=>${
+							this.id
+						}, args=>${args},views.one=>${this.one()}`
 					},
 				},
 			},
@@ -253,7 +259,7 @@ describe('redox worked:', () => {
 		const otherCountStore = manager.get(otherCount)
 		otherCountStore.useCount(undefined)
 
-		expect(otherCountStore.$state()).toEqual(['1'])
+		expect(otherCountStore.$state()).toEqual({ value: ['1'] })
 
 		expect(() => {
 			manager.destroy()

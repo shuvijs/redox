@@ -257,9 +257,9 @@ describe('useRootModel worked:', () => {
 				},
 			},
 			views: {
-				test(state, _dependsState) {
+				test() {
 					viewComputedTime++
-					return state.value1
+					return this.value1
 				},
 			},
 		})
@@ -354,8 +354,8 @@ describe('useRootModel worked:', () => {
 					},
 				},
 				views: {
-					test(_state, dependsState) {
-						return dependsState.countModel.value * 2
+					test() {
+						return this.$dep.countModel.value * 2
 					},
 				},
 			},
