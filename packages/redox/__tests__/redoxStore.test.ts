@@ -211,7 +211,9 @@ describe('redox worked:', () => {
 						// console.log('this', views.one)
 						// return state.id * args;
 						console.log('double computed')
-						return `state.id=>${this.id}, args=>${args},views.one=>${this.one}`
+						return `state.id=>${
+							this.id
+						}, args=>${args},views.one=>${this.one()}`
 					},
 				},
 			},

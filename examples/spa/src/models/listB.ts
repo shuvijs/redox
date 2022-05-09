@@ -42,10 +42,8 @@ export const listB = defineModel(
 			},
 		},
 		views: {
-			current(state, dependState) {
-				const current = state.arr.filter(
-					(item) => item.id === dependState.id.id
-				)
+			current() {
+				const current = this.arr.filter((item) => item.id === this.$dep.id.id)
 				return current.length ? current[0].item : ''
 			},
 		},

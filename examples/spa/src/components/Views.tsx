@@ -44,13 +44,13 @@ const user = defineModel(
 			},
 		},
 		views: {
-			viewValue1(state) {
+			viewValue1() {
 				console.log('viewValue1 computed')
-				return state.value1
+				return this.value1
 			},
-			viewDome(_state, dependsState) {
+			viewDome() {
 				console.log('viewDome computed')
-				return dependsState.domeDep.dome
+				return this.$dep.domeDep.dome
 			},
 		},
 	},

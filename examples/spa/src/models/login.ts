@@ -20,8 +20,8 @@ export const currentUser = defineModel(
 			},
 		},
 		views: {
-			userInfo(state, dependsState) {
-				return dependsState.login.isLogin ? state.user : 'need login'
+			userInfo() {
+				return this.$dep.login.isLogin ? this.user : 'need login'
 			},
 		},
 	},
