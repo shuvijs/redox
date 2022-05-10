@@ -222,7 +222,11 @@ export interface Model<
 	reducers: R
 	effects?: E &
 		ThisType<
-			{ $state: () => S } & RedoxViews<V> & {
+			{
+				$state: () => S
+				$set: (s: S) => void
+				$modify: (modifier: (s: S) => void) => void
+			} & RedoxViews<V> & {
 					$dep: MiniStoreOfStoreCollection<MC>
 				} & DispatchOfModelByProps<S, R, E>
 		>
@@ -245,6 +249,8 @@ export type Depends = AnyModel[]
 
 export type Store<IModel extends AnyModel> = {
 	$state: () => IModel['state']
+	$set: (state: IModel['state']) => void
+	$modify: (modifier: (state: IModel['state']) => void) => void
 } & RedoxViews<IModel['views']> &
 	DispatchOfModel<IModel>
 
