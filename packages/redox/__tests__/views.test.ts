@@ -117,6 +117,49 @@ describe('views worked:', () => {
 			expect(sampleComputeTimes).toBe(1)
 		})
 
+		test('return sample value with call property breaks should not collect duplicate keys', () => {
+			let sampleComputeTimes = 0
+			const sample = defineModel({
+				name: 'sample',
+				state: {
+					value: 0,
+					value1: {
+						a: {
+							b: 'b',
+						},
+					},
+				},
+				reducers: {
+					change(state) {
+						return {
+							...state,
+							value: 1,
+						}
+					},
+				},
+				views: {
+					sampleView() {
+						const value1 = this.value1
+						sampleComputeTimes++
+						const a = value1.a
+						this.value1.a.b
+						return a.b
+					},
+				},
+			})
+			const store = manager.get(sample)
+
+			let viewsValue
+
+			expect(sampleComputeTimes).toBe(0)
+
+			viewsValue = store.sampleView()
+			expect(sampleComputeTimes).toBe(1)
+			store.change()
+			expect(store.sampleView() === viewsValue).toBeTruthy
+			expect(sampleComputeTimes).toBe(1)
+		})
+
 		test('return obj value', () => {
 			let objComputeTimes = 0
 			const obj = defineModel({
@@ -158,6 +201,47 @@ describe('views worked:', () => {
 		})
 
 		test('return obj value with call property breaks', () => {
+			let objComputeTimes = 0
+			const obj = defineModel({
+				name: 'obj',
+				state: {
+					value: 0,
+					value1: {
+						a: {
+							b: 'b',
+						},
+					},
+				},
+				reducers: {
+					change(state) {
+						return {
+							...state,
+							value: 1,
+						}
+					},
+				},
+				views: {
+					objView() {
+						const value1 = this.value1
+						objComputeTimes++
+						return value1.a
+					},
+				},
+			})
+			const store = manager.get(obj)
+
+			let viewsValue
+
+			expect(objComputeTimes).toBe(0)
+
+			viewsValue = store.objView()
+			expect(objComputeTimes).toBe(1)
+			store.change()
+			expect(store.objView() === viewsValue).toBeTruthy
+			expect(objComputeTimes).toBe(1)
+		})
+
+		test('return obj value with call property breaks should not collect duplicate keys', () => {
 			let objComputeTimes = 0
 			const obj = defineModel({
 				name: 'obj',
@@ -267,11 +351,57 @@ describe('views worked:', () => {
 					selfView() {
 						const value1 = this.value1
 						selfViewComputeTimes++
+						return value1.a
+					},
+					objView() {
+						const selfView = this.selfView()
+						return selfView.b
+					},
+				},
+			})
+			const store = manager.get(selfView)
+
+			let viewsValue
+
+			expect(selfViewComputeTimes).toBe(0)
+
+			viewsValue = store.objView()
+			expect(selfViewComputeTimes).toBe(1)
+			store.change()
+			expect(store.objView() === viewsValue).toBeTruthy
+			expect(selfViewComputeTimes).toBe(1)
+		})
+
+		test('call self view with call property breaks should not collect duplicate keys', () => {
+			let selfViewComputeTimes = 0
+			const selfView = defineModel({
+				name: 'selfView',
+				state: {
+					value: 0,
+					value1: {
+						a: {
+							b: 'b',
+						},
+					},
+				},
+				reducers: {
+					change(state) {
+						return {
+							...state,
+							value: 1,
+						}
+					},
+				},
+				views: {
+					selfView() {
+						const value1 = this.value1
+						selfViewComputeTimes++
 						this.value1.a
 						return value1.a
 					},
 					objView() {
 						const selfView = this.selfView()
+						selfView.b
 						return selfView.b
 					},
 				},
@@ -424,13 +554,13 @@ describe('views worked:', () => {
 				},
 				reducers: {},
 				views: {
-					selfView(n: number = 0) {
+					selfView(n: number) {
 						viewComputeTimes++
 						return this.value + n
 					},
 					call() {
-						this.selfView()
-						return this.selfView(0)
+						this.selfView(1)
+						return this.selfView(2)
 					},
 				},
 			})
@@ -438,7 +568,7 @@ describe('views worked:', () => {
 
 			expect(viewComputeTimes).toBe(0)
 
-			expect(store.call()).toBe(1)
+			expect(store.call()).toBe(3)
 			expect(viewComputeTimes).toBe(2)
 		})
 	})
