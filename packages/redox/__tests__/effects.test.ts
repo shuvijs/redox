@@ -171,6 +171,53 @@ describe('effects worked:', () => {
 		expect(state).toEqual([2, 4])
 	})
 
+	test('this.$state returns newest state after this.$set invoked', () => {
+		let valueFromStore: number = 0
+		const count = defineModel({
+			name: 'count',
+			state: { value: 0 },
+			reducers: {},
+			effects: {
+				makeCall(newState: { value: number }): void {
+					this.$set(newState)
+					valueFromStore = this.$state().value
+				},
+			},
+		})
+
+		const store = manager.get(count)
+
+		const state = {
+			value: 2,
+		}
+		store.makeCall(state)
+		expect(state.value).toEqual(valueFromStore)
+	})
+
+	test('this.$state returns newest state after this.$modify invoked', () => {
+		let valueFromStore: number = 0
+		const count = defineModel({
+			name: 'count',
+			state: { value: 0 },
+			reducers: {},
+			effects: {
+				makeCall(modifier: (state: { value: number }) => void): void {
+					this.$modify(modifier)
+					valueFromStore = this.$state().value
+				},
+			},
+		})
+
+		const store = manager.get(count)
+
+		const newValue: number = 2
+		const modifier = (state: any) => {
+			state.value += newValue
+		}
+		store.makeCall(modifier)
+		expect(newValue).toEqual(valueFromStore)
+	})
+
 	test('this should contain $dep', async () => {
 		let dep: any
 
@@ -397,7 +444,7 @@ describe('effects worked:', () => {
 		expect(result).toBe(2)
 	})
 
-	describe('$dep has full function of reducer effect views $state():', () => {
+	describe('$dep has full function of reducer effect views $state() $set $modify:', () => {
 		test("$dep's $state should worked", async () => {
 			const depModel = defineModel({
 				name: 'depModel',
@@ -429,6 +476,71 @@ describe('effects worked:', () => {
 
 			store.makeCall()
 		})
+
+		test("$dep's $set should worked", async () => {
+			const depModel = defineModel({
+				name: 'depModel',
+				state: { value: 0 },
+				reducers: {},
+			})
+
+			const count = defineModel(
+				{
+					name: 'count',
+					state: { count: 0 },
+					reducers: {},
+					effects: {
+						makeCall() {
+							const newState = { value: 1 }
+							this.$dep.depModel.$set(newState)
+							expect(this.$dep.depModel.$state()).toEqual(newState)
+							const newState2 = { value: 2 }
+							this.$dep.depModel.$set(newState2)
+							expect(this.$dep.depModel.$state()).toEqual(newState2)
+						},
+					},
+				},
+				[depModel]
+			)
+
+			const store = manager.get(count)
+
+			store.makeCall()
+		})
+
+		test("$dep's $modify should worked", async () => {
+			const depModel = defineModel({
+				name: 'depModel',
+				state: { value: 0 },
+				reducers: {},
+			})
+
+			const count = defineModel(
+				{
+					name: 'count',
+					state: { count: 0 },
+					reducers: {},
+					effects: {
+						makeCall() {
+							this.$dep.depModel.$modify((state) => {
+								state.value += 1
+							})
+							expect(this.$dep.depModel.$state()).toEqual({ value: 1 })
+							this.$dep.depModel.$modify((state) => {
+								state.value -= 10
+							})
+							expect(this.$dep.depModel.$state()).toEqual({ value: -9 })
+						},
+					},
+				},
+				[depModel]
+			)
+
+			const store = manager.get(count)
+
+			store.makeCall()
+		})
+
 		test("$dep's reducer should worked", async () => {
 			const depModel = defineModel({
 				name: 'depModel',
@@ -582,6 +694,12 @@ describe('effects worked:', () => {
 							expect(this.$dep.depModel0.$state()).toEqual({ value: 0 })
 							await this.$dep.depModel0.addAsync()
 							expect(this.$dep.depModel0.$state()).toEqual({ value: 1 })
+							this.$dep.depModel0.$set({ value: 10 })
+							expect(this.$dep.depModel0.$state()).toEqual({ value: 10 })
+							this.$dep.depModel0.$modify((state) => {
+								state.value -= 10
+							})
+							expect(this.$dep.depModel0.$state()).toEqual({ value: 0 })
 						},
 					},
 				},
@@ -592,6 +710,7 @@ describe('effects worked:', () => {
 
 			store.makeCall()
 		})
+
 		test('depends order is not important', async () => {
 			const depModel = defineModel({
 				name: 'depModel',

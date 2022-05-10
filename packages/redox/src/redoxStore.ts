@@ -25,6 +25,8 @@ const randomString = () =>
 
 const ActionTypes = {
 	INIT: `@@redux/INIT${/* #__PURE__ */ randomString()}`,
+	SET: `@@redux/SET${/* #__PURE__ */ randomString()}`,
+	MODIFY: `@@redux/MODIFY${/* #__PURE__ */ randomString()}`,
 }
 
 type unSubscribe = () => void
@@ -114,6 +116,7 @@ export class RedoxStore<IModel extends AnyModel> {
 		this._cache = cache
 		this.model = model
 		this.storeDepends = {}
+		expandReducer(model)
 		const reducer = createModelReducer(model)
 		this.currentReducer = reducer
 		this.currentState =
@@ -139,6 +142,24 @@ export class RedoxStore<IModel extends AnyModel> {
 
 	$state = () => {
 		return this.currentState!
+	}
+
+	$set = (newState: State) => {
+		this.dispatch({
+			type: ActionTypes.SET,
+			payload: {
+				newState,
+			},
+		})
+	}
+
+	$modify = (modifier: (state: State) => void) => {
+		this.dispatch({
+			type: ActionTypes.MODIFY,
+			payload: {
+				modifier,
+			},
+		})
 	}
 
 	subscribe = (listener: () => void) => {
@@ -238,6 +259,8 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 ): Store<M> {
 	const store = {} as Store<M>
 	store.$state = redoxStore.$state
+	store.$set = redoxStore.$set
+	store.$modify = redoxStore.$modify
 	Object.assign(store, redoxStore.$actions, redoxStore.$views)
 	return store
 }
@@ -248,6 +271,29 @@ function enhanceModel<IModel extends AnyModel>(
 	createReducers(redoxStore)
 	if (redoxStore.model.effects) createEffects(redoxStore)
 	if (redoxStore.model.views) createViews(redoxStore)
+}
+
+function expandReducer<
+	N extends string,
+	S extends State,
+	MC extends ModelCollection,
+	R extends Reducers<S>,
+	E extends Effects,
+	V extends Views
+>(model: Model<N, S, MC, R, E, V>) {
+	model.reducers = {
+		...model.reducers,
+		[ActionTypes.SET]: function (_, payload: { newState: S }) {
+			return payload.newState
+		},
+		[ActionTypes.MODIFY]: function (
+			state: S,
+			payload: { modifier: (s: S) => {} }
+		) {
+			payload.modifier(state)
+			return state
+		},
+	}
 }
 
 setAutoFreeze(false)
