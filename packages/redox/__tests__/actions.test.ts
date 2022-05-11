@@ -4,13 +4,13 @@ beforeEach(() => {
 	manager = redox()
 })
 
-describe('effects worked:', () => {
+describe('actions worked:', () => {
 	test('should create an action', () => {
 		const count = defineModel({
 			name: 'count',
 			state: { value: 0 },
 			reducers: {},
-			effects: {
+			actions: {
 				add(): number {
 					return 1
 				},
@@ -29,7 +29,7 @@ describe('effects worked:', () => {
 			name: 'one',
 			state: { value: 0 },
 			reducers: {},
-			effects: {
+			actions: {
 				add(payload: number): number {
 					return this.$state().value + payload
 				},
@@ -46,7 +46,7 @@ describe('effects worked:', () => {
 					}
 				},
 			},
-			effects: {
+			actions: {
 				setString(arg0: any, arg1: string) {
 					this.set(JSON.stringify(arg0) + JSON.stringify(arg1))
 				},
@@ -63,7 +63,7 @@ describe('effects worked:', () => {
 					}
 				},
 			},
-			effects: {
+			actions: {
 				setString(arg0: any, arg1: string, arg2: { three: string }) {
 					this.set(
 						JSON.stringify(arg0) + JSON.stringify(arg1) + JSON.stringify(arg2)
@@ -82,7 +82,7 @@ describe('effects worked:', () => {
 					}
 				},
 			},
-			effects: {
+			actions: {
 				setString(
 					arg0: any,
 					arg1: string,
@@ -132,7 +132,7 @@ describe('effects worked:', () => {
 			reducers: {
 				add: (s, p: number) => ({ value: s.value + p }),
 			},
-			effects: {
+			actions: {
 				makeCall(_: number): void {
 					secondParam = this.$state().value
 				},
@@ -154,7 +154,7 @@ describe('effects worked:', () => {
 			reducers: {
 				add: (s, p: number) => ({ value: s.value + p }),
 			},
-			effects: {
+			actions: {
 				makeCall(_: number): void {
 					this.add(_)
 					state.push(this.$state().value)
@@ -177,7 +177,7 @@ describe('effects worked:', () => {
 			name: 'count',
 			state: { value: 0 },
 			reducers: {},
-			effects: {
+			actions: {
 				makeCall(newState: { value: number }): void {
 					this.$set(newState)
 					valueFromStore = this.$state().value
@@ -200,7 +200,7 @@ describe('effects worked:', () => {
 			name: 'count',
 			state: { value: 0 },
 			reducers: {},
-			effects: {
+			actions: {
 				makeCall(modifier: (state: { value: number }) => void): void {
 					this.$modify(modifier)
 					valueFromStore = this.$state().value
@@ -229,7 +229,7 @@ describe('effects worked:', () => {
 					count: s.count + p,
 				}),
 			},
-			effects: {
+			actions: {
 				makeCall0(_: number): void {},
 			},
 		})
@@ -241,7 +241,7 @@ describe('effects worked:', () => {
 				reducers: {
 					add: (s, p: number) => ({ value: s.value + p }),
 				},
-				effects: {
+				actions: {
 					makeCall(_: void): void {
 						dep = this.$dep
 						this.$dep.count.add(1)
@@ -258,14 +258,14 @@ describe('effects worked:', () => {
 		expect(typeof dep.count.makeCall0).toBe('function')
 	})
 
-	test('should create an effect dynamically', () => {
+	test('should create an action dynamically', () => {
 		const example = defineModel({
 			name: 'example',
 			state: { value: 0 },
 			reducers: {
 				addOne: () => ({ value: 1 }),
 			},
-			effects: {
+			actions: {
 				add(): void {
 					this.addOne()
 				},
@@ -285,7 +285,7 @@ describe('effects worked:', () => {
 			reducers: {
 				addOne: (s) => ({ value: s.value + 1 }),
 			},
-			effects: {
+			actions: {
 				async asyncAddOne(): Promise<void> {
 					await this.addOne()
 				},
@@ -306,7 +306,7 @@ describe('effects worked:', () => {
 			reducers: {
 				addBy: (state, payload: number) => ({ value: state.value + payload }),
 			},
-			effects: {
+			actions: {
 				async asyncAddBy(value: number): Promise<void> {
 					await this.addBy(value)
 				},
@@ -329,7 +329,7 @@ describe('effects worked:', () => {
 					value: state.value + payload.value,
 				}),
 			},
-			effects: {
+			actions: {
 				async asyncAddBy(payload: { value: number }): Promise<void> {
 					await this.addBy(payload)
 				},
@@ -343,14 +343,14 @@ describe('effects worked:', () => {
 		expect(store.$state()).toStrictEqual({ value: 9 })
 	})
 
-	test('should be able to trigger local effect by `this`', async () => {
+	test('should be able to trigger local action by `this`', async () => {
 		const example = defineModel({
 			name: 'example',
 			state: { value: 0 },
 			reducers: {
 				addOne: (state) => ({ value: state.value + 1 }),
 			},
-			effects: {
+			actions: {
 				async asyncAddOne(): Promise<void> {
 					await this.addOne()
 				},
@@ -374,7 +374,7 @@ describe('effects worked:', () => {
 			reducers: {
 				addBy: (state, payload: number) => ({ value: state.value + payload }),
 			},
-			effects: {
+			actions: {
 				async asyncAddOne(): Promise<void> {
 					await this.addBy(1)
 				},
@@ -401,7 +401,7 @@ describe('effects worked:', () => {
 			name: 'example',
 			state: { value: 0 },
 			reducers: {},
-			effects: {
+			actions: {
 				async asyncAddOne(): Promise<Number> {
 					return await this.valueAddOne()
 				},
@@ -425,7 +425,7 @@ describe('effects worked:', () => {
 			name: 'example',
 			state: { value: 0 },
 			reducers: {},
-			effects: {
+			actions: {
 				async asyncAddOne(): Promise<Number> {
 					return await this.valueAddOne(1)
 				},
@@ -444,7 +444,7 @@ describe('effects worked:', () => {
 		expect(result).toBe(2)
 	})
 
-	describe('$dep has full function of reducer effect views $state() $set $modify:', () => {
+	describe('$dep has full function of reducer action views $state() $set $modify:', () => {
 		test("$dep's $state should worked", async () => {
 			const depModel = defineModel({
 				name: 'depModel',
@@ -461,7 +461,7 @@ describe('effects worked:', () => {
 					name: 'count',
 					state: { count: 0 },
 					reducers: {},
-					effects: {
+					actions: {
 						makeCall() {
 							expect(this.$dep.depModel.$state()).toEqual({ value: 0 })
 							this.$dep.depModel.add(1)
@@ -489,7 +489,7 @@ describe('effects worked:', () => {
 					name: 'count',
 					state: { count: 0 },
 					reducers: {},
-					effects: {
+					actions: {
 						makeCall() {
 							const newState = { value: 1 }
 							this.$dep.depModel.$set(newState)
@@ -520,16 +520,16 @@ describe('effects worked:', () => {
 					name: 'count',
 					state: { count: 0 },
 					reducers: {},
-					effects: {
+					actions: {
 						makeCall() {
 							this.$dep.depModel.$modify((state) => {
 								state.value += 1
 							})
 							expect(this.$dep.depModel.$state()).toEqual({ value: 1 })
 							this.$dep.depModel.$modify((state) => {
-								state.value -= 10
+								state.value -= 1
 							})
-							expect(this.$dep.depModel.$state()).toEqual({ value: -9 })
+							expect(this.$dep.depModel.$state()).toEqual({ value: 0 })
 						},
 					},
 				},
@@ -557,7 +557,7 @@ describe('effects worked:', () => {
 					name: 'count',
 					state: { count: 0 },
 					reducers: {},
-					effects: {
+					actions: {
 						makeCall() {
 							expect(this.$dep.depModel.$state()).toEqual({ value: 0 })
 							this.$dep.depModel.add(2)
@@ -575,7 +575,7 @@ describe('effects worked:', () => {
 			store.makeCall()
 		})
 
-		test("$dep's effect should worked", async () => {
+		test("$dep's action should worked", async () => {
 			const depModel = defineModel({
 				name: 'depModel',
 				state: { value: 0 },
@@ -584,7 +584,7 @@ describe('effects worked:', () => {
 						value: s.value + p,
 					}),
 				},
-				effects: {
+				actions: {
 					async addAsync() {
 						await this.add(1)
 						return ''
@@ -597,7 +597,7 @@ describe('effects worked:', () => {
 					name: 'count',
 					state: { count: 0 },
 					reducers: {},
-					effects: {
+					actions: {
 						async makeCall() {
 							expect(this.$dep.depModel.$state()).toEqual({ value: 0 })
 							await this.$dep.depModel.addAsync()
@@ -634,7 +634,7 @@ describe('effects worked:', () => {
 					name: 'count',
 					state: { count: 0 },
 					reducers: {},
-					effects: {
+					actions: {
 						async makeCall() {
 							expect(this.$dep.depModel.double()).toBe(0)
 							await this.$dep.depModel.add(1)
@@ -674,7 +674,7 @@ describe('effects worked:', () => {
 						value: s.value + p,
 					}),
 				},
-				effects: {
+				actions: {
 					async addAsync() {
 						await this.add(1)
 					},
@@ -686,7 +686,7 @@ describe('effects worked:', () => {
 					name: 'count',
 					state: { count: 0 },
 					reducers: {},
-					effects: {
+					actions: {
 						async makeCall() {
 							expect(this.$dep.depModel.double()).toBe(0)
 							await this.$dep.depModel.add(1)
@@ -735,7 +735,7 @@ describe('effects worked:', () => {
 						value: s.value + p,
 					}),
 				},
-				effects: {
+				actions: {
 					async addAsync() {
 						await this.add(1)
 					},
@@ -747,7 +747,7 @@ describe('effects worked:', () => {
 					name: 'count',
 					state: { count: 0 },
 					reducers: {},
-					effects: {
+					actions: {
 						async makeCall() {
 							expect(this.$dep.depModel.double()).toBe(0)
 							await this.$dep.depModel.add(1)

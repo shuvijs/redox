@@ -11,7 +11,7 @@ export const id = defineModel({
 			}
 		},
 	},
-	effects: {
+	actions: {
 		async incrementAsync(id?: number) {
 			await delay(500)
 			this.increment(id || 1)

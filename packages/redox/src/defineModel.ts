@@ -1,6 +1,6 @@
 import validate, { validateModel } from './validate'
 import {
-	Effects,
+	RedoxActions,
 	Model,
 	MakeDeps,
 	Reducers,
@@ -13,7 +13,7 @@ export const defineModel = <
 	N extends string,
 	S extends State,
 	R extends Reducers<S>,
-	E extends Effects,
+	E extends RedoxActions,
 	MC extends MakeDeps<D>,
 	V extends Views,
 	D extends any[] = []

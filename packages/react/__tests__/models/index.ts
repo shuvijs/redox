@@ -18,7 +18,7 @@ export const countModel = defineModel({
 			state.value += payload
 		},
 	},
-	effects: {
+	actions: {
 		async asyncAdd(n: number) {
 			await sleep(200)
 			this.add(n)

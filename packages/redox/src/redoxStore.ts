@@ -6,7 +6,7 @@ import {
 	ReduxReducer,
 	ReduxDispatch,
 	Reducers,
-	Effects,
+	RedoxActions,
 	Views,
 	Store,
 	Model,
@@ -15,7 +15,7 @@ import {
 	AnyModel,
 } from './types'
 import { createReducers } from './reducers'
-import { createEffects } from './effects'
+import { createActions } from './actions'
 import { createViews } from './views'
 import validate from './validate'
 import { emptyObject } from './utils'
@@ -269,7 +269,7 @@ function enhanceModel<IModel extends AnyModel>(
 	redoxStore: RedoxStore<IModel>
 ): void {
 	createReducers(redoxStore)
-	if (redoxStore.model.effects) createEffects(redoxStore)
+	if (redoxStore.model.actions) createActions(redoxStore)
 	if (redoxStore.model.views) createViews(redoxStore)
 }
 
@@ -278,9 +278,9 @@ function expandReducer<
 	S extends State,
 	MC extends ModelCollection,
 	R extends Reducers<S>,
-	E extends Effects,
+	RA extends RedoxActions,
 	V extends Views
->(model: Model<N, S, MC, R, E, V>) {
+>(model: Model<N, S, MC, R, RA, V>) {
 	model.reducers = {
 		...model.reducers,
 		[ActionTypes.SET]: function (_, payload: { newState: S }) {
@@ -309,9 +309,9 @@ export function createModelReducer<
 	S extends State,
 	MC extends ModelCollection,
 	R extends Reducers<S>,
-	E extends Effects,
+	RA extends RedoxActions,
 	V extends Views
->(model: Model<N, S, MC, R, E, V>): ReduxReducer<S, Action> {
+>(model: Model<N, S, MC, R, RA, V>): ReduxReducer<S, Action> {
 	// select and run a reducer based on the incoming action
 	const reducer = (state: S = model.state, action: Action): S => {
 		const reducer = model.reducers[action.type]

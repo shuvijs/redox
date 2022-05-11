@@ -33,7 +33,7 @@ const count = defineModel({
 			}
 		},
 	},
-	effects: {
+	actions: {
 		async asyncAdd(arg0: number) {
 			this.addValue(arg0)
 		},

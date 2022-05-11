@@ -196,12 +196,12 @@ describe('reducer worked:', () => {
 		})
 	})
 
-	describe('promise effect', () => {
+	describe('promise action', () => {
 		beforeEach(() => {
 			manager = redox()
 		})
 
-		test('should return a promise from an effect', () => {
+		test('should return a promise from an action', () => {
 			const count = defineModel({
 				name: 'count',
 				state: { value: 0 },
@@ -210,7 +210,7 @@ describe('reducer worked:', () => {
 						value: state.value + 1
 					},
 				},
-				effects: {
+				actions: {
 					async callAddOne(): Promise<void> {
 						this.addOne()
 					},
@@ -224,14 +224,14 @@ describe('reducer worked:', () => {
 			expect(typeof dispatched.then).toBe('function')
 		})
 
-		test('should return a promise that resolves to a value from an effect', async () => {
+		test('should return a promise that resolves to a value from an action', async () => {
 			const count = defineModel({
 				name: 'count',
 				state: { value: 0 },
 				reducers: {
 					addOne: (state) => ({ value: state.value + 1 }),
 				},
-				effects: {
+				actions: {
 					async callAddOne(): Promise<Record<string, any>> {
 						this.addOne()
 						return {
