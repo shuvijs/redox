@@ -11,7 +11,7 @@ function Count() {
 			<div>
 				<h3>count: {value}</h3>
 				<button onClick={() => add(1)}>Immer reducer +1</button>
-				<button onClick={addAsync}>Async effect +1</button>
+				<button onClick={addAsync}>Async action +1</button>
 			</div>
 			<hr />
 		</div>

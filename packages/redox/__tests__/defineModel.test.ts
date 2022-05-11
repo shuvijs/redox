@@ -99,25 +99,25 @@ describe('defineModel worked:', () => {
 			}).toThrow()
 		})
 
-		test('effects should be object', () => {
+		test('actions should be object', () => {
 			expect(() => {
 				const modelA = defineModel({
 					name: 'a',
 					state: {},
 					reducers: {},
 					// @ts-ignore
-					effects: 1,
+					actions: 1,
 				})
 			}).toThrow()
 		})
 
-		test('effect should be function', () => {
+		test('action should be function', () => {
 			expect(() => {
 				const modelA = defineModel({
 					name: 'a',
 					state: {},
 					reducers: {},
-					effects: {
+					actions: {
 						// @ts-ignore
 						1: 1,
 					},
@@ -166,7 +166,7 @@ describe('defineModel worked:', () => {
 			}).toThrow()
 		})
 
-		test('not allow repeat key reducers effects views', () => {
+		test('not allow repeat key reducers actions views', () => {
 			expect(() => {
 				const model = defineModel({
 					name: 'a',
@@ -174,7 +174,7 @@ describe('defineModel worked:', () => {
 					reducers: {
 						a() {},
 					},
-					effects: {
+					actions: {
 						async a() {},
 					},
 				})

@@ -100,12 +100,12 @@ describe('typings', () => {
 			store.twoAny([])
 		})
 
-		test('effects typescript', () => {
+		test('actions typescript', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {},
 				reducers: {},
-				effects: {
+				actions: {
 					none() {
 						return 'none' as const
 					},
@@ -154,12 +154,12 @@ describe('typings', () => {
 			store.argsAny([], {})
 		})
 
-		test('effects return async typescript', () => {
+		test('actions return async typescript', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {},
 				reducers: {},
-				effects: {
+				actions: {
 					async none() {
 						return 'none' as const
 					},
@@ -252,7 +252,7 @@ describe('typings', () => {
 			store.argsMore('1', 'custom')
 		})
 
-		test('no reducers effects views typescript', () => {
+		test('no reducers actions views typescript', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {
@@ -288,14 +288,14 @@ describe('typings', () => {
 			console.log('_model: ', _model)
 		})
 
-		test('effects this typescript $state', () => {
+		test('actions this typescript $state', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {
 					value: [] as customType[],
 				},
 				reducers: {},
-				effects: {
+				actions: {
 					none() {
 						return this.$state()
 					},
@@ -304,7 +304,7 @@ describe('typings', () => {
 			console.log('model: ', model)
 		})
 
-		test('effects this typescript with reducers, call reducers', () => {
+		test('actions this typescript with reducers, call reducers', () => {
 			const model = defineModel({
 				name: 'model',
 				state: { value: 0 },
@@ -344,8 +344,8 @@ describe('typings', () => {
 					// 	}
 					// }
 				},
-				effects: {
-					anyEffect() {
+				actions: {
+					anyAction() {
 						this.none()
 						this.one()
 						this.two(1)
@@ -365,12 +365,12 @@ describe('typings', () => {
 			console.log('model: ', model)
 		})
 
-		test('effects this typescript with effects, call self', () => {
+		test('actions this typescript with actions, call self', () => {
 			const model = defineModel({
 				name: 'model',
 				state: { value: 0 },
 				reducers: {},
-				effects: {
+				actions: {
 					async none() {
 						const none = await this.none()
 						const one = await this.one('')
@@ -416,12 +416,12 @@ describe('typings', () => {
 			const temp = store.stateType()
 		})
 
-		test('effects this typescript with effects, call views', () => {
+		test('actions this typescript with actions, call views', () => {
 			const model = defineModel({
 				name: 'model',
 				state: { value: 0 },
 				reducers: {},
-				effects: {
+				actions: {
 					async anyOne() {
 						this.none()
 						this.argsOptional()
@@ -463,14 +463,14 @@ describe('typings', () => {
 			console.log('model: ', model)
 		})
 
-		test('effects this typescript no depends', () => {
+		test('actions this typescript no depends', () => {
 			const model = defineModel({
 				name: 'model',
 				state: {
 					value: [] as customType[],
 				},
 				reducers: {},
-				effects: {
+				actions: {
 					none() {
 						this.$dep
 						// this.$dep.a
@@ -491,8 +491,8 @@ describe('typings', () => {
 					state.value.push(payload)
 				},
 			},
-			effects: {
-				async depend0Effect(arg0: string) {
+			actions: {
+				async depend0Action(arg0: string) {
 					return arg0
 				},
 			},
@@ -513,8 +513,8 @@ describe('typings', () => {
 					state.value.push(payload)
 				},
 			},
-			effects: {
-				async depend1Effect(arg0: number) {
+			actions: {
+				async depend1Action(arg0: number) {
 					return arg0
 				},
 			},
@@ -525,7 +525,7 @@ describe('typings', () => {
 			},
 		})
 
-		test('effects this typescript with depends', () => {
+		test('actions this typescript with depends', () => {
 			const model = defineModel(
 				{
 					name: 'model',
@@ -533,17 +533,17 @@ describe('typings', () => {
 						value: [] as customType[],
 					},
 					reducers: {},
-					effects: {
+					actions: {
 						async none() {
 							this.$dep.depend0.$state()
 							this.$dep.depend0.depend0Reducer()
-							this.$dep.depend0.depend0Effect('')
+							this.$dep.depend0.depend0Action('')
 							this.$dep.depend0.depend0View()
 							this.$dep.depend1.$state()
 							this.$dep.depend1.depend1Reducer(1)
-							this.$dep.depend1.depend1Effect(1)
+							this.$dep.depend1.depend1Action(1)
 							this.$dep.depend1.depend1View()
-							return await this.$dep.depend0.depend0Effect('')
+							return await this.$dep.depend0.depend0Action('')
 						},
 					},
 				},

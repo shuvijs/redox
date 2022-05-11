@@ -423,7 +423,7 @@ describe('batchedUpdates worked:', () => {
 						state.value += 1
 					},
 				},
-				effects: {
+				actions: {
 					makeCall() {
 						this.$dep.countModel.addValue() // depend case appModel render
 						this.add()
