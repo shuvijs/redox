@@ -219,7 +219,7 @@ export interface Model<
 > {
 	name?: N
 	state: S
-	reducers: R
+	reducers?: R
 	actions?: RA &
 		ThisType<
 			{

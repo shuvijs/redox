@@ -24,9 +24,9 @@ const randomString = () =>
 	Math.random().toString(36).substring(7).split('').join('.')
 
 const ActionTypes = {
-	INIT: `@@redux/INIT${/* #__PURE__ */ randomString()}`,
-	SET: `@@redux/SET${/* #__PURE__ */ randomString()}`,
-	MODIFY: `@@redux/MODIFY${/* #__PURE__ */ randomString()}`,
+	INIT: `@@redox/INIT${/* #__PURE__ */ randomString()}`,
+	SET: '@@redox/SET',
+	MODIFY: '@@redox/MODIFY',
 }
 
 type unSubscribe = () => void
@@ -116,7 +116,7 @@ export class RedoxStore<IModel extends AnyModel> {
 		this._cache = cache
 		this.model = model
 		this.storeDepends = {}
-		expandReducer(model)
+		enhanceReducer(model)
 		const reducer = createModelReducer(model)
 		this.currentReducer = reducer
 		this.currentState =
@@ -147,9 +147,7 @@ export class RedoxStore<IModel extends AnyModel> {
 	$set = (newState: State) => {
 		this.dispatch({
 			type: ActionTypes.SET,
-			payload: {
-				newState,
-			},
+			payload: newState,
 		})
 	}
 
@@ -273,7 +271,7 @@ function enhanceModel<IModel extends AnyModel>(
 	if (redoxStore.model.views) createViews(redoxStore)
 }
 
-function expandReducer<
+function enhanceReducer<
 	N extends string,
 	S extends State,
 	MC extends ModelCollection,
@@ -282,9 +280,9 @@ function expandReducer<
 	V extends Views
 >(model: Model<N, S, MC, R, RA, V>) {
 	model.reducers = {
-		...model.reducers,
-		[ActionTypes.SET]: function (_, payload: { newState: S }) {
-			return payload.newState
+		...(model.reducers ? model.reducers : {}),
+		[ActionTypes.SET]: function (_, payload: S) {
+			return payload
 		},
 		[ActionTypes.MODIFY]: function (
 			state: S,
@@ -293,7 +291,7 @@ function expandReducer<
 			payload.modifier(state)
 			return state
 		},
-	}
+	} as R
 }
 
 setAutoFreeze(false)
@@ -314,7 +312,7 @@ export function createModelReducer<
 >(model: Model<N, S, MC, R, RA, V>): ReduxReducer<S, Action> {
 	// select and run a reducer based on the incoming action
 	const reducer = (state: S = model.state, action: Action): S => {
-		const reducer = model.reducers[action.type]
+		const reducer = model.reducers![action.type]
 		if (typeof reducer === 'function') {
 			return reducer(state, action.payload) as S
 		}
