@@ -24,7 +24,7 @@ export const createReducers = <IModel extends AnyModel>(
 ): void => {
 	// map reducer names to dispatch actions
 	const model = redoxStore.model
-	const reducersKeys = Object.keys(model.reducers)
+	const reducersKeys = Object.keys(model.reducers!)
 	reducersKeys.forEach((reducerName) => {
 		// @ts-ignore
 		redoxStore.$actions[reducerName] = createReducer(redoxStore, reducerName)
