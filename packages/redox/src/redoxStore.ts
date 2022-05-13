@@ -154,9 +154,7 @@ export class RedoxStore<IModel extends AnyModel> {
 	$modify = (modifier: (state: State) => void) => {
 		this.dispatch({
 			type: ActionTypes.MODIFY,
-			payload: {
-				modifier,
-			},
+			payload: modifier,
 		})
 	}
 
@@ -284,11 +282,8 @@ function enhanceReducer<
 		[ActionTypes.SET]: function (_, payload: S) {
 			return payload
 		},
-		[ActionTypes.MODIFY]: function (
-			state: S,
-			payload: { modifier: (s: S) => {} }
-		) {
-			payload.modifier(state)
+		[ActionTypes.MODIFY]: function (state: S, payload: (s: S) => {}) {
+			payload(state)
 			return state
 		},
 	} as R
