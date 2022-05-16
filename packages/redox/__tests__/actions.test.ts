@@ -2,6 +2,7 @@ import { defineModel, redox } from '../src'
 let manager: ReturnType<typeof redox>
 beforeEach(() => {
 	manager = redox()
+	process.env.NODE_ENV = 'development'
 })
 
 describe('actions worked:', () => {
@@ -171,8 +172,7 @@ describe('actions worked:', () => {
 		expect(state).toEqual([2, 4])
 	})
 
-	test('this.$state returns newest state after this.$set invoked', () => {
-		let valueFromStore: number = 0
+	test('this.$set could change the state', () => {
 		const count = defineModel({
 			name: 'count',
 			state: { value: 0 },
@@ -180,21 +180,74 @@ describe('actions worked:', () => {
 			actions: {
 				makeCall(newState: { value: number }): void {
 					this.$set(newState)
-					valueFromStore = this.$state().value
 				},
 			},
 		})
 
 		const store = manager.get(count)
 
-		const state = {
-			value: 2,
-		}
+		const state = { value: 2 }
 		store.makeCall(state)
-		expect(state.value).toEqual(valueFromStore)
+		expect(state.value).toEqual(store.$state().value)
 	})
 
-	test('this.$state returns newest state after this.$modify invoked', () => {
+	test('this.$set should throw error message if the argument type is not an Object', () => {
+		const count = defineModel({
+			name: 'count',
+			state: { value: 0 },
+			reducers: {},
+			actions: {
+				setStateWith(value: any): void {
+					this.$set(value)
+				},
+			},
+		})
+
+		const store = manager.get(count)
+		expect(() => store.setStateWith([])).toThrow(
+			'Expected the payload to be an Object'
+		)
+		expect(store.$state()).toEqual({ value: 0 })
+
+		expect(() => store.setStateWith(2)).toThrow(
+			'Expected the payload to be an Object'
+		)
+		expect(store.$state()).toEqual({ value: 0 })
+
+		expect(() => store.setStateWith(false)).toThrow(
+			'Expected the payload to be an Object'
+		)
+		expect(store.$state()).toEqual({ value: 0 })
+
+		expect(() => store.setStateWith('test string')).toThrow(
+			'Expected the payload to be an Object'
+		)
+		expect(store.$state()).toEqual({ value: 0 })
+	})
+
+	test('this.$modify could change the state', () => {
+		const count = defineModel({
+			name: 'count',
+			state: { value: 0 },
+			reducers: {},
+			actions: {
+				makeCall(modifier: (state: { value: number }) => void): void {
+					this.$modify(modifier)
+				},
+			},
+		})
+
+		const store = manager.get(count)
+
+		const newValue: number = 2
+		const modifier = (state: any) => {
+			state.value += newValue
+		}
+		store.makeCall(modifier)
+		expect(newValue).toEqual(store.$state().value)
+	})
+
+	test('this.$modify does not affected by returned value from the modifier', () => {
 		let valueFromStore: number = 0
 		const count = defineModel({
 			name: 'count',
@@ -213,6 +266,9 @@ describe('actions worked:', () => {
 		const newValue: number = 2
 		const modifier = (state: any) => {
 			state.value += newValue
+			return {
+				value: 0,
+			}
 		}
 		store.makeCall(modifier)
 		expect(newValue).toEqual(valueFromStore)
@@ -444,7 +500,7 @@ describe('actions worked:', () => {
 		expect(result).toBe(2)
 	})
 
-	describe('$dep has full function of reducer action views $state() $set $modify:', () => {
+	describe('$dep has full function of reducer action views $state() $set() $modify():', () => {
 		test("$dep's $state should worked", async () => {
 			const depModel = defineModel({
 				name: 'depModel',
@@ -477,7 +533,7 @@ describe('actions worked:', () => {
 			store.makeCall()
 		})
 
-		test("$dep's $set should worked", async () => {
+		test("$dep's $set should worked", () => {
 			const depModel = defineModel({
 				name: 'depModel',
 				state: { value: 0 },
@@ -508,7 +564,44 @@ describe('actions worked:', () => {
 			store.makeCall()
 		})
 
-		test("$dep's $modify should worked", async () => {
+		test("$dep's $set should throw error if argument type is not an Object", () => {
+			const depModel = defineModel({
+				name: 'depModel',
+				state: { value: 0 },
+				reducers: {},
+			})
+
+			const count = defineModel(
+				{
+					name: 'count',
+					state: { count: 0 },
+					reducers: {},
+					actions: {
+						makeCall() {
+							expect(() => this.$dep.depModel.$set(1 as any)).toThrow(
+								'Expected the payload to be an Object'
+							)
+							expect(() => this.$dep.depModel.$set([] as any)).toThrow(
+								'Expected the payload to be an Object'
+							)
+							expect(() => this.$dep.depModel.$set(false as any)).toThrow(
+								'Expected the payload to be an Object'
+							)
+							expect(() =>
+								this.$dep.depModel.$set('test string' as any)
+							).toThrow('Expected the payload to be an Object')
+						},
+					},
+				},
+				[depModel]
+			)
+
+			const store = manager.get(count)
+
+			store.makeCall()
+		})
+
+		test("$dep's $modify should worked", () => {
 			const depModel = defineModel({
 				name: 'depModel',
 				state: { value: 0 },
@@ -529,6 +622,45 @@ describe('actions worked:', () => {
 							this.$dep.depModel.$modify((state) => {
 								state.value -= 1
 							})
+							expect(this.$dep.depModel.$state()).toEqual({ value: 0 })
+						},
+					},
+				},
+				[depModel]
+			)
+
+			const store = manager.get(count)
+
+			store.makeCall()
+		})
+
+		test("$dep's $modify does not affected by returned value from the modifier", () => {
+			const depModel = defineModel({
+				name: 'depModel',
+				state: { value: 0 },
+				reducers: {},
+			})
+
+			const count = defineModel(
+				{
+					name: 'count',
+					state: { count: 0 },
+					reducers: {},
+					actions: {
+						makeCall() {
+							this.$dep.depModel.$modify((_) => {
+								return {
+									value: 100,
+								}
+							})
+							expect(this.$dep.depModel.$state()).not.toEqual({ value: 100 })
+							this.$dep.depModel.$modify((_) => {
+								return {
+									value: -100,
+								}
+							})
+							expect(this.$dep.depModel.$state()).not.toEqual({ value: -100 })
+
 							expect(this.$dep.depModel.$state()).toEqual({ value: 0 })
 						},
 					},
