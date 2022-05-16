@@ -280,9 +280,15 @@ function enhanceReducer<
 	model.reducers = {
 		...(model.reducers ? model.reducers : {}),
 		[ActionTypes.MODIFY]: function (state: S, payload: (s: S) => any) {
-			if (typeof payload === 'function') {
-				payload(state)
+			if (process.env.NODE_ENV === 'development') {
+				validate(() => [
+					[
+						typeof payload !== 'function',
+						'Expected the payload to be a Function',
+					],
+				])
 			}
+			payload(state)
 		},
 	} as R
 }
