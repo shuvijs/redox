@@ -17,7 +17,7 @@ import {
 import { createReducers } from './reducers'
 import { createActions } from './actions'
 import { createViews } from './views'
-import validate from './validate'
+import validate, { isObject } from './validate'
 import { emptyObject } from './utils'
 
 const randomString = () =>
@@ -145,14 +145,14 @@ export class RedoxStore<IModel extends AnyModel> {
 	}
 
 	$set = (newState: State) => {
-		this.dispatch({
+		return this.dispatch({
 			type: ActionTypes.SET,
 			payload: newState,
 		})
 	}
 
 	$modify = (modifier: (state: State) => void) => {
-		this.dispatch({
+		return this.dispatch({
 			type: ActionTypes.MODIFY,
 			payload: modifier,
 		})
@@ -279,23 +279,15 @@ function enhanceReducer<
 >(model: Model<N, S, MC, R, RA, V>) {
 	model.reducers = {
 		...(model.reducers ? model.reducers : {}),
-		[ActionTypes.SET]: function (_, payload: S) {
-			return payload
-		},
-		[ActionTypes.MODIFY]: function (state: S, payload: (s: S) => {}) {
-			payload(state)
-			return state
+		[ActionTypes.MODIFY]: function (state: S, payload: (s: S) => any) {
+			if (typeof payload === 'function') {
+				payload(state)
+			}
 		},
 	} as R
 }
 
 setAutoFreeze(false)
-function wrapReducerWithImmer(reducer: ReduxReducer) {
-	return (state: any, payload: any): any => {
-		if (state === undefined) return reducer(state, payload)
-		return produce(state, (draft: any) => reducer(draft, payload))
-	}
-}
 
 export function createModelReducer<
 	N extends string,
@@ -306,14 +298,23 @@ export function createModelReducer<
 	V extends Views
 >(model: Model<N, S, MC, R, RA, V>): ReduxReducer<S, Action> {
 	// select and run a reducer based on the incoming action
-	const reducer = (state: S = model.state, action: Action): S => {
+	return (state: S = model.state, action: Action): S => {
+		if (action.type === ActionTypes.SET) {
+			if (process.env.NODE_ENV === 'development') {
+				validate(() => [
+					[!isObject(action.payload), 'Expected the payload to be an Object'],
+				])
+			}
+			return action.payload
+		}
+
 		const reducer = model.reducers![action.type]
 		if (typeof reducer === 'function') {
-			return reducer(state, action.payload) as S
+			// immer does not support 'undefined' state
+			if (state === undefined) return reducer(state, action.payload) as S
+			return produce(state, (draft: any) => reducer(draft, action.payload) as S)
 		}
 
 		return state
 	}
-
-	return wrapReducerWithImmer(reducer)
 }
