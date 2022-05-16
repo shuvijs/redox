@@ -22,6 +22,42 @@ describe('typings', () => {
 			expect(state).toEqual({ value: 0 })
 		})
 
+		test('$set typescript', () => {
+			const model = defineModel({
+				name: 'model',
+				state: {
+					value: 0,
+				},
+				reducers: {},
+			})
+
+			const store = manager.get(model)
+
+			store.$set({
+				value: 1,
+			})
+			expect(store.$state()).toEqual({
+				value: 1,
+			})
+		})
+
+		test('$modify typescript', () => {
+			const model = defineModel({
+				name: 'model',
+				state: {
+					value: 0,
+				},
+				reducers: {},
+			})
+
+			const store = manager.get(model)
+
+			store.$modify((state) => {
+				state.value = 1
+			})
+			expect(store.$state()).toEqual({ value: 1 })
+		})
+
 		test('reducers get custom $state typescript', () => {
 			const model = defineModel({
 				name: 'model',
@@ -39,6 +75,50 @@ describe('typings', () => {
 
 			const state = store.$state()
 			expect(state).toEqual({ value: [] })
+		})
+
+		test('reducers $set custom typescript', () => {
+			const model = defineModel({
+				name: 'model',
+				state: {
+					value: [] as customType[],
+				},
+				reducers: {
+					a(state) {
+						return state
+					},
+				},
+			})
+
+			const store = manager.get(model)
+
+			store.$set({
+				value: ['custom'],
+			})
+			expect(store.$state()).toEqual({
+				value: ['custom'],
+			})
+		})
+
+		test('reducers $modify custom typescript', () => {
+			const model = defineModel({
+				name: 'model',
+				state: {
+					value: [] as customType[],
+				},
+				reducers: {
+					a(state) {
+						return state
+					},
+				},
+			})
+
+			const store = manager.get(model)
+
+			store.$modify((state) => {
+				state.value[0] = 'custom'
+			})
+			expect(store.$state()).toEqual({ value: ['custom'] })
 		})
 
 		test('reducers typescript', () => {
@@ -304,6 +384,40 @@ describe('typings', () => {
 			console.log('model: ', model)
 		})
 
+		test('actions this typescript $set', () => {
+			const model = defineModel({
+				name: 'model',
+				state: {
+					value: [] as customType[],
+				},
+				reducers: {},
+				actions: {
+					none() {
+						this.$set({
+							value: ['custom'],
+						})
+					},
+				},
+			})
+			console.log('model: ', model)
+		})
+
+		test('actions this typescript $modify', () => {
+			const model = defineModel({
+				name: 'model',
+				state: {
+					value: [] as customType[],
+				},
+				reducers: {},
+				actions: {
+					none() {
+						return this.$modify((s) => (s.value[0] = 'custom'))
+					},
+				},
+			})
+			console.log('model: ', model)
+		})
+
 		test('actions this typescript with reducers, call reducers', () => {
 			const model = defineModel({
 				name: 'model',
@@ -536,10 +650,14 @@ describe('typings', () => {
 					actions: {
 						async none() {
 							this.$dep.depend0.$state()
+							this.$dep.depend0.$set({ value: [] })
+							this.$dep.depend0.$modify((state) => (state.value = []))
 							this.$dep.depend0.depend0Reducer()
 							this.$dep.depend0.depend0Action('')
 							this.$dep.depend0.depend0View()
 							this.$dep.depend1.$state()
+							this.$dep.depend1.$set({ value: [] })
+							this.$dep.depend1.$modify((state) => (state.value = []))
 							this.$dep.depend1.depend1Reducer(1)
 							this.$dep.depend1.depend1Action(1)
 							this.$dep.depend1.depend1View()
