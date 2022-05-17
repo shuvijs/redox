@@ -51,6 +51,30 @@ importers:
       tslib: 2.3.1
       typescript: 4.6.3
 
+  examples/plugins:
+    specifiers:
+      '@shuvi/redox': workspace:*
+      '@shuvi/redox-log': workspace:*
+      '@shuvi/redox-persist': workspace:*
+      '@shuvi/redox-react': workspace:*
+      '@types/react': ^16.9.43
+      '@types/react-dom': ^16.9.6
+      react: 16.14.0
+      react-dom: 16.14.0
+      react-scripts: 5.0.1
+      typescript: ^4.6.3
+    dependencies:
+      '@shuvi/redox': link:../../packages/redox
+      '@shuvi/redox-log': link:../../packages/plugins/log
+      '@shuvi/redox-persist': link:../../packages/plugins/persist
+      '@shuvi/redox-react': link:../../packages/react
+      '@types/react': 16.14.24
+      '@types/react-dom': 16.9.14
+      react: 16.14.0
+      react-dom: 16.14.0_react@16.14.0
+      react-scripts: 5.0.1_react@16.14.0+typescript@4.6.3
+      typescript: 4.6.3
+
   examples/spa:
     specifiers:
       '@shuvi/redox': workspace:*
@@ -97,6 +121,18 @@ importers:
       autocannon: 7.8.1
       react: 16.14.0
       react-dom: 16.14.0_react@16.14.0
+
+  packages/plugins/log:
+    specifiers:
+      '@shuvi/redox': 0.0.1-pre.6
+    devDependencies:
+      '@shuvi/redox': link:../../redox
+
+  packages/plugins/persist:
+    specifiers:
+      '@shuvi/redox': 0.0.1-pre.6
+    devDependencies:
+      '@shuvi/redox': link:../../redox
 
   packages/react:
     specifiers:
@@ -4616,7 +4652,7 @@ packages:
   /axios/0.26.0_debug@4.1.1:
     resolution: {integrity: sha512-lKoGLMYtHvFrPVt3r+RBMp9nh34N0M8zEfCWqdWZx6phynIEhQqAdydpyBAAG211zlhX9Rgu08cOamy6XjE5Og==}
     dependencies:
-      follow-redirects: 1.14.9_debug@3.2.7
+      follow-redirects: 1.14.9_debug@4.1.1
     transitivePeerDependencies:
       - debug
     dev: false
@@ -8719,16 +8755,6 @@ packages:
       readable-stream: 2.3.7
     dev: false
 
-  /follow-redirects/1.14.9:
-    resolution: {integrity: sha512-MQDfihBQYMcyy5dhRDJUHcw7lb2Pv/TuE6xP1vyraLukNDHKbDxDNaOE3NbCAdKQApno+GPRyo1YAp89yCjK4w==}
-    engines: {node: '>=4.0'}
-    peerDependencies:
-      debug: '*'
-    peerDependenciesMeta:
-      debug:
-        optional: true
-    dev: false
-
   /follow-redirects/1.14.9_debug@3.2.7:
     resolution: {integrity: sha512-MQDfihBQYMcyy5dhRDJUHcw7lb2Pv/TuE6xP1vyraLukNDHKbDxDNaOE3NbCAdKQApno+GPRyo1YAp89yCjK4w==}
     engines: {node: '>=4.0'}
@@ -8739,6 +8765,18 @@ packages:
         optional: true
     dependencies:
       debug: 3.2.7
+    dev: false
+
+  /follow-redirects/1.14.9_debug@4.1.1:
+    resolution: {integrity: sha512-MQDfihBQYMcyy5dhRDJUHcw7lb2Pv/TuE6xP1vyraLukNDHKbDxDNaOE3NbCAdKQApno+GPRyo1YAp89yCjK4w==}
+    engines: {node: '>=4.0'}
+    peerDependencies:
+      debug: '*'
+    peerDependenciesMeta:
+      debug:
+        optional: true
+    dependencies:
+      debug: 4.1.1
     dev: false
 
   /for-each/0.3.3:
@@ -9646,7 +9684,7 @@ packages:
     engines: {node: '>=8.0.0'}
     dependencies:
       eventemitter3: 4.0.7
-      follow-redirects: 1.14.9
+      follow-redirects: 1.14.9_debug@4.1.1
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
