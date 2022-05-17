@@ -18,6 +18,6 @@
 		"removeComments": true,
 		"noEmit": true
 	},
-	"include": ["packages/*/src", "packages/*/__tests__"],
+	"include": ["packages/*/src", "packages/plugins/*/src", "packages/*/__tests__"],
 	"exclude": ["node_modules"]
 }
