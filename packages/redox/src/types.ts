@@ -74,7 +74,7 @@ export type ExtractRedoxDispatcherFromReducer<TState, TReducer> =
 			: RedoxDispatcher<false, ExtractParameterFromReducer<TRest>, never>
 		: never
 
-export type Effects = {
+export type RedoxActions = {
 	[x: string]: Function
 }
 
@@ -106,14 +106,14 @@ export type DispatchOfModel<M> = M extends Model<
 	infer S,
 	any,
 	infer R,
-	infer E,
+	infer RA,
 	any
 >
-	? DispatchOfModelByProps<S, R, E> & noExist
+	? DispatchOfModelByProps<S, R, RA> & noExist
 	: never
 
-type DispatchOfModelByProps<S, R, E> = DispatcherOfReducers<S, R> &
-	DispatcherOfEffects<E>
+type DispatchOfModelByProps<S, R, RA> = DispatcherOfReducers<S, R> &
+	DispatcherOfRedoxActions<RA>
 
 export type DispatcherOfReducers<S, R> = R extends undefined
 	? {}
@@ -123,7 +123,7 @@ export type DispatcherOfReducers<S, R> = R extends undefined
 	  }
 	: never
 
-export type DispatcherOfEffects<E> = E extends Effects
+export type DispatcherOfRedoxActions<E> = E extends RedoxActions
 	? FilterIndex<E> extends infer FilterE
 		? {
 				[K in keyof FilterE]: FilterE[K]
@@ -201,10 +201,10 @@ export type Tuple<T> = T extends [any, ...any] ? T : []
  * Get return type of redox dispatcher
  */
 type ReturnOfDispatcher<
-	IsEffect extends boolean,
+	IsAction extends boolean,
 	TReturn = any,
 	TPayload = void
-> = IsEffect extends true ? TReturn : Action<TPayload>
+> = IsAction extends true ? TReturn : Action<TPayload>
 /**
  * @template S State
  * @template MC dependency models
@@ -214,17 +214,21 @@ export interface Model<
 	S extends State,
 	MC extends ModelCollection,
 	R extends Reducers<S>,
-	E extends Effects,
+	RA extends RedoxActions,
 	V extends Views
 > {
 	name?: N
 	state: S
-	reducers: R
-	effects?: E &
+	reducers?: R
+	actions?: RA &
 		ThisType<
-			{ $state: () => S } & RedoxViews<V> & {
+			{
+				$state: () => S
+				$set: (s: S) => void
+				$modify: (modifier: (s: S) => void) => void
+			} & RedoxViews<V> & {
 					$dep: MiniStoreOfStoreCollection<MC>
-				} & DispatchOfModelByProps<S, R, E>
+				} & DispatchOfModelByProps<S, R, RA>
 		>
 	views?: V &
 		ThisType<
@@ -245,20 +249,22 @@ export type Depends = AnyModel[]
 
 export type Store<IModel extends AnyModel> = {
 	$state: () => IModel['state']
+	$set: (state: IModel['state']) => void
+	$modify: (modifier: (state: IModel['state']) => void) => void
 } & RedoxViews<IModel['views']> &
 	DispatchOfModel<IModel>
 
 export type RedoxDispatcher<
-	IsEffect extends boolean,
+	IsAction extends boolean,
 	TPayload extends [p?: unknown] = never,
 	TReturn = any
 > = [TPayload] extends [never]
-	? () => ReturnOfDispatcher<IsEffect, TReturn>
+	? () => ReturnOfDispatcher<IsAction, TReturn>
 	: CheckIfParameterOptional<TPayload> extends true
 	? (
 			payload?: TPayload[0]
-	  ) => ReturnOfDispatcher<IsEffect, TReturn, TPayload[0]>
-	: (payload: TPayload[0]) => ReturnOfDispatcher<IsEffect, TReturn, TPayload[0]>
+	  ) => ReturnOfDispatcher<IsAction, TReturn, TPayload[0]>
+	: (payload: TPayload[0]) => ReturnOfDispatcher<IsAction, TReturn, TPayload[0]>
 
 export type RedoxViews<V> = {
 	[K in keyof V]: V[K] extends (...args: any) => any ? V[K] : never

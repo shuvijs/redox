@@ -50,7 +50,7 @@ describe('redox worked:', () => {
 						state.value = state.value + payload
 					},
 				},
-				effects: {
+				actions: {
 					dependAdd() {
 						this.$dep.depend.increment(1)
 					},
@@ -158,7 +158,7 @@ describe('redox worked:', () => {
 						}
 					},
 				},
-				effects: {
+				actions: {
 					useCount(_payload: any) {
 						const countState = this.$dep.count.$state()
 						this.add(countState.value.toString())
@@ -183,7 +183,7 @@ describe('redox worked:', () => {
 						}
 					},
 				},
-				effects: {
+				actions: {
 					async depends(_payload: string) {
 						const domeState = this.$dep.dome.$state()
 						this.$dep.other.add('use1 paly')
