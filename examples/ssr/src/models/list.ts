@@ -32,7 +32,7 @@ export const list = defineModel(
 				state.arr = state.arr.filter((item) => item.id !== payload)
 			},
 		},
-		effects: {
+		actions: {
 			async addContentAsync(payload: string) {
 				const id = this.$dep.id
 				await id.incrementAsync(id.$state().id + 1)

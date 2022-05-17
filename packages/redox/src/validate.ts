@@ -57,8 +57,8 @@ export const validateModel = (model: AnyModel): void => {
 	validateProperty(model, 'views', keys, 'check state and views')
 	keys.clear()
 	validateProperty(model, 'reducers', keys, 'check reducers')
-	validateProperty(model, 'effects', keys, 'check reducers and effects')
-	validateProperty(model, 'views', keys, 'check reducers, effects and views')
+	validateProperty(model, 'actions', keys, 'check reducers and actions')
+	validateProperty(model, 'views', keys, 'check reducers, actions and views')
 	keys.clear()
 }
 

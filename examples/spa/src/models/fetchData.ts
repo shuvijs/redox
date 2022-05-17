@@ -15,7 +15,7 @@ export const fetchA = defineModel(
 				state.data = payload
 			},
 		},
-		effects: {
+		actions: {
 			fetchAData(arg: string) {
 				this.$dep.loading.isLoading()
 				delay(200)
@@ -43,7 +43,7 @@ export const fetchB = defineModel(
 				state.data = payload
 			},
 		},
-		effects: {
+		actions: {
 			fetchBData(arg: number) {
 				this.$dep.loading.isLoading()
 				delay(200)

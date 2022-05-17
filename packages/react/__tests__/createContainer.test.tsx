@@ -211,7 +211,7 @@ describe('useRootModel worked:', () => {
 		expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 	})
 
-	test('effect worked:', async () => {
+	test('action worked:', async () => {
 		const App = () => {
 			const [state, actions] = useRootModel(countModel)
 
@@ -347,7 +347,7 @@ describe('useRootModel worked:', () => {
 						state.value += payload
 					},
 				},
-				effects: {
+				actions: {
 					async asyncAdd() {
 						await this.$dep.countModel.asyncAdd(1)
 						this.add(this.$dep.countModel.$state().value)

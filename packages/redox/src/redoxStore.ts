@@ -6,7 +6,7 @@ import {
 	ReduxReducer,
 	ReduxDispatch,
 	Reducers,
-	Effects,
+	RedoxActions,
 	Views,
 	Store,
 	Model,
@@ -15,16 +15,18 @@ import {
 	AnyModel,
 } from './types'
 import { createReducers } from './reducers'
-import { createEffects } from './effects'
+import { createActions } from './actions'
 import { createViews } from './views'
-import validate from './validate'
+import validate, { isObject } from './validate'
 import { emptyObject } from './utils'
 
 const randomString = () =>
 	Math.random().toString(36).substring(7).split('').join('.')
 
 const ActionTypes = {
-	INIT: `@@redux/INIT${/* #__PURE__ */ randomString()}`,
+	INIT: `@@redox/INIT${/* #__PURE__ */ randomString()}`,
+	SET: '@@redox/SET',
+	MODIFY: '@@redox/MODIFY',
 }
 
 type unSubscribe = () => void
@@ -114,6 +116,7 @@ export class RedoxStore<IModel extends AnyModel> {
 		this._cache = cache
 		this.model = model
 		this.storeDepends = {}
+		enhanceReducer(model)
 		const reducer = createModelReducer(model)
 		this.currentReducer = reducer
 		this.currentState =
@@ -139,6 +142,20 @@ export class RedoxStore<IModel extends AnyModel> {
 
 	$state = () => {
 		return this.currentState!
+	}
+
+	$set = (newState: State) => {
+		return this.dispatch({
+			type: ActionTypes.SET,
+			payload: newState,
+		})
+	}
+
+	$modify = (modifier: (state: State) => void) => {
+		return this.dispatch({
+			type: ActionTypes.MODIFY,
+			payload: modifier,
+		})
 	}
 
 	subscribe = (listener: () => void) => {
@@ -238,6 +255,8 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 ): Store<M> {
 	const store = {} as Store<M>
 	store.$state = redoxStore.$state
+	store.$set = redoxStore.$set
+	store.$modify = redoxStore.$modify
 	Object.assign(store, redoxStore.$actions, redoxStore.$views)
 	return store
 }
@@ -246,35 +265,62 @@ function enhanceModel<IModel extends AnyModel>(
 	redoxStore: RedoxStore<IModel>
 ): void {
 	createReducers(redoxStore)
-	if (redoxStore.model.effects) createEffects(redoxStore)
+	if (redoxStore.model.actions) createActions(redoxStore)
 	if (redoxStore.model.views) createViews(redoxStore)
 }
 
-setAutoFreeze(false)
-function wrapReducerWithImmer(reducer: ReduxReducer) {
-	return (state: any, payload: any): any => {
-		if (state === undefined) return reducer(state, payload)
-		return produce(state, (draft: any) => reducer(draft, payload))
-	}
+function enhanceReducer<
+	N extends string,
+	S extends State,
+	MC extends ModelCollection,
+	R extends Reducers<S>,
+	RA extends RedoxActions,
+	V extends Views
+>(model: Model<N, S, MC, R, RA, V>) {
+	model.reducers = {
+		...(model.reducers ? model.reducers : {}),
+		[ActionTypes.MODIFY]: function (state: S, payload: (s: S) => any) {
+			if (process.env.NODE_ENV === 'development') {
+				validate(() => [
+					[
+						typeof payload !== 'function',
+						'Expected the payload to be a Function',
+					],
+				])
+			}
+			payload(state)
+		},
+	} as R
 }
+
+setAutoFreeze(false)
 
 export function createModelReducer<
 	N extends string,
 	S extends State,
 	MC extends ModelCollection,
 	R extends Reducers<S>,
-	E extends Effects,
+	RA extends RedoxActions,
 	V extends Views
->(model: Model<N, S, MC, R, E, V>): ReduxReducer<S, Action> {
+>(model: Model<N, S, MC, R, RA, V>): ReduxReducer<S, Action> {
 	// select and run a reducer based on the incoming action
-	const reducer = (state: S = model.state, action: Action): S => {
-		const reducer = model.reducers[action.type]
+	return (state: S = model.state, action: Action): S => {
+		if (action.type === ActionTypes.SET) {
+			if (process.env.NODE_ENV === 'development') {
+				validate(() => [
+					[!isObject(action.payload), 'Expected the payload to be an Object'],
+				])
+			}
+			return action.payload
+		}
+
+		const reducer = model.reducers![action.type]
 		if (typeof reducer === 'function') {
-			return reducer(state, action.payload) as S
+			// immer does not support 'undefined' state
+			if (state === undefined) return reducer(state, action.payload) as S
+			return produce(state, (draft: any) => reducer(draft, action.payload) as S)
 		}
 
 		return state
 	}
-
-	return wrapReducerWithImmer(reducer)
 }

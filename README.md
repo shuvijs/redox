@@ -35,8 +35,8 @@ Redox-react is a decentralized store management solution base on redox, All stor
   - reducers*
     - is the reducer concept of Redux
     - [immer](https://github.com/immerjs/immer) support by default
-  - effects?
-    some effects functions, like fetch data
+  - actions?
+    some actions functions, like fetch data
   - views?
     define view by property, when a view been called, it will collect dependencies with automatic. if depends on changes, view return value with cache.
 
@@ -59,8 +59,8 @@ const count = defineModel({
             }
         },
     },
-    effects: {
-        // some effects method
+    actions: {
+        // some actions method
         async addAsync(payload: number, _state) {
             await delay(payload) // may be await some async method
             this.increment(1) // this point reducers
@@ -85,11 +85,11 @@ const user = defineModel(
         };
       }
     },
-    effects: {
+    actions: {
       async depends(selfArg0: string, selfArg1: number, selfArg2: any) {
         // get current state
         const state = this.$state()
-        // call self effect
+        // call self action
         await this.anyMethod(1)
         // get depends state
         const countState = this.$dep.count.$state()
@@ -118,7 +118,7 @@ const user = defineModel(
 );
 ```
 
-> `this` in `Effects` and `views` can be accessed to itself, `ts` automatically infers the type, and when there is an error in the type related to `this` returned, it can actively mark the type
+> `this` in `actions` and `views` can be accessed to itself, `ts` automatically infers the type, and when there is an error in the type related to `this` returned, it can actively mark the type
 
 ## `usexxModel`
 
@@ -175,9 +175,13 @@ All the models in same `Provider` can be shared by each other. `useModel, useSta
 ## modelManager
 
 ### Store
-  return by modelManager.get(model), Store contains keys of reducers, effects and views.
+  return by modelManager.get(model), Store contains keys of reducers, actions and views.
   - $state
     return state of store
+  - $set
+    set new state of store
+  - $modify
+    modify state of store
   - subscribe
     trigger subscribe functions called when state changed, if there is depends relationship between models, beDepend model subscribe functions also been called, and return unsubscribe function.
 
@@ -192,10 +196,20 @@ const countStore = manager.get(count);
 // getState of store
 countStore.$state()
 
+// setState of store
+countStore.$set(newState)
+
+// modify state of store
+countStore.$modify(state => {
+  state.count += 1
+  state.bool = false
+  // ...
+})
+
 // call reducers
 countStore.add(1)
 
-// call effects
+// call actions
 countStore.addAsync(1)
 
 const unsubscribe = modelManager.subscribe(count, ()=>{
