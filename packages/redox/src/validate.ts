@@ -48,10 +48,6 @@ export const validateModel = (model: AnyModel): void => {
 			typeof model.state !== 'object',
 			'model "state" is required and it should be object !',
 		],
-		[
-			typeof model.reducers === 'undefined',
-			'model "reducers" is required and it should be object !',
-		],
 	])
 	const keys = new Set<string>(Object.keys(model.state))
 	validateProperty(model, 'views', keys, 'check state and views')

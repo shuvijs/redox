@@ -69,8 +69,8 @@ export type IPlugin<IModel extends AnyModel = AnyModel, Option = any> = (
 
 type ICacheMap = Map<string, RedoxStore<any>>
 
-export function redox(
-	initialState: Record<string, State> = emptyObject,
+type RedoxOptions = {
+	initialState: Record<string, State>
 	plugins: [
 		IPlugin,
 		(
@@ -79,7 +79,14 @@ export function redox(
 					: never)
 			| never
 		)
-	][] = []
+	][]
+}
+
+export function redox(
+	{
+		initialState = emptyObject,
+		plugins = [],
+	}: RedoxOptions = {} as RedoxOptions
 ): IModelManager {
 	const cacheMap: ICacheMap = new Map()
 	let initState = initialState

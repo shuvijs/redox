@@ -137,6 +137,9 @@ const createContainer = function () {
 			} else {
 				isUpdate.current = true
 			}
+			// useEffect is async ,there's maybe some async update state between init and useEffect, trigger fn once
+			fn()
+
 			const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
 			return () => {
 				unSubscribe()

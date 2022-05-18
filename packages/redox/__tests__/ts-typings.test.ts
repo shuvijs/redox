@@ -13,7 +13,6 @@ describe('typings', () => {
 				state: {
 					value: 0,
 				},
-				reducers: {},
 			})
 
 			const store = manager.get(model)
@@ -28,7 +27,6 @@ describe('typings', () => {
 				state: {
 					value: 0,
 				},
-				reducers: {},
 			})
 
 			const store = manager.get(model)
@@ -47,7 +45,6 @@ describe('typings', () => {
 				state: {
 					value: 0,
 				},
-				reducers: {},
 			})
 
 			const store = manager.get(model)
@@ -390,7 +387,6 @@ describe('typings', () => {
 				state: {
 					value: [] as customType[],
 				},
-				reducers: {},
 				actions: {
 					none() {
 						this.$set({
