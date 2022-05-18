@@ -15,10 +15,6 @@ type StoreProxy = Parameters<
 
 function setStorageState(storageState: IStorageState, Store: StoreProxy) {
 	if (storageState && Store.model.name && storageState[Store.model.name]) {
-		console.log(
-			'storageState[Store.model.name]: ',
-			storageState[Store.model.name]
-		)
 		Store.$set(storageState[Store.model.name])
 	}
 }
@@ -48,31 +44,29 @@ const redoxPersist: IPlugin<AnyModel, PersistOptions> = function (options) {
 			})
 			_modelManager = modelManager
 			if (typeof options.version !== 'undefined') {
-				persistStore.setVersion(options.version)
+				persistStore.$modify((state) => (state.version = options.version!))
 			}
 			getStoredState(options)
 				.then((state) => {
-					console.log('state: ', state)
 					return Promise.resolve(
 						options.migrate?.(state, persistStore.$state().version) || state
 					)
 						.then((migrateState) => {
 							_storageState = migrateState
+							_isInit = true
 							for (const Store of collectLoadingStore) {
 								setStorageState(_storageState, Store)
 							}
-							// persistStore.$modify(s=>s.isLoading = false)
-							persistStore.setRehydrated(true)
+							persistStore.$modify((s) => (s.rehydrated = true))
 							collectLoadingStore.clear()
 						})
 						.catch((err) => {
-							console.error(`options migrate error:`, err)
+							console.error(`redoxPersist options.migrate error:`, err)
 						})
 				})
 				.catch((err) => {
-					console.error(`getStoredState error:`, err)
+					console.error(`getStoredState inner error:`, err)
 				})
-			_isInit = true
 		},
 		onStoreCreated(Store) {
 			if (_isInit) {

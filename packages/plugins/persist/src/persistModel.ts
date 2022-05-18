@@ -6,14 +6,6 @@ export const persistModel = defineModel({
 		rehydrated: false,
 		version: -1,
 	},
-	reducers: {
-		setRehydrated(state, rehydrated: boolean = true) {
-			state.rehydrated = rehydrated
-		},
-		setVersion(state, version: number) {
-			state.version = version
-		},
-	},
 	actions: {
 		purge(): Promise<any> {
 			return Promise.resolve()

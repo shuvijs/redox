@@ -20,7 +20,6 @@ export default function createPersist(config: PersistOptions) {
 	let writePromise: Promise<any> | null = null
 
 	const update = (state: IStorageState) => {
-		console.log('state: ', state)
 		// add any changed keys to the queue
 		Object.keys(state).forEach((key) => {
 			if (!passWhitelistBlacklist(key)) return // is keyspace ignored? noop

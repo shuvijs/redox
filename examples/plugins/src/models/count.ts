@@ -9,7 +9,7 @@ export const count = defineModel({
 			state.value += payload // change state by immer way
 		},
 	},
-	effects: {
+	actions: {
 		async addAsync() {
 			await delay(2)
 			this.add(1)
