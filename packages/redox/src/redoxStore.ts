@@ -91,7 +91,7 @@ export function redox(
 ): IModelManager {
 	const cacheMap: ICacheMap = new Map()
 	let initState = initialState
-	plugins.push([reduxDevTools, undefined])
+	plugins.unshift([reduxDevTools, undefined])
 	const hooks = plugins.map(([plugin, option]) => plugin(option))
 	const modelManager = {
 		get<IModel extends AnyModel>(model: IModel) {

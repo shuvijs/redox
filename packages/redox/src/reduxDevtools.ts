@@ -8,8 +8,6 @@ const reduxDevTools: IPlugin = function () {
 				(window as any).__REDUX_DEVTOOLS_EXTENSION__
 			) {
 				const origDispatch = Store.dispatch
-
-				console.log(Store.model.name, ' created')
 				const devTools = (window as any).__REDUX_DEVTOOLS_EXTENSION__!.connect({
 					name: Store.model.name,
 				})
