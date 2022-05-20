@@ -69,17 +69,9 @@ export type IPlugin<IModel extends AnyModel = AnyModel, Option = any> = (
 
 type ICacheMap = Map<string, RedoxStore<any>>
 
-type RedoxOptions = {
-	initialState: Record<string, State>
-	plugins: [
-		IPlugin,
-		(
-			| (Parameters<IPlugin> extends { 0: any }
-					? Parameters<IPlugin>[0]
-					: never)
-			| never
-		)
-	][]
+export type RedoxOptions = {
+	initialState?: Record<string, State>
+	plugins?: [IPlugin, any?][]
 }
 
 export function redox(

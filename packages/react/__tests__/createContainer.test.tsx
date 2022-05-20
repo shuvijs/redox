@@ -6,12 +6,8 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { defineModel, redox } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
-import {
-	RedoxRoot,
-	createContainer,
-	useRootStaticModel,
-	useRootModel,
-} from '../src'
+import { createContainer } from '../src'
+import { RedoxRoot, useRootStaticModel, useRootModel } from './Container'
 
 import { sleep, countModel, countSelectorParameters } from './models'
 
@@ -431,19 +427,19 @@ describe('useRootModel worked:', () => {
 				)
 			})
 
-			expect(selectorRunCount).toBe(1)
+			expect(selectorRunCount).toBe(2)
 			act(() => {
 				node
 					.querySelector('#button')
 					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 			})
-			expect(selectorRunCount).toBe(1)
+			expect(selectorRunCount).toBe(2)
 			act(() => {
 				node
 					.querySelector('#action')
 					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 			})
-			expect(selectorRunCount).toBe(2)
+			expect(selectorRunCount).toBe(3)
 		})
 
 		test('selector outside:', async () => {
@@ -476,19 +472,19 @@ describe('useRootModel worked:', () => {
 				)
 			})
 
-			expect(selectorRunCount).toBe(1)
+			expect(selectorRunCount).toBe(2)
 			act(() => {
 				node
 					.querySelector('#button')
 					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 			})
-			expect(selectorRunCount).toBe(1)
+			expect(selectorRunCount).toBe(2)
 			act(() => {
 				node
 					.querySelector('#action')
 					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 			})
-			expect(selectorRunCount).toBe(2)
+			expect(selectorRunCount).toBe(3)
 		})
 	})
 
@@ -889,8 +885,10 @@ describe('RedoxRoot worked:', () => {
 		}
 
 		const modelManager = redox({
-			countModel: {
-				value: 2,
+			initialState: {
+				countModel: {
+					value: 2,
+				},
 			},
 		})
 
