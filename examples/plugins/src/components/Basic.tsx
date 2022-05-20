@@ -1,7 +1,9 @@
 import * as React from 'react'
-import { useRootModel } from '@shuvi/redox-react'
+import { useRootModel } from '../Container'
 
 import { count } from '../models/count'
+import A from './A'
+import B from './B'
 
 function Count() {
 	const [{ value }, { add, addAsync }] = useRootModel(count)
@@ -13,6 +15,10 @@ function Count() {
 				<button onClick={() => add(1)}>Immer reducer +1</button>
 				<button onClick={addAsync}>Async effect +1</button>
 			</div>
+			<hr />
+			<A />
+			<hr />
+			<B />
 			<hr />
 		</div>
 	)
