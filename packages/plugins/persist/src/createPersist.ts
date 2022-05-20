@@ -92,7 +92,8 @@ export default function createPersist(config: PersistOptions) {
 	}
 
 	function passWhitelistBlacklist(key: string) {
-		if (whitelist && whitelist.indexOf(key) === -1) return false
+		if (whitelist && whitelist.indexOf(key) === -1 && key !== '_persist')
+			return false
 		if (blacklist && blacklist.indexOf(key) !== -1) return false
 		return true
 	}
