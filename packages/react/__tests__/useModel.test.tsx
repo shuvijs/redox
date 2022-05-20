@@ -6,7 +6,8 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { defineModel } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
-import { useModel, RedoxRoot, useRootModel } from '../src'
+import { useModel } from '../src'
+import { useRootModel, RedoxRoot } from './Container'
 import { sleep, countModel, countSelectorParameters } from './models'
 
 const countSelector = function (stateAndViews: countSelectorParameters) {
@@ -362,19 +363,19 @@ describe('useModel worked:', () => {
 				)
 			})
 
-			expect(selectorRunCount).toBe(1)
+			expect(selectorRunCount).toBe(2)
 			act(() => {
 				node
 					.querySelector('#button')
 					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 			})
-			expect(selectorRunCount).toBe(1)
+			expect(selectorRunCount).toBe(2)
 			act(() => {
 				node
 					.querySelector('#action')
 					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 			})
-			expect(selectorRunCount).toBe(2)
+			expect(selectorRunCount).toBe(3)
 		})
 
 		test('selector outside:', async () => {
@@ -407,19 +408,19 @@ describe('useModel worked:', () => {
 				)
 			})
 
-			expect(selectorRunCount).toBe(1)
+			expect(selectorRunCount).toBe(2)
 			act(() => {
 				node
 					.querySelector('#button')
 					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 			})
-			expect(selectorRunCount).toBe(1)
+			expect(selectorRunCount).toBe(2)
 			act(() => {
 				node
 					.querySelector('#action')
 					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 			})
-			expect(selectorRunCount).toBe(2)
+			expect(selectorRunCount).toBe(3)
 		})
 	})
 

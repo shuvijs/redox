@@ -1,13 +1,15 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import App from './App';
+import App from './App'
 import { redox } from '@shuvi/redox'
 
-let modelManager;
+let modelManager
 
-if(window.clientEnv){
-	modelManager = redox(window.clientEnv);
-}else{
+if (window.clientEnv) {
+	modelManager = redox({
+		initialState: window.clientEnv,
+	})
+} else {
 	modelManager = redox()
 }
 
