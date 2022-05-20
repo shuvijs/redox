@@ -19,6 +19,7 @@ import { createActions } from './actions'
 import { createViews } from './views'
 import validate, { isObject } from './validate'
 import { emptyObject } from './utils'
+import reduxDevTools from './reduxDevtools'
 
 const randomString = () =>
 	Math.random().toString(36).substring(7).split('').join('.')
@@ -82,6 +83,7 @@ export function redox(
 ): IModelManager {
 	const cacheMap: ICacheMap = new Map()
 	let initState = initialState
+	plugins.unshift([reduxDevTools, undefined])
 	const hooks = plugins.map(([plugin, option]) => plugin(option))
 	const modelManager = {
 		get<IModel extends AnyModel>(model: IModel) {
