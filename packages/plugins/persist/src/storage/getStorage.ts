@@ -24,7 +24,7 @@ function hasStorage(storageType: string) {
 		storage.getItem(testKey)
 		storage.removeItem(testKey)
 	} catch (e) {
-		if (process.env.NODE_ENV !== 'production')
+		if (process.env.NODE_ENV === 'development')
 			console.warn(
 				`persist ${storageType} test failed, persistence will be disabled.`
 			)
@@ -38,7 +38,7 @@ export default function getStorage(type: string): Storage {
 	if (hasStorage(storageType))
 		return (globalThis as unknown as { [key: string]: Storage })[storageType]
 	else {
-		if (process.env.NODE_ENV !== 'production') {
+		if (process.env.NODE_ENV === 'development') {
 			console.error(
 				`persist failed to create sync storage. falling back to noop storage.`
 			)
