@@ -1,7 +1,7 @@
 import { IPlugin, redox, Store, AnyModel } from '@shuvi/redox'
 import createPersist from './createPersist'
 import getStoredState from './getStoredState'
-import localStorage, { createWebStorage } from './storage'
+import { createWebStorage } from './storage'
 import { persistModel } from './persistModel'
 import { IStorageState, PersistOptions } from './types'
 
@@ -39,7 +39,10 @@ const redoxPersist: IPlugin<AnyModel, PersistOptions> = function (options) {
 					return persist.flush()
 				},
 				togglePause() {
-					_isPause = !!_isPause
+					_isPause = !_isPause
+					if (!_isPause && _isInit) {
+						persist.update(_modelManager.getSnapshot())
+					}
 				},
 			})
 			_modelManager = modelManager
@@ -53,12 +56,12 @@ const redoxPersist: IPlugin<AnyModel, PersistOptions> = function (options) {
 					)
 						.then((migrateState) => {
 							_storageState = migrateState
-							_isInit = true
 							for (const Store of collectLoadingStore) {
 								setStorageState(_storageState, Store)
 							}
 							persistStore.$modify((s) => (s.rehydrated = true))
 							collectLoadingStore.clear()
+							_isInit = true
 						})
 						.catch((err) => {
 							console.error(`redoxPersist options.migrate error:`, err)
@@ -75,7 +78,7 @@ const redoxPersist: IPlugin<AnyModel, PersistOptions> = function (options) {
 				collectLoadingStore.add(Store)
 			}
 			const unSubscribe = Store.subscribe(function () {
-				if (!_isPause) {
+				if (!_isPause && _isInit) {
 					persist.update(_modelManager.getSnapshot())
 				}
 			})
@@ -89,7 +92,7 @@ const redoxPersist: IPlugin<AnyModel, PersistOptions> = function (options) {
 	}
 }
 
-export { localStorage, createWebStorage }
+export { createWebStorage, persistModel }
 
 export * from './types'
 
