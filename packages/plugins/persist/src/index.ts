@@ -13,7 +13,7 @@ type StoreProxy = Parameters<
 		: undefined
 	: undefined
 
-function setStorageState(storageState: IStorageState, Store: StoreProxy) {
+function _rehydrated(storageState: IStorageState, Store: StoreProxy) {
 	if (storageState && Store.model.name && storageState[Store.model.name]) {
 		Store.$set(storageState[Store.model.name])
 	}
@@ -57,7 +57,7 @@ const redoxPersist: IPlugin<AnyModel, PersistOptions> = function (options) {
 						.then((migrateState) => {
 							_storageState = migrateState
 							for (const Store of collectLoadingStore) {
-								setStorageState(_storageState, Store)
+								_rehydrated(_storageState, Store)
 							}
 							persistStore.$modify((s) => (s.rehydrated = true))
 							collectLoadingStore.clear()
@@ -73,7 +73,7 @@ const redoxPersist: IPlugin<AnyModel, PersistOptions> = function (options) {
 		},
 		onStoreCreated(Store) {
 			if (_isInit) {
-				setStorageState(_storageState, Store)
+				_rehydrated(_storageState, Store)
 			} else {
 				collectLoadingStore.add(Store)
 			}
