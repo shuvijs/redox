@@ -19,6 +19,7 @@ import { createActions } from './actions'
 import { createViews } from './views'
 import validate, { isObject } from './validate'
 import { emptyObject } from './utils'
+import reduxDevTools from './reduxDevtools'
 
 const randomString = () =>
 	Math.random().toString(36).substring(7).split('').join('.')
@@ -40,14 +41,53 @@ export type IModelManager = {
 	destroy(): void
 }
 
+export type pluginHook<IModel extends AnyModel = AnyModel> = {
+	onInit?(
+		modelManager: IModelManager,
+		initialState: Record<string, State>
+	): void
+	onModel?(model: IModel): void
+	onStoreCreated?(Store: RedoxStoreProxy): void
+	onDestroy?(): void
+}
+
+const proxyMethods = [
+	'$state',
+	'dispatch',
+	'subscribe',
+	'model',
+	'$set',
+	'$modify',
+] as const
+
+type IProxyMethods = typeof proxyMethods[number]
+
+type RedoxStoreProxy = Pick<RedoxStore<AnyModel>, IProxyMethods>
+
+export type IPlugin<IModel extends AnyModel = AnyModel, Option = any> = (
+	option: Option
+) => pluginHook<IModel>
+
 type ICacheMap = Map<string, RedoxStore<any>>
 
-export function redox(initialState?: Record<string, State>): IModelManager {
+export type RedoxOptions = {
+	initialState?: Record<string, State>
+	plugins?: [IPlugin, any?][]
+}
+
+export function redox(
+	{
+		initialState = emptyObject,
+		plugins = [],
+	}: RedoxOptions = {} as RedoxOptions
+): IModelManager {
 	const cacheMap: ICacheMap = new Map()
-	let initState = initialState || emptyObject
-	const modelCache = {
+	let initState = initialState
+	plugins.unshift([reduxDevTools, undefined])
+	const hooks = plugins.map(([plugin, option]) => plugin(option))
+	const modelManager = {
 		get<IModel extends AnyModel>(model: IModel) {
-			const redoxStore = modelCache._getRedox(model)
+			const redoxStore = modelManager._getRedox(model)
 			return redoxStore.storeApi
 		},
 		_getInitialState: (name: string): State | undefined => {
@@ -64,7 +104,7 @@ export function redox(initialState?: Record<string, State>): IModelManager {
 			return initModel(model)
 		},
 		subscribe(model: AnyModel, fn: () => any) {
-			const redoxStore = modelCache._getRedox(model)
+			const redoxStore = modelManager._getRedox(model)
 			return redoxStore.subscribe(fn)
 		},
 		// only get change state
@@ -76,6 +116,7 @@ export function redox(initialState?: Record<string, State>): IModelManager {
 			return allState
 		},
 		destroy() {
+			hooks.map((hook) => hook.onDestroy?.())
 			for (const store of cacheMap.values()) {
 				store.destroy()
 			}
@@ -84,18 +125,37 @@ export function redox(initialState?: Record<string, State>): IModelManager {
 		},
 	}
 	function initModel<M extends AnyModel>(model: M): RedoxStore<M> {
+		hooks.map((hook) => hook.onModel?.(model))
+
 		const depends = model._depends
 		if (depends) {
 			depends.forEach((depend) => {
-				modelCache._getRedox(depend) // trigger initial
+				modelManager._getRedox(depend) // trigger initial
 			})
 		}
-		const store = new RedoxStore(model, modelCache)
+		const store = new RedoxStore(model, modelManager)
+		const storeProxy = new Proxy(store, {
+			get(target, prop: IProxyMethods) {
+				if (process.env.NODE_ENV === 'development') {
+					validate(() => [
+						[
+							!proxyMethods.includes(prop),
+							`invalidate props ${prop}, should be one of ${proxyMethods.join(
+								' | '
+							)}`,
+						],
+					])
+				}
+				return target[prop]
+			},
+		})
+		hooks.map((hook) => hook.onStoreCreated?.(storeProxy))
 		const storeName = model.name
 		cacheMap.set(storeName, store)
 		return store
 	}
-	return modelCache
+	hooks.map((hook) => hook.onInit?.(modelManager, initState))
+	return modelManager
 }
 
 export class RedoxStore<IModel extends AnyModel> {
@@ -123,6 +183,7 @@ export class RedoxStore<IModel extends AnyModel> {
 			(this.model.name && this._cache._getInitialState(this.model.name)) ||
 			model.state
 		this.isDispatching = false
+
 		this.dispatch({ type: ActionTypes.INIT })
 
 		enhanceModel(this)

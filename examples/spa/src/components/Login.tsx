@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { useRootModel, ISelectorParams } from '@shuvi/redox-react'
+import { ISelectorParams } from '@shuvi/redox-react'
+import { useRootModel } from '../Container'
 
 import { login, currentUser } from '../models/login'
 

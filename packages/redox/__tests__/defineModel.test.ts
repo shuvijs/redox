@@ -40,18 +40,6 @@ describe('defineModel worked:', () => {
 			}).not.toThrow()
 		})
 
-		test('reducers is necessary', () => {
-			expect(() => {
-				const modelA = defineModel(
-					// @ts-ignore
-					{
-						name: 'a',
-						state: {},
-					}
-				)
-			}).toThrow()
-		})
-
 		test('state is necessary', () => {
 			expect(() => {
 				const modelA = defineModel(

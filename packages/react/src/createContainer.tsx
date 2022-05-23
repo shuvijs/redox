@@ -8,12 +8,12 @@ import React, {
 	useRef,
 } from 'react'
 import { validate, redox } from '@shuvi/redox'
-import type { IModelManager, AnyModel } from '@shuvi/redox'
+import type { IModelManager, AnyModel, RedoxOptions } from '@shuvi/redox'
 import { createUseModel, getStateActions } from './useModel'
 import { createBatchManager } from './batchManager'
 import { IUseModel, ISelector } from './types'
 
-const createContainer = function () {
+const createContainer = function (options?: RedoxOptions) {
 	const Context = createContext<{
 		modelManager: IModelManager
 		batchManager: ReturnType<typeof createBatchManager>
@@ -29,7 +29,7 @@ const createContainer = function () {
 				if (propsModelManager) {
 					modelManager = propsModelManager
 				} else {
-					modelManager = redox()
+					modelManager = redox(options)
 				}
 				const batchManager = createBatchManager()
 
@@ -137,6 +137,9 @@ const createContainer = function () {
 			} else {
 				isUpdate.current = true
 			}
+			// useEffect is async ,there's maybe some async update state between init and useEffect, trigger fn once
+			fn()
+
 			const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
 			return () => {
 				unSubscribe()
