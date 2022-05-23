@@ -6,7 +6,8 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { defineModel, redox } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
-import { useModel, RedoxRoot, useRootModel } from '../src'
+import { useModel } from '../src'
+import { RedoxRoot, useRootModel } from './Container'
 
 const countModel = defineModel({
 	name: 'countModel',

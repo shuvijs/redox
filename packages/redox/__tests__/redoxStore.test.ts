@@ -10,8 +10,10 @@ describe('redox worked:', () => {
 
 	test('initialState worked', () => {
 		manager = redox({
-			count: {
-				value: 1,
+			initialState: {
+				count: {
+					value: 1,
+				},
 			},
 		})
 		const count = defineModel({

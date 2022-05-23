@@ -68,6 +68,10 @@ const createUseModel =
 					isUpdate.current = true
 				}
 				const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
+
+				// useEffect is async ,there's maybe some async update state between init and useEffect, trigger fn once
+				fn()
+
 				return () => {
 					unSubscribe()
 				}
