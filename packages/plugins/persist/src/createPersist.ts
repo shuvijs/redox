@@ -101,7 +101,7 @@ export default function createPersist(config: PersistOptions) {
 	function onWriteFail(err: any) {
 		// @TODO add fail handlers (typically storage full)
 		if (writeFailHandler) writeFailHandler(err)
-		if (err && process.env.NODE_ENV !== 'production') {
+		if (err) {
 			console.error('Error storing data', err)
 		}
 	}
