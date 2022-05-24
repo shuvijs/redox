@@ -8,6 +8,7 @@ import { defineModel, redox } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
 import { useModel } from '../src'
 import { RedoxRoot, useRootModel } from './Container'
+import { sleep } from './models'
 
 const countModel = defineModel({
 	name: 'countModel',
@@ -47,8 +48,8 @@ afterEach(() => {
 	;(node as unknown as null) = null
 })
 
-describe('batchedUpdates worked:', () => {
-	test('once store change, update should batch in one time render', () => {
+describe('render test:', () => {
+	test('support unstable_batchedUpdates, update should batch in one time render', async () => {
 		let AppRenderCount = 0
 
 		function App() {
@@ -64,9 +65,13 @@ describe('batchedUpdates worked:', () => {
 					<div
 						id="button"
 						onClick={() => {
-							globalAddValue()
-							addValue()
-							addValue1()
+							Promise.resolve().then(() => {
+								ReactDOM.unstable_batchedUpdates(() => {
+									globalAddValue()
+									addValue()
+									addValue1()
+								})
+							})
 						}}
 					>
 						trigger actions
@@ -91,6 +96,7 @@ describe('batchedUpdates worked:', () => {
 				.querySelector('#button')
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
+		await sleep(100)
 		expect(AppRenderCount).toBe(2)
 	})
 
@@ -129,7 +135,7 @@ describe('batchedUpdates worked:', () => {
 		expect(AppRenderCount).toBe(2)
 	})
 
-	test('unsubscribe component render should is auto when component unmount', () => {
+	test('unsubscribe worked and it should not render any more when component unmount', () => {
 		let AppRenderCount = 0
 
 		function SubApp() {
@@ -407,87 +413,5 @@ describe('batchedUpdates worked:', () => {
 		expect(childRenderCount).toBe(2)
 		expect(node.querySelector('#test')?.innerHTML).toEqual('test:4')
 		expect(node.querySelector('#value')?.innerHTML).toEqual('value:2')
-	})
-
-	test('depends model case render depend and beDepend subscribe component should batch in one time render', () => {
-		let parentRenderCount = 0
-		let childRenderCount = 0
-
-		const appModel = defineModel(
-			{
-				name: 'appModel',
-				state: {
-					value: 2,
-				},
-				reducers: {
-					add(state) {
-						state.value += 1
-					},
-				},
-				actions: {
-					makeCall() {
-						this.$dep.countModel.addValue() // depend case appModel render
-						this.add()
-					},
-				},
-			},
-			[countModel]
-		)
-
-		function SubApp() {
-			childRenderCount++
-			const [{ value }, _] = useRootModel(countModel)
-
-			return (
-				<>
-					<div id="SubApp">{value}</div>
-				</>
-			)
-		}
-
-		function App() {
-			parentRenderCount += 1
-			const [{ value }, { makeCall }] = useRootModel(appModel)
-
-			return (
-				<div>
-					<div id="App">{value}</div>
-					<button
-						id="button"
-						onClick={() => {
-							makeCall()
-						}}
-					>
-						addValue
-					</button>
-					<SubApp />
-				</div>
-			)
-		}
-
-		act(() => {
-			ReactDOM.render(
-				<RedoxRoot>
-					<App />
-				</RedoxRoot>,
-				node
-			)
-		})
-
-		expect(parentRenderCount).toBe(1)
-		expect(childRenderCount).toBe(1)
-
-		expect(node.querySelector('#SubApp')?.innerHTML).toEqual('1')
-		expect(node.querySelector('#App')?.innerHTML).toEqual('2')
-
-		act(() => {
-			node
-				.querySelector('#button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		expect(parentRenderCount).toBe(2)
-		expect(childRenderCount).toBe(2)
-		expect(node.querySelector('#SubApp')?.innerHTML).toEqual('2')
-		expect(node.querySelector('#App')?.innerHTML).toEqual('3')
 	})
 })

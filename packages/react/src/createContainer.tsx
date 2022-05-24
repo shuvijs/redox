@@ -10,13 +10,11 @@ import React, {
 import { validate, redox } from '@shuvi/redox'
 import type { IModelManager, AnyModel, RedoxOptions } from '@shuvi/redox'
 import { createUseModel, getStateActions } from './useModel'
-import { createBatchManager } from './batchManager'
 import { IUseModel, ISelector } from './types'
 
 const createContainer = function (options?: RedoxOptions) {
 	const Context = createContext<{
 		modelManager: IModelManager
-		batchManager: ReturnType<typeof createBatchManager>
 	}>(null as any)
 	function Provider(
 		props: PropsWithChildren<{ modelManager?: IModelManager }>
@@ -31,11 +29,9 @@ const createContainer = function (options?: RedoxOptions) {
 				} else {
 					modelManager = redox(options)
 				}
-				const batchManager = createBatchManager()
 
 				return {
 					modelManager,
-					batchManager,
 				}
 			},
 			[propsModelManager]
@@ -78,12 +74,12 @@ const createContainer = function (options?: RedoxOptions) {
 			])
 		}
 
-		const { modelManager, batchManager } = context
+		const { modelManager } = context
 
-		return useMemo(
-			() => createUseModel(modelManager, batchManager),
-			[modelManager, batchManager]
-		)(model, selector)
+		return useMemo(() => createUseModel(modelManager), [modelManager])(
+			model,
+			selector
+		)
 	}
 
 	const useStaticModel: IUseModel = <
@@ -106,10 +102,10 @@ const createContainer = function (options?: RedoxOptions) {
 			])
 		}
 
-		const { modelManager, batchManager } = context
+		const { modelManager } = context
 		const initialValue = useMemo(() => {
 			return getStateActions(model, modelManager, selector)
-		}, [modelManager, batchManager])
+		}, [modelManager])
 
 		const value = useRef<[any, any]>([
 			// deep clone state in case mutate origin state accidentlly.
@@ -140,11 +136,11 @@ const createContainer = function (options?: RedoxOptions) {
 			// useEffect is async ,there's maybe some async update state between init and useEffect, trigger fn once
 			fn()
 
-			const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
+			const unSubscribe = modelManager.subscribe(model, fn)
 			return () => {
 				unSubscribe()
 			}
-		}, [modelManager, batchManager])
+		}, [modelManager])
 
 		return value.current
 	}

@@ -1,7 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { redox, validate } from '@shuvi/redox'
 import type { IModelManager, RedoxStore, AnyModel } from '@shuvi/redox'
-import { createBatchManager } from './batchManager'
 import { shadowEqual } from './utils'
 import { IUseModel, ISelector, ISelectorParams } from './types'
 
@@ -32,10 +31,7 @@ function getStateActions<
 }
 
 const createUseModel =
-	(
-		modelManager: IModelManager,
-		batchManager: ReturnType<typeof createBatchManager>
-	) =>
+	(modelManager: IModelManager) =>
 	<IModel extends AnyModel, Selector extends ISelector<IModel>>(
 		model: IModel,
 		selector?: Selector
@@ -44,7 +40,7 @@ const createUseModel =
 			function () {
 				return getStateActions(model, modelManager, selector)
 			},
-			[modelManager, batchManager]
+			[modelManager]
 		)
 
 		const [modelValue, setModelValue] = useState(initialValue)
@@ -67,8 +63,7 @@ const createUseModel =
 				} else {
 					isUpdate.current = true
 				}
-				const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
-
+				const unSubscribe = modelManager.subscribe(model, fn)
 				// useEffect is async ,there's maybe some async update state between init and useEffect, trigger fn once
 				fn()
 
@@ -76,7 +71,7 @@ const createUseModel =
 					unSubscribe()
 				}
 			},
-			[modelManager, batchManager]
+			[modelManager]
 		)
 
 		return modelValue
@@ -93,23 +88,19 @@ const useModel: IUseModel = <
 		validate(() => [[!Boolean(model), `useModel param model is necessary`]])
 	}
 
-	let [modelManager, batchManager] = useMemo(function () {
-		return [redox(), createBatchManager()]
+	let [modelManager] = useMemo(function () {
+		return [redox()]
 	}, [])
 
 	const contextValue = useRef({
 		modelManager,
-		batchManager,
 	})
 
 	return useMemo(
 		function () {
-			return createUseModel(
-				contextValue.current.modelManager,
-				contextValue.current.batchManager
-			)
+			return createUseModel(contextValue.current.modelManager)
 		},
-		[contextValue.current.modelManager, contextValue.current.batchManager]
+		[contextValue.current.modelManager]
 	)(model, selector)
 }
 
