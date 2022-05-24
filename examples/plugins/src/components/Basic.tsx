@@ -17,9 +17,7 @@ function Count() {
 			</div>
 			<hr />
 			<A />
-			<hr />
 			<B />
-			<hr />
 		</div>
 	)
 }

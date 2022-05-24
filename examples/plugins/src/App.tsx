@@ -1,15 +1,19 @@
 import React from 'react'
 import Basic from './components/Basic'
+import { persistModel } from '@shuvi/redox-persist'
+import { useRootModel } from './Container'
 
 function App() {
-	const [show, setShow] = React.useState(true)
+	const [{ rehydrated }] = useRootModel(persistModel)
 	return (
 		<>
-			{show ? (
+			{rehydrated ? (
 				<>
 					<Basic />
 				</>
-			) : null}
+			) : (
+				'isLoading'
+			)}
 		</>
 	)
 }
