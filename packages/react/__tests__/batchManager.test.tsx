@@ -8,6 +8,8 @@ import { defineModel, redox } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
 import { useModel } from '../src'
 import { RedoxRoot, useRootModel } from './Container'
+import { unstable_batchedUpdates } from 'react-dom'
+import { sleep } from './models'
 
 const countModel = defineModel({
 	name: 'countModel',
@@ -48,7 +50,7 @@ afterEach(() => {
 })
 
 describe('batchedUpdates worked:', () => {
-	test('once store change, update should batch in one time render', () => {
+	test('internal batchedUpdates, sync update should batch in one time render', () => {
 		let AppRenderCount = 0
 
 		function App() {
@@ -91,6 +93,57 @@ describe('batchedUpdates worked:', () => {
 				.querySelector('#button')
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
+		expect(AppRenderCount).toBe(2)
+	})
+
+	test('supported batchedUpdates, async update should batch in one time render', async () => {
+		let AppRenderCount = 0
+
+		function App() {
+			AppRenderCount += 1
+			const [{ value: globalValue }, { addValue: globalAddValue }] =
+				useRootModel(countModel)
+			const [{ value }, { addValue }] = useModel(countModel)
+			const [{ value1 }, { addValue1 }] = useModel(countModel)
+
+			return (
+				<>
+					<div id="value">{`${globalValue}${value}${value1}`}</div>
+					<div
+						id="button"
+						onClick={() => {
+							Promise.resolve().then(() => {
+								unstable_batchedUpdates(() => {
+									globalAddValue()
+									addValue()
+									addValue1()
+								})
+							})
+						}}
+					>
+						trigger actions
+					</div>
+				</>
+			)
+		}
+
+		act(() => {
+			ReactDOM.render(
+				<RedoxRoot>
+					<App />
+				</RedoxRoot>,
+				node
+			)
+		})
+
+		expect(AppRenderCount).toBe(1)
+
+		act(() => {
+			node
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		await sleep(100)
 		expect(AppRenderCount).toBe(2)
 	})
 
