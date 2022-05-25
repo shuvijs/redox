@@ -24,10 +24,11 @@ import reduxDevTools from './reduxDevtools'
 const randomString = () =>
 	Math.random().toString(36).substring(7).split('').join('.')
 
-const ActionTypes = {
+export const ActionTypes = {
 	INIT: `@@redox/INIT${/* #__PURE__ */ randomString()}`,
 	SET: '@@redox/SET',
 	MODIFY: '@@redox/MODIFY',
+	SET_FROM_DEVTOOLS: '@@redox/SET_FROM_DEVTOOLS',
 }
 
 type unSubscribe = () => void
@@ -58,6 +59,7 @@ const proxyMethods = [
 	'model',
 	'$set',
 	'$modify',
+	'$reducer',
 ] as const
 
 type IProxyMethods = typeof proxyMethods[number]
@@ -83,7 +85,9 @@ export function redox(
 ): IModelManager {
 	const cacheMap: ICacheMap = new Map()
 	let initState = initialState
-	plugins.unshift([reduxDevTools])
+	if (process.env.NODE_ENV === 'development') {
+		plugins.unshift([reduxDevTools])
+	}
 	const hooks = plugins.map(([plugin, option]) => plugin(option))
 	const modelManager = {
 		get<IModel extends AnyModel>(model: IModel) {
@@ -166,6 +170,7 @@ export class RedoxStore<IModel extends AnyModel> {
 	public storeDepends: Record<string, Store<AnyModel>>
 	public $actions = {} as DispatchOfModel<IModel>
 	public $views = {} as RedoxViews<IModel['views']>
+	public $reducer: ReduxReducer<IModel['state']> | null
 
 	private currentState: IModel['state']
 	private currentReducer: ReduxReducer<IModel['state']> | null
@@ -179,6 +184,7 @@ export class RedoxStore<IModel extends AnyModel> {
 		enhanceReducer(model)
 		const reducer = createModelReducer(model)
 		this.currentReducer = reducer
+		this.$reducer = reducer
 		this.currentState =
 			(this.model.name && this._cache._getInitialState(this.model.name)) ||
 			model.state
@@ -366,7 +372,10 @@ export function createModelReducer<
 >(model: Model<N, S, MC, R, RA, V>): ReduxReducer<S, Action> {
 	// select and run a reducer based on the incoming action
 	return (state: S = model.state, action: Action): S => {
-		if (action.type === ActionTypes.SET) {
+		if (
+			action.type === ActionTypes.SET ||
+			action.type === ActionTypes.SET_FROM_DEVTOOLS
+		) {
 			if (process.env.NODE_ENV === 'development') {
 				validate(() => [
 					[!isObject(action.payload), 'Expected the payload to be an Object'],
