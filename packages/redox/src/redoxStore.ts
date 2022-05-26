@@ -58,6 +58,7 @@ const proxyMethods = [
 	'model',
 	'$set',
 	'$modify',
+	'$reducer',
 ] as const
 
 type IProxyMethods = typeof proxyMethods[number]
@@ -83,7 +84,9 @@ export function redox(
 ): IModelManager {
 	const cacheMap: ICacheMap = new Map()
 	let initState = initialState
-	plugins.unshift([reduxDevTools])
+	if (process.env.NODE_ENV === 'development') {
+		plugins.unshift([reduxDevTools])
+	}
 	const hooks = plugins.map(([plugin, option]) => plugin(option))
 	const modelManager = {
 		get<IModel extends AnyModel>(model: IModel) {
@@ -166,9 +169,9 @@ export class RedoxStore<IModel extends AnyModel> {
 	public storeDepends: Record<string, Store<AnyModel>>
 	public $actions = {} as DispatchOfModel<IModel>
 	public $views = {} as RedoxViews<IModel['views']>
+	public $reducer: ReduxReducer<IModel['state']> | null
 
 	private currentState: IModel['state']
-	private currentReducer: ReduxReducer<IModel['state']> | null
 	private listeners: Set<() => void> = new Set()
 	private isDispatching: boolean
 
@@ -178,7 +181,7 @@ export class RedoxStore<IModel extends AnyModel> {
 		this.storeDepends = {}
 		enhanceReducer(model)
 		const reducer = createModelReducer(model)
-		this.currentReducer = reducer
+		this.$reducer = reducer
 		this.currentState =
 			(this.model.name && this._cache._getInitialState(this.model.name)) ||
 			model.state
@@ -264,7 +267,7 @@ export class RedoxStore<IModel extends AnyModel> {
 
 		try {
 			this.isDispatching = true
-			nextState = this.currentReducer!(this.currentState, action)
+			nextState = this.$reducer!(this.currentState, action)
 		} finally {
 			this.isDispatching = false
 		}
@@ -295,7 +298,7 @@ export class RedoxStore<IModel extends AnyModel> {
 	destroy = () => {
 		// @ts-ignore
 		this.currentState = null
-		this.currentReducer = null
+		this.$reducer = null
 		this.listeners.clear()
 		this._beDepends.clear()
 		this.model = emptyObject
