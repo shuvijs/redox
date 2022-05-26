@@ -28,7 +28,6 @@ export const ActionTypes = {
 	INIT: `@@redox/INIT${/* #__PURE__ */ randomString()}`,
 	SET: '@@redox/SET',
 	MODIFY: '@@redox/MODIFY',
-	SET_FROM_DEVTOOLS: '@@redox/SET_FROM_DEVTOOLS',
 }
 
 type unSubscribe = () => void
@@ -173,7 +172,6 @@ export class RedoxStore<IModel extends AnyModel> {
 	public $reducer: ReduxReducer<IModel['state']> | null
 
 	private currentState: IModel['state']
-	private currentReducer: ReduxReducer<IModel['state']> | null
 	private listeners: Set<() => void> = new Set()
 	private isDispatching: boolean
 
@@ -183,7 +181,6 @@ export class RedoxStore<IModel extends AnyModel> {
 		this.storeDepends = {}
 		enhanceReducer(model)
 		const reducer = createModelReducer(model)
-		this.currentReducer = reducer
 		this.$reducer = reducer
 		this.currentState =
 			(this.model.name && this._cache._getInitialState(this.model.name)) ||
@@ -270,7 +267,7 @@ export class RedoxStore<IModel extends AnyModel> {
 
 		try {
 			this.isDispatching = true
-			nextState = this.currentReducer!(this.currentState, action)
+			nextState = this.$reducer!(this.currentState, action)
 		} finally {
 			this.isDispatching = false
 		}
@@ -301,7 +298,7 @@ export class RedoxStore<IModel extends AnyModel> {
 	destroy = () => {
 		// @ts-ignore
 		this.currentState = null
-		this.currentReducer = null
+		this.$reducer = null
 		this.listeners.clear()
 		this._beDepends.clear()
 		this.model = emptyObject
@@ -372,10 +369,7 @@ export function createModelReducer<
 >(model: Model<N, S, MC, R, RA, V>): ReduxReducer<S, Action> {
 	// select and run a reducer based on the incoming action
 	return (state: S = model.state, action: Action): S => {
-		if (
-			action.type === ActionTypes.SET ||
-			action.type === ActionTypes.SET_FROM_DEVTOOLS
-		) {
+		if (action.type === ActionTypes.SET) {
 			if (process.env.NODE_ENV === 'development') {
 				validate(() => [
 					[!isObject(action.payload), 'Expected the payload to be an Object'],
