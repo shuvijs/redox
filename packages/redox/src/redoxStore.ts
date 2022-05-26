@@ -24,7 +24,7 @@ import reduxDevTools from './reduxDevtools'
 const randomString = () =>
 	Math.random().toString(36).substring(7).split('').join('.')
 
-export const ActionTypes = {
+const ActionTypes = {
 	INIT: `@@redox/INIT${/* #__PURE__ */ randomString()}`,
 	SET: '@@redox/SET',
 	MODIFY: '@@redox/MODIFY',

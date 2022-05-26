@@ -43,7 +43,6 @@ const reduxDevTools: IPlugin = function () {
 						case 'DISPATCH':
 							switch (message.payload.type) {
 								case 'RESET':
-									// Store.$set(initialState)
 									return devTools.init(Store.$state())
 
 								case 'COMMIT':
