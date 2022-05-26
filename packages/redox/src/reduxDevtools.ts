@@ -1,16 +1,20 @@
-import { IPlugin, ActionTypes } from './redoxStore'
+import { IPlugin } from './redoxStore'
 import validate from './validate'
 
+const SET_FROM_DEVTOOLS = '@@redox/SET_FROM_DEVTOOLS'
+
 const reduxDevTools: IPlugin = function () {
+	let id = 0
+	const unsubscribeSet = new Set<() => void>()
 	return {
 		onStoreCreated(Store) {
 			if (
 				typeof window !== 'undefined' &&
 				(window as any).__REDUX_DEVTOOLS_EXTENSION__
 			) {
-				const origDispatch = Store.dispatch
+				const originReducer = Store.$reducer
 				const devTools = (window as any).__REDUX_DEVTOOLS_EXTENSION__!.connect({
-					name: Store.model.name,
+					name: Store.model.name || `userModel_${id++}`,
 				})
 
 				const initialState = Store.$state()
@@ -18,7 +22,7 @@ const reduxDevTools: IPlugin = function () {
 
 				let isLatestState = true
 				let latestState: any = Store.$state()
-				devTools.subscribe((message: any) => {
+				const fn = (message: any) => {
 					switch (message.type) {
 						case 'ACTION':
 							validate(() => [
@@ -29,9 +33,6 @@ const reduxDevTools: IPlugin = function () {
 							])
 							try {
 								const action = JSON.parse(message.payload)
-								if (action.type === ActionTypes.SET) {
-									return Store.$set(action.state)
-								}
 								return Store.dispatch(action)
 							} catch (e) {
 								return validate(() => [
@@ -42,7 +43,7 @@ const reduxDevTools: IPlugin = function () {
 						case 'DISPATCH':
 							switch (message.payload.type) {
 								case 'RESET':
-									Store.$set(initialState)
+									// Store.$set(initialState)
 									return devTools.init(Store.$state())
 
 								case 'COMMIT':
@@ -54,7 +55,7 @@ const reduxDevTools: IPlugin = function () {
 									try {
 										const parsedState = JSON.parse(message.state)
 										const action = {
-											type: ActionTypes.SET_FROM_DEVTOOLS,
+											type: SET_FROM_DEVTOOLS,
 											payload: parsedState,
 										}
 										Store.dispatch(action)
@@ -79,7 +80,7 @@ const reduxDevTools: IPlugin = function () {
 											latestState = Store.$state()
 										}
 										const action = {
-											type: ActionTypes.SET_FROM_DEVTOOLS,
+											type: SET_FROM_DEVTOOLS,
 											payload: parsedState,
 										}
 										return Store.dispatch(action)
@@ -91,27 +92,33 @@ const reduxDevTools: IPlugin = function () {
 							}
 							return
 					}
-				})
+				}
+				const unsubscribe = devTools.subscribe(fn)
+				unsubscribeSet.add(unsubscribe)
 
-				const dispatch = function (action: any) {
-					let res
-					let state
-					if (isLatestState || action.type === ActionTypes.SET_FROM_DEVTOOLS) {
-						res = origDispatch(action)
-						state = Store.$state()
-					} else {
-						res = action
-						state = Store.$reducer!(latestState, action)
-						latestState = state
+				const $reducer: typeof Store.$reducer = function (state, action) {
+					if (action.type === SET_FROM_DEVTOOLS) {
+						return action.payload
 					}
-					if (action.type !== ActionTypes.SET_FROM_DEVTOOLS) {
-						devTools.send(action, state)
+					if (!isLatestState) {
+						const newState = originReducer!(latestState, action)
+						latestState = newState
+						devTools.send(action, newState)
+						return state
 					}
-					return res
+					const newState = originReducer!(state, action)
+					devTools.send(action, newState)
+					return newState
 				}
 
-				Store.dispatch = dispatch
+				Store.$reducer = $reducer
 			}
+		},
+		onDestroy() {
+			for (const fn of unsubscribeSet.values()) {
+				fn()
+			}
+			unsubscribeSet.clear()
 		},
 	}
 }
