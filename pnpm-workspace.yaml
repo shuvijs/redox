@@ -3,4 +3,5 @@ packages:
   - 'packages/plugins/*'
   - 'examples/ssr'
   - 'examples/spa'
+  - 'examples/tearing'
   - 'examples/plugins'
