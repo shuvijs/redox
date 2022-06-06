@@ -142,6 +142,7 @@ const createContainer = function (options?: RedoxOptions) {
 
 			const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
 			return () => {
+				isUpdate.current = false
 				unSubscribe()
 			}
 		}, [modelManager, batchManager])
