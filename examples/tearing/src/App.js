@@ -84,6 +84,8 @@ const counterModel = defineModel({
 
 const counterStore = modelManger.get(counterModel)
 
+window.counterStore = counterStore
+
 setInterval(() => {
 	counterStore.increment()
 }, 50)
