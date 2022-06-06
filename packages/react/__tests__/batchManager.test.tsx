@@ -30,6 +30,9 @@ const countModel = defineModel({
 		},
 	},
 	views: {
+		valuePlusOne() {
+			return this.value + 1
+		},
 		test(args: number) {
 			return this.value + args
 		},
@@ -48,7 +51,7 @@ afterEach(() => {
 })
 
 describe('batchedUpdates worked:', () => {
-	test('once store change, update should batch in one time render', () => {
+	test('updates should be batched when there are in the lifecyle of react', () => {
 		let AppRenderCount = 0
 
 		function App() {
@@ -92,6 +95,43 @@ describe('batchedUpdates worked:', () => {
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
 		expect(AppRenderCount).toBe(2)
+	})
+
+	test("render should be batched when update occurs out of react's lifecycle", () => {
+		let _actions: any
+		let AppRenderCount = 0
+		function App() {
+			AppRenderCount++
+			const [{ value }, actions] = useRootModel(countModel)
+			const [valuePlusOne] = useRootModel(countModel, (s) => s.valuePlusOne())
+			_actions = actions
+
+			return (
+				<>
+					<div id="v">{value}</div>
+					<div id="v1">{valuePlusOne}</div>
+				</>
+			)
+		}
+
+		act(() => {
+			ReactDOM.render(
+				<RedoxRoot>
+					<App />
+				</RedoxRoot>,
+				node
+			)
+		})
+
+		expect(AppRenderCount).toBe(1)
+		expect(node.querySelector('#v')!.textContent).toEqual('1')
+		expect(node.querySelector('#v1')!.textContent).toEqual('2')
+
+		_actions.addValue()
+
+		expect(AppRenderCount).toBe(2)
+		expect(node.querySelector('#v')!.textContent).toEqual('2')
+		expect(node.querySelector('#v1')!.textContent).toEqual('3')
 	})
 
 	test('it can trigger component render outside of component', () => {
