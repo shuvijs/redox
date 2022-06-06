@@ -73,6 +73,7 @@ const createUseModel =
 				fn()
 
 				return () => {
+					isUpdate.current = false
 					unSubscribe()
 				}
 			},
