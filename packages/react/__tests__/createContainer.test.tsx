@@ -23,7 +23,7 @@ afterEach(() => {
 	;(node as unknown as null) = null
 })
 
-describe('useRootModel worked:', () => {
+describe('useRootModel', () => {
 	describe('useRootModel valid:', () => {
 		test('valid name is required:', async () => {
 			const tempModel = defineModel({
@@ -645,9 +645,9 @@ describe('useRootModel worked:', () => {
 	})
 })
 
-describe('useRootStaticModel worked:', () => {
+describe('useRootStaticModel', () => {
 	describe('useRootStaticModel valid:', () => {
-		test('valid name is required:', async () => {
+		test('name should be required:', async () => {
 			const tempModel = defineModel({
 				state: {
 					value: 1,
@@ -816,7 +816,7 @@ describe('useRootStaticModel worked:', () => {
 	})
 })
 
-describe('RedoxRoot worked:', () => {
+describe('RedoxRoot', () => {
 	test('RedoxRoot worked with useRootModel:', () => {
 		const App = () => {
 			const [state, actions] = useRootModel(countModel)
