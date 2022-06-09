@@ -43,7 +43,8 @@ const validate = (runValidations: () => Validation[]): void => {
 
 export const validateModel = (model: AnyModel): void => {
 	validate(() => [[!model, 'model config is required']])
-	const keys = new Set<string>(Object.keys(model.state))
+	validate(() => [[!model.hasOwnProperty('state'), 'state is required']])
+	const keys = new Set<string>(Object.keys(model.state || {}))
 	validateProperty(model, 'views', keys, 'check state and views')
 	keys.clear()
 	validateProperty(model, 'reducers', keys, 'check reducers')

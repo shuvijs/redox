@@ -32,6 +32,71 @@ describe('redox worked:', () => {
 		expect(store.$state()).toEqual({ value: 2 })
 	})
 
+	test('initialize state as a String should work', () => {
+		manager = redox({
+			initialState: {
+				countNumber: 1,
+			},
+		})
+		const countNumber = defineModel({
+			name: 'countNumber',
+			state: 0,
+			reducers: {
+				increment(state) {
+					return ++state
+				},
+			},
+		})
+
+		const store = manager.get(countNumber)
+		expect(store.$state()).toEqual(1)
+		store.increment()
+		expect(store.$state()).toEqual(2)
+	})
+
+	test('initialize state as a Number should work', () => {
+		manager = redox({
+			initialState: {
+				textModel: 'initial',
+			},
+		})
+		const textModel = defineModel({
+			name: 'textModel',
+			state: '',
+			reducers: {
+				append(state, payload) {
+					return `${state}${payload}`
+				},
+				replace(_, payload) {
+					return payload
+				},
+			},
+		})
+
+		const store = manager.get(textModel)
+		expect(store.$state()).toEqual('initial')
+		store.append('_test')
+		expect(store.$state()).toEqual('initial_test')
+	})
+
+	test('initialize state as a Boolean should work', () => {
+		manager = redox()
+		const booleanModel = defineModel({
+			name: 'booleanModel',
+			state: false,
+			reducers: {
+				toggle(state) {
+					return !state
+				},
+			},
+		})
+
+		const store = manager.get(booleanModel)
+		expect(store.$state()).toEqual(false)
+		store.toggle()
+		expect(store.$state()).toEqual(true)
+	})
+
 	test('depends will be initial auto', () => {
 		manager = redox()
 		const depend = defineModel({
