@@ -37,10 +37,17 @@ export interface ReduxDispatch<A extends ReduxAction = AnyAction> {
 
 /** ************************** modal-start *************************** */
 
-export type State = {
-	[x: string]: any
-	[y: number]: never
-}
+export type State =
+	| {
+			[x: string]: any
+			[y: number]: never
+	  }
+	| String
+	| Number
+	| Boolean
+	| any[]
+	| undefined
+	| null
 
 export interface Action<TPayload = any> extends ReduxAction<string> {
 	payload?: TPayload
@@ -249,7 +256,7 @@ export type Depends = AnyModel[]
 
 export type Store<IModel extends AnyModel> = {
 	$state: () => IModel['state']
-	$set: (state: IModel['state']) => void
+	$set: (state: State) => void
 	$modify: (modifier: (state: IModel['state']) => void) => void
 } & RedoxViews<IModel['views']> &
 	DispatchOfModel<IModel>
