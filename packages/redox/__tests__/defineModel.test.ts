@@ -52,15 +52,70 @@ describe('defineModel worked:', () => {
 			}).toThrow()
 		})
 
-		test('state should be object', () => {
+		test('state could be a number', () => {
 			expect(() => {
-				const modelA = defineModel({
+				const model = defineModel({
 					name: 'a',
 					// @ts-ignore
 					state: 1,
 					reducers: {},
 				})
-			}).toThrow()
+			}).not.toThrow()
+		})
+
+		test('state could be a string', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					// @ts-ignore
+					state: 'test',
+					reducers: {},
+				})
+			}).not.toThrow()
+		})
+
+		test('state could be a array', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					// @ts-ignore
+					state: [],
+					reducers: {},
+				})
+			}).not.toThrow()
+		})
+
+		test('state could be a boolean', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					// @ts-ignore
+					state: false,
+					reducers: {},
+				})
+			}).not.toThrow()
+		})
+
+		test('state could be a undefined', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					// @ts-ignore
+					state: undefined,
+					reducers: {},
+				})
+			}).not.toThrow()
+		})
+
+		test('state could be a null', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					// @ts-ignore
+					state: null,
+					reducers: {},
+				})
+			}).not.toThrow()
 		})
 
 		test('reducers should be object', () => {

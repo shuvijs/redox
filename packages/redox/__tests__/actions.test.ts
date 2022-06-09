@@ -191,9 +191,9 @@ describe('actions worked:', () => {
 		expect(state.value).toEqual(store.$state().value)
 	})
 
-	test('this.$set should throw error message if the argument type is not an Object', () => {
-		const count = defineModel({
-			name: 'count',
+	test('this.$set could accept any primitive type as an argument, except Symbol and BigInt', () => {
+		const anyModal = defineModel({
+			name: 'anyModal',
 			state: { value: 0 },
 			reducers: {},
 			actions: {
@@ -203,29 +203,23 @@ describe('actions worked:', () => {
 			},
 		})
 
-		const store = manager.get(count)
-		expect(() => store.setStateWith([])).toThrow(
-			'Expected the payload to be an Object'
-		)
+		const store = manager.get(anyModal)
 		expect(store.$state()).toEqual({ value: 0 })
 
-		expect(() => store.setStateWith(2)).toThrow(
-			'Expected the payload to be an Object'
-		)
-		expect(store.$state()).toEqual({ value: 0 })
+		store.$set([])
+		expect(store.$state()).toEqual([])
 
-		expect(() => store.setStateWith(false)).toThrow(
-			'Expected the payload to be an Object'
-		)
-		expect(store.$state()).toEqual({ value: 0 })
+		store.$set(0)
+		expect(store.$state()).toEqual(0)
 
-		expect(() => store.setStateWith('test string')).toThrow(
-			'Expected the payload to be an Object'
-		)
-		expect(store.$state()).toEqual({ value: 0 })
+		store.$set(false)
+		expect(store.$state()).toEqual(false)
+
+		store.$set('test string')
+		expect(store.$state()).toEqual('test string')
 	})
 
-	test('this.$modify could change the state', () => {
+	test('this.$modify could change the Object state', () => {
 		const count = defineModel({
 			name: 'count',
 			state: { value: 0 },
@@ -245,6 +239,29 @@ describe('actions worked:', () => {
 		}
 		store.makeCall(modifier)
 		expect(newValue).toEqual(store.$state().value)
+	})
+
+	test('this.$modify could change the Array state', () => {
+		const count = defineModel({
+			name: 'count',
+			state: [0],
+			reducers: {},
+			actions: {
+				makeCall(modifier: (state: any) => void): void {
+					this.$modify(modifier)
+				},
+			},
+		})
+
+		const store = manager.get(count)
+		const originalArr = store.$state()
+
+		const newValue: number = 2
+		const modifier = (state: any) => {
+			state.push(newValue)
+		}
+		store.makeCall(modifier)
+		expect([...originalArr, newValue]).toEqual(store.$state())
 	})
 
 	test('this.$modify does not affected by returned value from the modifier', () => {
@@ -272,6 +289,77 @@ describe('actions worked:', () => {
 		}
 		store.makeCall(modifier)
 		expect(newValue).toEqual(valueFromStore)
+	})
+
+	test('this.$modify should modify nothing if typeof state is number', () => {
+		const count = defineModel({
+			name: 'count',
+			state: 4,
+			reducers: {},
+			actions: {
+				makeCall(modifier: (state: any) => void): void {
+					this.$modify(modifier)
+				},
+			},
+		})
+
+		const store = manager.get(count)
+		const originalValue = store.$state()
+
+		const addedValue: number = 2
+		const modifier = (state: any) => {
+			state += addedValue
+			return state + addedValue
+		}
+		store.makeCall(modifier)
+		expect(originalValue).toEqual(store.$state())
+	})
+
+	test('this.$modify should modify nothing if typeof state is string', () => {
+		const count = defineModel({
+			name: 'count',
+			state: 'test',
+			reducers: {},
+			actions: {
+				makeCall(modifier: (state: any) => void): void {
+					this.$modify(modifier)
+				},
+			},
+		})
+
+		const store = manager.get(count)
+		const originalValue = store.$state()
+
+		const appendedString: string = 'append'
+		const modifier = (state: any) => {
+			state += appendedString
+			return state + appendedString
+		}
+		store.makeCall(modifier)
+		expect(originalValue).toEqual(store.$state())
+	})
+
+	test('this.$modify should modify nothing if typeof state is boolean', () => {
+		const count = defineModel({
+			name: 'count',
+			state: true,
+			reducers: {},
+			actions: {
+				makeCall(modifier: (state: any) => void): void {
+					this.$modify(modifier)
+				},
+			},
+		})
+
+		const store = manager.get(count)
+		const originalValue = store.$state()
+
+		const modifier = (state: any) => {
+			state = false
+			return false
+		}
+		store.makeCall(modifier)
+		expect(originalValue).toEqual(store.$state())
 	})
 
 	test('this should contain $dep', async () => {
@@ -578,18 +666,14 @@ describe('actions worked:', () => {
 					reducers: {},
 					actions: {
 						makeCall() {
-							expect(() => this.$dep.depModel.$set(1 as any)).toThrow(
-								'Expected the payload to be an Object'
-							)
-							expect(() => this.$dep.depModel.$set([] as any)).toThrow(
-								'Expected the payload to be an Object'
-							)
-							expect(() => this.$dep.depModel.$set(false as any)).toThrow(
-								'Expected the payload to be an Object'
-							)
-							expect(() =>
-								this.$dep.depModel.$set('test string' as any)
-							).toThrow('Expected the payload to be an Object')
+							this.$dep.depModel.$set([])
+							expect(this.$dep.depModel.$state()).toEqual([])
+							this.$dep.depModel.$set(1)
+							expect(this.$dep.depModel.$state()).toEqual(1)
+							this.$dep.depModel.$set(false)
+							expect(this.$dep.depModel.$state()).toEqual(false)
+							this.$dep.depModel.$set('test string')
+							expect(this.$dep.depModel.$state()).toEqual('test string')
 						},
 					},
 				},
@@ -601,7 +685,7 @@ describe('actions worked:', () => {
 			store.makeCall()
 		})
 
-		test("$dep's $modify should worked", () => {
+		test("$dep's $modify could change Object state", () => {
 			const depModel = defineModel({
 				name: 'depModel',
 				state: { value: 0 },
@@ -623,6 +707,39 @@ describe('actions worked:', () => {
 								state.value -= 1
 							})
 							expect(this.$dep.depModel.$state()).toEqual({ value: 0 })
+						},
+					},
+				},
+				[depModel]
+			)
+
+			const store = manager.get(count)
+
+			store.makeCall()
+		})
+
+		test("$dep's $modify could change Array state", () => {
+			const depModel = defineModel({
+				name: 'depModel',
+				state: [0],
+				reducers: {},
+			})
+
+			const count = defineModel(
+				{
+					name: 'count',
+					state: { count: 0 },
+					reducers: {},
+					actions: {
+						makeCall() {
+							this.$dep.depModel.$modify((state) => {
+								state.push(1)
+							})
+							expect(this.$dep.depModel.$state()).toEqual([0, 1])
+							this.$dep.depModel.$modify((state) => {
+								state.pop()
+							})
+							expect(this.$dep.depModel.$state()).toEqual([0])
 						},
 					},
 				},
@@ -662,6 +779,95 @@ describe('actions worked:', () => {
 							expect(this.$dep.depModel.$state()).not.toEqual({ value: -100 })
 
 							expect(this.$dep.depModel.$state()).toEqual({ value: 0 })
+						},
+					},
+				},
+				[depModel]
+			)
+
+			const store = manager.get(count)
+
+			store.makeCall()
+		})
+
+		test("$dep's $modify should modify nothing if typeof state is number", () => {
+			const depModel = defineModel({
+				name: 'depModel',
+				state: 0,
+			})
+
+			const count = defineModel(
+				{
+					name: 'count',
+					state: { count: 0 },
+					actions: {
+						makeCall() {
+							this.$dep.depModel.$modify((_) => {
+								return 100
+							})
+							expect(this.$dep.depModel.$state()).not.toEqual(100)
+							this.$dep.depModel.$modify((_) => {
+								return -100
+							})
+							expect(this.$dep.depModel.$state()).not.toEqual(-100)
+
+							expect(this.$dep.depModel.$state()).toEqual(0)
+						},
+					},
+				},
+				[depModel]
+			)
+
+			const store = manager.get(count)
+
+			store.makeCall()
+		})
+
+		test("$dep's $modify should modify nothing if typeof state is string", () => {
+			const depModel = defineModel({
+				name: 'depModel',
+				state: 'initial',
+			})
+
+			const count = defineModel(
+				{
+					name: 'count',
+					state: { count: 0 },
+					actions: {
+						makeCall() {
+							this.$dep.depModel.$modify((_) => {
+								return 'test'
+							})
+							expect(this.$dep.depModel.$state()).not.toEqual('test')
+							expect(this.$dep.depModel.$state()).toEqual('initial')
+						},
+					},
+				},
+				[depModel]
+			)
+
+			const store = manager.get(count)
+
+			store.makeCall()
+		})
+
+		test("$dep's $modify should modify nothing if typeof state is boolean", () => {
+			const depModel = defineModel({
+				name: 'depModel',
+				state: false,
+			})
+
+			const count = defineModel(
+				{
+					name: 'count',
+					state: { count: 0 },
+					actions: {
+						makeCall() {
+							this.$dep.depModel.$modify((_) => {
+								return true
+							})
+							expect(this.$dep.depModel.$state()).not.toEqual(true)
+							expect(this.$dep.depModel.$state()).toEqual(false)
 						},
 					},
 				},
