@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useRootModel } from '../Container'
+import { useRootModel } from '@shuvi/redox-react'
 
 import { count } from '../models/count'
 import A from './A'

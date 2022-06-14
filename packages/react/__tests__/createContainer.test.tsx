@@ -6,8 +6,12 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { defineModel, redox } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
-import { createContainer } from '../src'
-import { RedoxRoot, useRootStaticModel, useRootModel } from './Container'
+import {
+	createContainer,
+	RedoxRoot,
+	useRootStaticModel,
+	useRootModel,
+} from '../src'
 
 import { sleep, countModel, countSelectorParameters } from './models'
 

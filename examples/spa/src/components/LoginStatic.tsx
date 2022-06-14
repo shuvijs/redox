@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useRootStaticModel } from '../Container'
+import { useRootStaticModel } from '@shuvi/redox-react'
 
 import { login } from '../models/login'
 

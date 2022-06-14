@@ -4,8 +4,12 @@
 
 import * as React from 'react'
 import { defineModel } from '@shuvi/redox'
-import { useModel, ISelectorParams } from '../src'
-import { useRootModel, useRootStaticModel } from './Container'
+import {
+	useModel,
+	ISelectorParams,
+	useRootModel,
+	useRootStaticModel,
+} from '../src'
 
 type customType = 'custom' | 'custom0'
 

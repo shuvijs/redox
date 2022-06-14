@@ -5,7 +5,7 @@ import Views from './components/Views'
 import List from './components/List'
 import Repeat from './components/Repeat'
 import type { IModelManager } from '@shuvi/redox'
-import { RedoxRoot } from './Container'
+import { RedoxRoot } from '@shuvi/redox-react'
 
 function App(props: { modelManager?: IModelManager }) {
 	return (
