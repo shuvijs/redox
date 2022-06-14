@@ -664,7 +664,7 @@ describe('useRootStaticModel', () => {
 
 				return (
 					<>
-						<div id="value">{state.value}</div>
+						<div id="value">{state.current.value}</div>
 						<button id="button" type="button" onClick={() => actions.add()}>
 							add
 						</button>
@@ -702,7 +702,7 @@ describe('useRootStaticModel', () => {
 
 				return (
 					<>
-						<div id="value">{state.value}</div>
+						<div id="value">{state.current.value}</div>
 						<button id="button" type="button" onClick={() => actions.add()}>
 							add
 						</button>
@@ -740,7 +740,7 @@ describe('useRootStaticModel', () => {
 
 				return (
 					<>
-						<div id="value">{state.value}</div>
+						<div id="value">{state.current.value}</div>
 						<button id="button" type="button" onClick={() => actions.add()}>
 							add
 						</button>
@@ -765,11 +765,11 @@ describe('useRootStaticModel', () => {
 
 			const [state, dispatch] = useRootStaticModel(countModel)
 
-			currentCount = state.value
+			currentCount = state.current.value
 
 			return (
 				<>
-					<div id="state">{state.value}</div>
+					<div id="state">{state.current.value}</div>
 					<button id="add" type="button" onClick={() => dispatch.add()}>
 						add
 					</button>
@@ -777,7 +777,7 @@ describe('useRootStaticModel', () => {
 						id="updateCount"
 						type="button"
 						onClick={() => {
-							currentCount = state.value
+							currentCount = state.current.value
 						}}
 					>
 						updateCount
@@ -831,7 +831,7 @@ describe('useRootStaticModel', () => {
 
 			return (
 				<>
-					<div id="state">{state.value}</div>
+					<div id="state">{state.current.value}</div>
 					<button
 						id="add"
 						type="button"
