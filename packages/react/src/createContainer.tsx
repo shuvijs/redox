@@ -42,16 +42,11 @@ const createContainer = function (options?: RedoxOptions) {
 			[propsModelManager]
 		)
 
-		const [contextValue, setContextValue] = useState(memoContext)
-
-		const modelManagerPos = useRef(propsModelManager) // for hmr
+		const [contextValue, setContextValue] = useState(memoContext) // for hmr keep contextValue
 
 		useEffect(
 			function () {
-				if (modelManagerPos.current !== propsModelManager) {
-					modelManagerPos.current = propsModelManager
-					setContextValue(memoContext)
-				}
+				setContextValue(memoContext)
 			},
 			[propsModelManager]
 		)
