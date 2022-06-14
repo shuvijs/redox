@@ -8,7 +8,7 @@ describe('redox worked:', () => {
 		expect(managerA).not.toBe(managerB)
 	})
 
-	test('initialState worked', () => {
+	test('initialize state as an Object should work', () => {
 		manager = redox({
 			initialState: {
 				count: {
@@ -32,7 +32,38 @@ describe('redox worked:', () => {
 		expect(store.$state()).toEqual({ value: 2 })
 	})
 
-	test('initialize state as a String should work', () => {
+	test('initialize state as an Array should work', () => {
+		manager = redox({
+			initialState: {
+				count: [0, 1, 2],
+			},
+		})
+		const count = defineModel({
+			name: 'count',
+			state: [0],
+			reducers: {
+				modify(
+					state,
+					payload: {
+						index: number
+						value: any
+					}
+				) {
+					state[payload.index] = payload.value
+				},
+			},
+		})
+
+		const store = manager.get(count)
+		expect(store.$state()).toEqual([0, 1, 2])
+		store.modify({
+			index: 1,
+			value: 10,
+		})
+		expect(store.$state()).toEqual([0, 10, 2])
+	})
+
+	test('initialize state as a Number should work', () => {
 		manager = redox({
 			initialState: {
 				countNumber: 1,
@@ -54,7 +85,7 @@ describe('redox worked:', () => {
 		expect(store.$state()).toEqual(2)
 	})
 
-	test('initialize state as a Number should work', () => {
+	test('initialize state as a String should work', () => {
 		manager = redox({
 			initialState: {
 				textModel: 'initial',
@@ -261,7 +292,7 @@ describe('redox worked:', () => {
 					},
 				},
 				views: {
-					d(): { number: number } {
+					d() {
 						console.log(this.id)
 						const a = this.$dep.other
 						console.log(this.$dep.dome.number)
@@ -297,7 +328,9 @@ describe('redox worked:', () => {
 				number: 1,
 			},
 		})
-		expect(manager.get(user).d()).toEqual({ number: 1 })
+
+		expect(manager.get(user).d()).toHaveProperty('number')
+		expect(manager.get(user).d()['number']).toBe(1)
 		expect(manager.get(user).one()).toEqual(1)
 		expect(manager.get(user).s(2)).toEqual('state.id=>1, args=>2,views.one=>1')
 		countStore.increment(1)
@@ -317,7 +350,8 @@ describe('redox worked:', () => {
 				name: 'haha',
 			},
 		})
-		expect(manager.get(user).d()).toEqual({ number: 3 })
+		expect(manager.get(user).d()).toHaveProperty('number')
+		expect(manager.get(user).d()['number']).toBe(3)
 		expect(manager.get(user).one()).toEqual(3)
 		expect(manager.get(user).s(undefined)).toEqual(
 			'state.id=>1, args=>undefined,views.one=>3'
