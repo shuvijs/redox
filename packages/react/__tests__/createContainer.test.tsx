@@ -814,6 +814,47 @@ describe('useRootStaticModel', () => {
 		})
 		expect(currentCount).toBe(2)
 	})
+
+	test('useRootStaticModel should state keep same ref', () => {
+		let stateRef: any
+		let stateRef1: any
+
+		const StaticApp = () => {
+			const [state, dispatch] = useRootStaticModel(countModel)
+
+			if (!stateRef) {
+				stateRef = state
+			}
+
+			stateRef1 = state
+
+			return (
+				<>
+					<div id="state">{state.value}</div>
+					<button id="add" type="button" onClick={() => dispatch.add()}>
+						add
+					</button>
+				</>
+			)
+		}
+
+		act(() => {
+			ReactDOM.render(
+				<RedoxRoot>
+					<StaticApp />
+				</RedoxRoot>,
+				node
+			)
+		})
+
+		act(() => {
+			node
+				.querySelector('#add')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+
+		expect(stateRef === stateRef1).toBeTruthy()
+	})
 })
 
 describe('RedoxRoot', () => {
