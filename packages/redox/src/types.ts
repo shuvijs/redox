@@ -37,11 +37,13 @@ export interface ReduxDispatch<A extends ReduxAction = AnyAction> {
 
 /** ************************** modal-start *************************** */
 
+type ObjectState = {
+	[x: string]: any
+	[y: number]: never
+}
+
 export type State =
-	| {
-			[x: string]: any
-			[y: number]: never
-	  }
+	| ObjectState
 	| String
 	| Number
 	| Boolean
@@ -97,7 +99,12 @@ type MiniStoreOfStoreCollection<MC extends ModelCollection> = {
 
 type StateOfStoreCollection<MC extends ModelCollection> = {
 	[K in keyof MC]: MC[K]['state']
-}
+} &
+	{
+		[K in keyof MC]: {
+			$state: () => MC[K]['state']
+		}
+	}
 
 type ViewOfStoreCollection<MC extends ModelCollection> = {
 	[K in keyof MC]: RedoxViews<MC[K]['views']>
@@ -239,7 +246,13 @@ export interface Model<
 		>
 	views?: V &
 		ThisType<
-			S &
+			(S extends ObjectState
+				? S & {
+						$state: () => S
+				  }
+				: {
+						$state: () => S
+				  }) &
 				RedoxViews<V> & {
 					$dep: StateOfStoreCollection<MC> & ViewOfStoreCollection<MC>
 				}
