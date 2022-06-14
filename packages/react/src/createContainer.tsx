@@ -111,29 +111,47 @@ const createContainer = function (options?: RedoxOptions) {
 			return getStateActions(model, modelManager, selector)
 		}, [modelManager, batchManager])
 
-		const value = useRef<[any, any]>([
-			// deep clone state in case mutate origin state accidentlly.
-			JSON.parse(JSON.stringify(initialValue[0])),
-			initialValue[1],
-		])
+		const currentState = useRef<any>(initialValue[0])
+
+		const valueProxy = useMemo(() => {
+			if (
+				Object.prototype.toString.call(currentState.current) ===
+				'[object Object]'
+			) {
+				return new Proxy(
+					{},
+					{
+						get(_target, p) {
+							return currentState.current[p]
+						},
+						set() {
+							if (process.env.NODE_ENV === 'development') {
+								throw new Error(`useStaticModel only allow read value !`)
+							}
+							return false
+						},
+					}
+				)
+			}
+			return currentState.current
+		}, [modelManager, batchManager])
+
+		const value = useRef<[any, any]>([valueProxy, initialValue[1]])
 
 		const isUpdate = useRef(false)
 
 		useEffect(() => {
 			const fn = () => {
 				const newValue = getStateActions(model, modelManager, selector)
-				if (
-					Object.prototype.toString.call(value.current[0]) === '[object Object]'
-				) {
-					// merge data to old reference
-					Object.assign(value.current[0], newValue[0])
+				if (Object.prototype.toString.call(newValue[0]) === '[object Object]') {
+					currentState.current = newValue[0]
+				} else {
+					value.current[0] = newValue[0]
 				}
 			}
 			if (isUpdate.current) {
-				value.current = [
-					JSON.parse(JSON.stringify(initialValue[0])),
-					initialValue[1],
-				]
+				currentState.current = initialValue[0]
+				value.current = [valueProxy, initialValue[1]]
 			} else {
 				isUpdate.current = true
 			}
@@ -141,6 +159,7 @@ const createContainer = function (options?: RedoxOptions) {
 			fn()
 
 			const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
+
 			return () => {
 				isUpdate.current = false
 				unSubscribe()
