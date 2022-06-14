@@ -51,8 +51,6 @@ const createUseModel =
 
 		const lastValueRef = useRef<any>(initialValue)
 
-		const isUpdate = useRef(false)
-
 		useEffect(
 			function () {
 				const fn = function () {
@@ -62,16 +60,20 @@ const createUseModel =
 						lastValueRef.current = newValue
 					}
 				}
-				if (isUpdate.current) {
-					setModelValue(initialValue as any)
-					lastValueRef.current = initialValue
-				} else {
-					// useEffect is async ,there's maybe some async update state between init and useEffect, trigger fn once
-					fn()
-					isUpdate.current = true
-				}
 
 				const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
+
+				// useEffect is async, there's maybe some async update state before store subscribe
+				// check state and actions once, need update if it changed
+				const newValue = getStateActions(model, modelManager, selector)
+				if (
+					// selector maybe return new object each time, compare value with shadowEqual
+					!shadowEqual(lastValueRef.current[0], newValue[0]) ||
+					lastValueRef.current[1] !== newValue[1]
+				) {
+					setModelValue(newValue as any)
+					lastValueRef.current = newValue
+				}
 
 				return () => {
 					unSubscribe()
