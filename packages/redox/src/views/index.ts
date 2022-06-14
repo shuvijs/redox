@@ -48,6 +48,7 @@ function createProxyObjFactory() {
 		if (proxyObjMap.has(target)) {
 			return proxyObjMap.get(target)
 		}
+
 		const proxy = new Proxy(target, collection())
 		proxyObjMap.set(target, proxy)
 		return proxy
@@ -72,9 +73,11 @@ const getStateCollection = () => {
 			if (p === isProxy) return true
 			if (p === getTarget) return target
 			let result = target[p]
+
 			if (isCollectionKeys) {
 				const compareTree = compareStatePos.tree
 				const treeNode = compareTree.get(target)
+
 				if (treeNode) {
 					treeNode.children[p as string] = result
 				} else {
@@ -84,27 +87,46 @@ const getStateCollection = () => {
 						},
 					})
 				}
+
 				if (isComplexObject(result)) {
 					result = stateCreateProxyObj(result, getStateCollection)
 				}
-				// OwnProperty function should be a view
+
+				// OwnProperty function should be a $state or view
 				if (typeof result === 'function' && target.hasOwnProperty(p)) {
-					const view = result
-					const previousPos = compareStatePos
-					result = function (...args: any[]) {
-						// call view fn
-						let res = view(...args)
-						// if child views fn call, go on collects current scope used keys
-						isCollectionKeys = true
-						compareStatePos = previousPos
-						const compareView = compareStatePos.view
-						const viewNode = compareView.get(view)
-						if (!viewNode) {
-							compareView.set(view, new Map([[args, res]]))
-						} else {
-							viewNode.set(args, res)
+					if (p === '$state') {
+						const $state = result
+						result = function () {
+							let state = $state()
+							compareTree.set($state, {
+								children: state,
+							})
+
+							isCollectionKeys = true
+							if (isComplexObject(state)) {
+								state = stateCreateProxyObj(state, getStateCollection)
+							}
+
+							return state
 						}
-						return res
+					} else {
+						const view = result
+						const previousPos = compareStatePos
+						result = function (...args: any[]) {
+							// call view fn
+							let res = view(...args)
+							// if child views fn call, go on collects current scope used keys
+							isCollectionKeys = true
+							compareStatePos = previousPos
+							const compareView = compareStatePos.view
+							const viewNode = compareView.get(view)
+							if (!viewNode) {
+								compareView.set(view, new Map([[args, res]]))
+							} else {
+								viewNode.set(args, res)
+							}
+							return res
+						}
 					}
 				}
 			}
@@ -122,7 +144,29 @@ const getStateCollection = () => {
  */
 function compareObject(prevObj: any, nextObj: any, compare: ICompare) {
 	if (!isComplexObject(prevObj)) {
-		// sample value like string number just call ===
+		// $state function comparison
+		if (typeof prevObj === 'function') {
+			const treeMap = compare.tree.get(prevObj)
+			if (treeMap) {
+				const child = treeMap!.children
+				const nextChild = nextObj()
+				const comparedChild = compare.tree.get(child)?.children
+				const keys = Object.keys(comparedChild || {})
+				for (let i = 0; i < keys.length; i++) {
+					const key = keys[i]
+					const childObj = comparedChild![key]
+					const nextChildObj = nextChild[key]
+					if (!compareObject(childObj, nextChildObj, compare)) {
+						return false
+					}
+				}
+				if (!isComplexObject(child)) {
+					return child === nextChild
+				}
+				return true
+			}
+		}
+		// simple value like string number just call ===
 		return prevObj === nextObj
 	} else if (prevObj === nextObj) {
 		// view compare, call function with arguments and compare result
@@ -197,13 +241,12 @@ function cacheFactory(
 			let tempOtherArgs = otherArgs
 
 			isCollectionKeys = true // just keep collection keys when fn call
-
 			let res = fn.apply(thisPointProxy, tempOtherArgs)
 			isCollectionKeys = false
 			// console.log(
 			// 	'modelName=>',
-			// 	// _modelName,
-			// 	// _viewsKey,
+			// 	_modelName,
+			// 	_viewsKey,
 			// 	thisCompare
 			// )
 			res = getRawValue(res)
@@ -273,6 +316,9 @@ export const createViews = <IModel extends AnyModel>(
 							const dependRedoxStore = redoxStore._cache._getRedox(depend)
 							dependsStateAndView[depend.name] = Object.assign(
 								tempDependStateAndView,
+								{
+									$state: dependRedoxStore.$state,
+								},
 								dependRedoxStore.$state(),
 								dependRedoxStore.$views
 							)
@@ -281,6 +327,7 @@ export const createViews = <IModel extends AnyModel>(
 					const thisPoint = {
 						...selfStateAndView,
 						$dep: dependsStateAndView,
+						$state: redoxStore.$state,
 					}
 					return cacheFun(thisPoint, args)
 				}
