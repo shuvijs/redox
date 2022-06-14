@@ -821,6 +821,7 @@ describe('useRootStaticModel', () => {
 
 		const StaticApp = () => {
 			const [state, dispatch] = useRootStaticModel(countModel)
+			const [_, setValue] = React.useState(false)
 
 			if (!stateRef) {
 				stateRef = state
@@ -831,7 +832,14 @@ describe('useRootStaticModel', () => {
 			return (
 				<>
 					<div id="state">{state.value}</div>
-					<button id="add" type="button" onClick={() => dispatch.add()}>
+					<button
+						id="add"
+						type="button"
+						onClick={() => {
+							dispatch.add()
+							setValue(true)
+						}}
+					>
 						add
 					</button>
 				</>
