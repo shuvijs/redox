@@ -181,8 +181,8 @@ describe('typings:', () => {
 	test('useRootStaticModel state and action:', () => {
 		function App() {
 			const [state, action] = useRootStaticModel(count)
-			state.value
-			state.s
+			state.current.value
+			state.current.s
 			action.addValue()
 			action.addValue(1)
 			action.setString('custom')
@@ -204,8 +204,8 @@ describe('typings:', () => {
 					}
 				}
 			)
-			state.n
-			state.viewS
+			state.current.n
+			state.current.viewS
 			action.addValue()
 			action.addValue(1)
 			action.setString('custom')
@@ -219,10 +219,10 @@ describe('typings:', () => {
 	test('useRootStaticModel state and action with selector:', () => {
 		function App() {
 			const [state, action] = useRootStaticModel(count, countSelector)
-			state.n
-			state.v
-			state.s
-			state.scustom
+			state.current.n
+			state.current.v
+			state.current.s
+			state.current.scustom
 			action.addValue()
 			action.addValue()
 			action.addValue(1)

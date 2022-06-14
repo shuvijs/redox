@@ -11,7 +11,7 @@ import { validate, redox } from '@shuvi/redox'
 import type { IModelManager, AnyModel, RedoxOptions } from '@shuvi/redox'
 import { createUseModel, getStateActions } from './useModel'
 import { createBatchManager } from './batchManager'
-import { IUseModel, ISelector } from './types'
+import { IUseModel, IUseStaticModel, ISelector } from './types'
 
 const createContainer = function (options?: RedoxOptions) {
 	const Context = createContext<{
@@ -86,7 +86,7 @@ const createContainer = function (options?: RedoxOptions) {
 		)(model, selector)
 	}
 
-	const useStaticModel: IUseModel = <
+	const useStaticModel: IUseStaticModel = <
 		IModel extends AnyModel,
 		Selector extends ISelector<IModel>
 	>(
@@ -111,47 +111,19 @@ const createContainer = function (options?: RedoxOptions) {
 			return getStateActions(model, modelManager, selector)
 		}, [modelManager, batchManager])
 
-		const currentState = useRef<any>(initialValue[0])
+		const stateRef = useRef<any>(initialValue[0])
 
-		const valueProxy = useMemo(() => {
-			if (
-				Object.prototype.toString.call(currentState.current) ===
-				'[object Object]'
-			) {
-				return new Proxy(
-					{},
-					{
-						get(_target, p) {
-							return currentState.current[p]
-						},
-						set() {
-							if (process.env.NODE_ENV === 'development') {
-								throw new Error(`useStaticModel only allow read value !`)
-							}
-							return false
-						},
-					}
-				)
-			}
-			return currentState.current
-		}, [modelManager, batchManager])
-
-		const value = useRef<[any, any]>([valueProxy, initialValue[1]])
+		const value = useRef<[any, any]>([stateRef, initialValue[1]])
 
 		const isUpdate = useRef(false)
 
 		useEffect(() => {
 			const fn = () => {
 				const newValue = getStateActions(model, modelManager, selector)
-				if (Object.prototype.toString.call(newValue[0]) === '[object Object]') {
-					currentState.current = newValue[0]
-				} else {
-					value.current[0] = newValue[0]
-				}
+				stateRef.current = newValue[0]
 			}
 			if (isUpdate.current) {
-				currentState.current = initialValue[0]
-				value.current = [valueProxy, initialValue[1]]
+				stateRef.current = initialValue[0]
 			} else {
 				isUpdate.current = true
 			}
