@@ -11,6 +11,7 @@ import { validate, redox } from '@shuvi/redox'
 import type { IModelManager, AnyModel, RedoxOptions } from '@shuvi/redox'
 import { createUseModel, getStateActions } from './useModel'
 import { createBatchManager } from './batchManager'
+import { shadowEqual } from './utils'
 import { IUseModel, IUseStaticModel, ISelector } from './types'
 
 const createContainer = function (options?: RedoxOptions) {
@@ -115,23 +116,27 @@ const createContainer = function (options?: RedoxOptions) {
 
 		const value = useRef<[any, any]>([stateRef, initialValue[1]])
 
-		const isUpdate = useRef(false)
-
 		useEffect(() => {
 			const fn = () => {
 				const newValue = getStateActions(model, modelManager, selector)
-				stateRef.current = newValue[0]
-			}
-			if (isUpdate.current) {
-				stateRef.current = initialValue[0]
-				value.current = [stateRef, initialValue[1]]
-			} else {
-				// useEffect is async ,there's maybe some async update state between init and useEffect, trigger fn once
-				fn()
-				isUpdate.current = true
+				if (!shadowEqual(stateRef.current, newValue[0])) {
+					stateRef.current = newValue[0]
+				}
 			}
 
 			const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
+
+			// useEffect is async, there's maybe some async update state before store subscribe
+			// check state and actions once, need update if it changed
+			const newValue = getStateActions(model, modelManager, selector)
+			if (
+				// selector maybe return new object each time, compare value with shadowEqual
+				!shadowEqual(stateRef.current, newValue[0]) ||
+				value.current[1] !== newValue[1]
+			) {
+				stateRef.current = newValue[0]
+				value.current = [stateRef, newValue[1]]
+			}
 
 			return () => {
 				unSubscribe()
