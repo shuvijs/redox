@@ -652,7 +652,7 @@ describe('actions worked:', () => {
 			store.makeCall()
 		})
 
-		test("$dep's $set should throw error if argument type is not an Object", () => {
+		test("$dep's $set should works if argument is primitive value", () => {
 			const depModel = defineModel({
 				name: 'depModel',
 				state: { value: 0 },
