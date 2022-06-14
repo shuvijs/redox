@@ -126,10 +126,10 @@ const createContainer = function (options?: RedoxOptions) {
 				stateRef.current = initialValue[0]
 				value.current = [stateRef, initialValue[1]]
 			} else {
+				// useEffect is async ,there's maybe some async update state between init and useEffect, trigger fn once
+				fn()
 				isUpdate.current = true
 			}
-			// useEffect is async ,there's maybe some async update state between init and useEffect, trigger fn once
-			fn()
 
 			const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
 
