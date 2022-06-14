@@ -124,6 +124,7 @@ const createContainer = function (options?: RedoxOptions) {
 			}
 			if (isUpdate.current) {
 				stateRef.current = initialValue[0]
+				value.current = [stateRef, initialValue[1]]
 			} else {
 				isUpdate.current = true
 			}
@@ -133,7 +134,6 @@ const createContainer = function (options?: RedoxOptions) {
 			const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
 
 			return () => {
-				isUpdate.current = false
 				unSubscribe()
 			}
 		}, [modelManager, batchManager])

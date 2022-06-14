@@ -64,6 +64,7 @@ const createUseModel =
 				}
 				if (isUpdate.current) {
 					setModelValue(initialValue as any)
+					lastValueRef.current = initialValue
 				} else {
 					isUpdate.current = true
 				}
@@ -74,7 +75,6 @@ const createUseModel =
 				const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
 
 				return () => {
-					isUpdate.current = false
 					unSubscribe()
 				}
 			},
