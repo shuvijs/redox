@@ -12,6 +12,7 @@
  */
 import React from 'react'
 import { renderToNodeStream } from 'react-dom/server'
+// @ts-ignore
 import express from 'express'
 import * as fs from 'fs'
 import * as path from 'path'

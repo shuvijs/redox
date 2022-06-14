@@ -6,8 +6,7 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { defineModel } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
-import { useModel } from '../src'
-import { useRootModel, RedoxRoot } from './Container'
+import { useModel, useRootModel, RedoxRoot } from '../src'
 import { sleep, countModel, countSelectorParameters } from './models'
 
 function wait(millinSeconeds: number) {

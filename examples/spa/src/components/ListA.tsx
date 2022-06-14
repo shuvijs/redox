@@ -1,6 +1,5 @@
 import * as React from 'react'
-import { useModel } from '@shuvi/redox-react'
-import { useRootModel } from '../Container'
+import { useModel, useRootModel } from '@shuvi/redox-react'
 import { listA } from '../models/listA'
 import { login } from '../models/login'
 
