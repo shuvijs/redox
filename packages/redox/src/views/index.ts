@@ -102,7 +102,6 @@ const getStateCollection = () => {
 								children: state,
 							})
 
-							isCollectionKeys = true
 							if (isComplexObject(state)) {
 								state = stateCreateProxyObj(state, getStateCollection)
 							}
@@ -142,6 +141,7 @@ const getStateCollection = () => {
  * @param tree
  * @returns true: need computed, false: don't need computed, and use cached value
  */
+// @ts-ignore
 function compareObject(prevObj: any, nextObj: any, compare: ICompare) {
 	if (!isComplexObject(prevObj)) {
 		// $state function comparison
@@ -150,20 +150,10 @@ function compareObject(prevObj: any, nextObj: any, compare: ICompare) {
 			if (treeMap) {
 				const child = treeMap!.children
 				const nextChild = nextObj()
-				const comparedChild = compare.tree.get(child)?.children
-				const keys = Object.keys(comparedChild || {})
-				for (let i = 0; i < keys.length; i++) {
-					const key = keys[i]
-					const childObj = comparedChild![key]
-					const nextChildObj = nextChild[key]
-					if (!compareObject(childObj, nextChildObj, compare)) {
-						return false
-					}
-				}
 				if (!isComplexObject(child)) {
 					return child === nextChild
 				}
-				return true
+				return compareObject(child, nextChild, compare)
 			}
 		}
 		// simple value like string number just call ===

@@ -44,6 +44,12 @@ const validate = (runValidations: () => Validation[]): void => {
 export const validateModel = (model: AnyModel): void => {
 	validate(() => [[!model, 'model config is required']])
 	validate(() => [[!model.hasOwnProperty('state'), 'state is required']])
+	validate(() => [
+		[
+			typeof model.state === 'bigint' || typeof model.state === 'symbol',
+			'state can not be BigInt or Symbol',
+		],
+	])
 	const keys = new Set<string>(Object.keys(model.state || {}))
 	validateProperty(model, 'views', keys, 'check state and views')
 	keys.clear()

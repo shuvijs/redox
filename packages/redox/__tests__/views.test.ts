@@ -1041,7 +1041,6 @@ describe('views worked:', () => {
 						numberOfCalls++
 						return this.$state()[index]
 					},
-					// failed, to be resolved
 					getState() {
 						numberOfCalls++
 						return this.$state()
@@ -1053,48 +1052,38 @@ describe('views worked:', () => {
 
 			let valueFromViews
 
-			// expect(numberOfCalls).toBe(0)
-			// valueFromViews = arrayStore.getState()
-			// expect(numberOfCalls).toBe(1)
-			// expect(valueFromViews).toEqual([0])
-
-			// arrayStore.doNothing()
-			// valueFromViews = arrayStore.getState()
-			// expect(numberOfCalls).toBe(1)
-			// expect(valueFromViews).toEqual([0])
-
-			// arrayStore.append(1)
-			// valueFromViews = arrayStore.getState()
-			// expect(numberOfCalls).toBe(2)
-			// expect(valueFromViews).toEqual([0, 1])
-
-			valueFromViews = arrayStore.getArr(0)
+			expect(numberOfCalls).toBe(0)
+			valueFromViews = arrayStore.getState()
 			expect(numberOfCalls).toBe(1)
-			expect(valueFromViews).toEqual(0)
+			expect(valueFromViews).toEqual([0])
+
+			arrayStore.doNothing()
+			valueFromViews = arrayStore.getState()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toEqual([0])
 
 			arrayStore.append(1)
-			valueFromViews = arrayStore.getArr(0)
-			expect(numberOfCalls).toBe(1)
-			expect(valueFromViews).toEqual(0)
-
-			arrayStore.append(1)
-			valueFromViews = arrayStore.getArr(0)
-			expect(numberOfCalls).toBe(1)
-			expect(valueFromViews).toEqual(0)
-
-			valueFromViews = arrayStore.getArr(1)
+			valueFromViews = arrayStore.getState()
 			expect(numberOfCalls).toBe(2)
+			expect(valueFromViews).toEqual([0, 1])
+
+			valueFromViews = arrayStore.getArr(0)
+			expect(numberOfCalls).toBe(3)
+			expect(valueFromViews).toEqual(0)
+
+			arrayStore.append(1)
+			valueFromViews = arrayStore.getArr(0)
+			expect(numberOfCalls).toBe(3)
+			expect(valueFromViews).toEqual(0)
+
+			arrayStore.remove(0)
+			valueFromViews = arrayStore.getArr(0)
+			expect(numberOfCalls).toBe(4)
 			expect(valueFromViews).toEqual(1)
 
-			// arrayStore.remove(0)
-			// valueFromViews = arrayStore.getState()
-			// expect(numberOfCalls).toBe(4)
-			// expect(valueFromViews).toEqual([1])
-
-			// arrayStore.doNothing()
-			// valueFromViews = arrayStore.getState()
-			// expect(numberOfCalls).toBe(4)
-			// expect(valueFromViews).toEqual([1])
+			valueFromViews = arrayStore.getArr(1)
+			expect(numberOfCalls).toBe(5)
+			expect(valueFromViews).toEqual(1)
 		})
 
 		test('Object state with immer reducer should work', () => {
