@@ -37,10 +37,19 @@ export interface ReduxDispatch<A extends ReduxAction = AnyAction> {
 
 /** ************************** modal-start *************************** */
 
-export type State = {
+type ObjectState = {
 	[x: string]: any
 	[y: number]: never
 }
+
+export type State =
+	| ObjectState
+	| String
+	| Number
+	| Boolean
+	| any[]
+	| undefined
+	| null
 
 export interface Action<TPayload = any> extends ReduxAction<string> {
 	payload?: TPayload
@@ -90,7 +99,12 @@ type MiniStoreOfStoreCollection<MC extends ModelCollection> = {
 
 type StateOfStoreCollection<MC extends ModelCollection> = {
 	[K in keyof MC]: MC[K]['state']
-}
+} &
+	{
+		[K in keyof MC]: {
+			$state: () => MC[K]['state']
+		}
+	}
 
 type ViewOfStoreCollection<MC extends ModelCollection> = {
 	[K in keyof MC]: RedoxViews<MC[K]['views']>
@@ -232,7 +246,13 @@ export interface Model<
 		>
 	views?: V &
 		ThisType<
-			S &
+			(S extends ObjectState
+				? S & {
+						$state: () => S
+				  }
+				: {
+						$state: () => S
+				  }) &
 				RedoxViews<V> & {
 					$dep: StateOfStoreCollection<MC> & ViewOfStoreCollection<MC>
 				}
@@ -249,7 +269,7 @@ export type Depends = AnyModel[]
 
 export type Store<IModel extends AnyModel> = {
 	$state: () => IModel['state']
-	$set: (state: IModel['state']) => void
+	$set: (state: State) => void
 	$modify: (modifier: (state: IModel['state']) => void) => void
 } & RedoxViews<IModel['views']> &
 	DispatchOfModel<IModel>

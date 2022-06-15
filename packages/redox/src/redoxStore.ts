@@ -17,7 +17,7 @@ import {
 import { createReducers } from './reducers'
 import { createActions } from './actions'
 import { createViews } from './views'
-import validate, { isObject } from './validate'
+import validate from './validate'
 import { emptyObject } from './utils'
 import reduxDevTools from './reduxDevtools'
 
@@ -370,11 +370,6 @@ export function createModelReducer<
 	// select and run a reducer based on the incoming action
 	return (state: S = model.state, action: Action): S => {
 		if (action.type === ActionTypes.SET) {
-			if (process.env.NODE_ENV === 'development') {
-				validate(() => [
-					[!isObject(action.payload), 'Expected the payload to be an Object'],
-				])
-			}
 			return action.payload
 		}
 
