@@ -47,7 +47,6 @@ function createSelectorCreator<
 			// apply arguments instead of spreading for performance.
 			return resultFunc.call(null, thisPoint, args)
 		}, equalityCheck)
-
 		return selector
 	}
 	return createSelector

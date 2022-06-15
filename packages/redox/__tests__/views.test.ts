@@ -891,4 +891,587 @@ describe('views worked:', () => {
 		expect(firstComputeTimes).toBe(2)
 		expect(viewsValue).toBe('d')
 	})
+
+	describe('this.$state() should work', () => {
+		test('should work with Number state', () => {
+			let numberOfCalls = 0
+
+			const numberModel = defineModel({
+				name: 'numberModel',
+				state: 0,
+				reducers: {
+					increment: (state) => {
+						return ++state
+					},
+					doNothing: (_) => {},
+				},
+				views: {
+					getState() {
+						numberOfCalls++
+						return this.$state()
+					},
+				},
+			})
+
+			const numberStore = manager.get(numberModel)
+
+			let valueFromViews
+
+			expect(numberOfCalls).toBe(0)
+			valueFromViews = numberStore.getState()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toBe(0)
+
+			numberStore.doNothing()
+			valueFromViews = numberStore.getState()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toBe(0)
+
+			numberStore.increment()
+			valueFromViews = numberStore.getState()
+			expect(numberOfCalls).toBe(2)
+			expect(valueFromViews).toBe(1)
+		})
+
+		test('should work with String state', () => {
+			let numberOfCalls = 0
+
+			const stringModel = defineModel({
+				name: 'stringModel',
+				state: '',
+				reducers: {
+					append: (state, payload: string) => {
+						return state + payload
+					},
+					doNothing: (state) => {
+						return state
+					},
+				},
+				views: {
+					getState() {
+						numberOfCalls++
+						return this.$state()
+					},
+				},
+			})
+
+			const stringStore = manager.get(stringModel)
+
+			let valueFromViews
+
+			expect(numberOfCalls).toBe(0)
+			valueFromViews = stringStore.getState()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toBe('')
+
+			stringStore.doNothing()
+			valueFromViews = stringStore.getState()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toBe('')
+
+			stringStore.append('test')
+			valueFromViews = stringStore.getState()
+			expect(numberOfCalls).toBe(2)
+			expect(valueFromViews).toBe('test')
+		})
+
+		test('should work with Boolean state', () => {
+			let numberOfCalls = 0
+
+			const booleanModel = defineModel({
+				name: 'booleanModel',
+				state: false,
+				reducers: {
+					toggle: (state) => {
+						return !state
+					},
+					doNothing: (state) => {
+						return state
+					},
+				},
+				views: {
+					getState() {
+						numberOfCalls++
+						return this.$state()
+					},
+				},
+			})
+
+			const booleanStore = manager.get(booleanModel)
+
+			let valueFromViews
+
+			expect(numberOfCalls).toBe(0)
+			valueFromViews = booleanStore.getState()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toBe(false)
+
+			booleanStore.doNothing()
+			valueFromViews = booleanStore.getState()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toBe(false)
+
+			booleanStore.toggle()
+			valueFromViews = booleanStore.getState()
+			expect(numberOfCalls).toBe(2)
+			expect(valueFromViews).toBe(true)
+		})
+
+		test('should work with Array state', () => {
+			let numberOfCalls = 0
+
+			const arrayModel = defineModel({
+				name: 'arrayModel',
+				state: [0],
+				reducers: {
+					remove: (state, payload: number) => {
+						state.splice(payload, 1)
+						return state
+					},
+					append: (state, payload: any) => {
+						state.push(payload)
+						return state
+					},
+					doNothing: (state) => {
+						return state
+					},
+				},
+				views: {
+					getArr(index: number) {
+						numberOfCalls++
+						return this.$state()[index]
+					},
+					getState() {
+						numberOfCalls++
+						return this.$state()
+					},
+				},
+			})
+
+			const arrayStore = manager.get(arrayModel)
+
+			let valueFromViews
+
+			expect(numberOfCalls).toBe(0)
+			valueFromViews = arrayStore.getState()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toEqual([0])
+
+			arrayStore.doNothing()
+			valueFromViews = arrayStore.getState()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toEqual([0])
+
+			arrayStore.append(1)
+			valueFromViews = arrayStore.getState()
+			expect(numberOfCalls).toBe(2)
+			expect(valueFromViews).toEqual([0, 1])
+
+			valueFromViews = arrayStore.getArr(0)
+			expect(numberOfCalls).toBe(3)
+			expect(valueFromViews).toEqual(0)
+
+			arrayStore.append(1)
+			valueFromViews = arrayStore.getArr(0)
+			expect(numberOfCalls).toBe(3)
+			expect(valueFromViews).toEqual(0)
+
+			arrayStore.remove(0)
+			valueFromViews = arrayStore.getArr(0)
+			expect(numberOfCalls).toBe(4)
+			expect(valueFromViews).toEqual(1)
+
+			valueFromViews = arrayStore.getArr(1)
+			expect(numberOfCalls).toBe(5)
+			expect(valueFromViews).toEqual(1)
+		})
+
+		test('Object state with immer reducer should work', () => {
+			let numberOfCalls = 0
+			const immerExample = defineModel({
+				name: 'immerExample',
+				state: {
+					other: 'other value',
+					level1: {
+						level2: {
+							level3: 'initial',
+						},
+						level2Arr: [1, 2],
+					},
+					level1Arr: [1, 2],
+				},
+				reducers: {
+					assignNewObject: (state) => {
+						state.level1.level2 = {
+							level3: 'initial',
+						}
+					},
+					changeValue: (state, payload: string) => {
+						state.level1.level2 = {
+							level3: payload,
+						}
+					},
+				},
+				views: {
+					getValueofLevel3() {
+						numberOfCalls++
+						return this.$state().level1.level2.level3
+					},
+					getArray(index: number) {
+						numberOfCalls++
+						return this.$state().level1.level2Arr[index]
+					},
+					getLevel1Array(index: number) {
+						numberOfCalls++
+						return this.$state().level1Arr[index]
+					},
+				},
+			})
+
+			const store = manager.get(immerExample)
+
+			let valueFromViews
+
+			expect(numberOfCalls).toBe(0)
+			valueFromViews = store.getValueofLevel3()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toBe('initial')
+
+			store.assignNewObject()
+			valueFromViews = store.getValueofLevel3()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toBe('initial')
+
+			store.$modify((state) => {
+				state.other = 'test other value'
+			})
+
+			valueFromViews = store.getValueofLevel3()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toBe('initial')
+
+			valueFromViews = store.getArray(0)
+			expect(numberOfCalls).toBe(2)
+			expect(valueFromViews).toEqual(1)
+
+			valueFromViews = store.getArray(1)
+			expect(numberOfCalls).toBe(3)
+			expect(valueFromViews).toEqual(2)
+
+			valueFromViews = store.getArray(1)
+			expect(numberOfCalls).toBe(3)
+			expect(valueFromViews).toEqual(2)
+
+			valueFromViews = store.getLevel1Array(0)
+			expect(numberOfCalls).toBe(4)
+			expect(valueFromViews).toEqual(1)
+
+			valueFromViews = store.getLevel1Array(1)
+			expect(numberOfCalls).toBe(5)
+			expect(valueFromViews).toEqual(2)
+
+			valueFromViews = store.getLevel1Array(1)
+			expect(numberOfCalls).toBe(5)
+			expect(valueFromViews).toEqual(2)
+		})
+
+		test('progressively generate cache should work', () => {
+			let numberOfCalls = 0
+			const immerExample = defineModel({
+				name: 'immerExample',
+				state: {
+					other: 'other value',
+					level1: {
+						level2: {
+							level3: 'initial',
+						},
+					},
+				},
+				reducers: {
+					assignNewObject: (state) => {
+						state.level1.level2 = {
+							level3: 'initial',
+						}
+					},
+					changeValue: (state, payload: string) => {
+						state.level1.level2 = {
+							level3: payload,
+						}
+					},
+				},
+				views: {
+					getState() {
+						numberOfCalls++
+						return this.$state()
+					},
+					getLevel1() {
+						numberOfCalls++
+						return this.$state().level1
+					},
+					getLevel2() {
+						numberOfCalls++
+						return this.$state().level1.level2
+					},
+					getLevel3() {
+						numberOfCalls++
+						return this.$state().level1.level2.level3
+					},
+				},
+			})
+
+			const store = manager.get(immerExample)
+
+			expect(numberOfCalls).toBe(0)
+
+			store.getState()
+			expect(numberOfCalls).toBe(1)
+
+			store.getLevel1()
+			expect(numberOfCalls).toBe(2)
+
+			store.getLevel2()
+			expect(numberOfCalls).toBe(3)
+
+			store.getLevel3()
+			expect(numberOfCalls).toBe(4)
+
+			store.$modify((state) => {
+				state.other = 'modify other value'
+			})
+
+			store.getLevel1()
+			expect(numberOfCalls).toBe(4)
+
+			store.getLevel2()
+			expect(numberOfCalls).toBe(4)
+
+			store.getLevel3()
+			expect(numberOfCalls).toBe(4)
+		})
+
+		test('Array state with immer reducer should work', () => {
+			let numberOfCalls = 0
+			const immerExample = defineModel({
+				name: 'immerExample',
+				state: [
+					{
+						level1: {
+							level2: {
+								level3: 'initial',
+							},
+						},
+					},
+				],
+				reducers: {
+					assignNewObject: (state) => {
+						state[0].level1.level2 = {
+							level3: 'initial',
+						}
+					},
+					changeValue: (state, payload: string) => {
+						state[0].level1.level2 = {
+							level3: payload,
+						}
+					},
+					append: (state, payload: any) => {
+						state.push(payload)
+					},
+				},
+				views: {
+					getValueofLevel3() {
+						numberOfCalls++
+						return this.$state()[0].level1.level2.level3
+					},
+				},
+			})
+
+			const store = manager.get(immerExample)
+
+			let valueFromViews
+
+			expect(numberOfCalls).toBe(0)
+			valueFromViews = store.getValueofLevel3()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toBe('initial')
+
+			store.assignNewObject()
+			valueFromViews = store.getValueofLevel3()
+			expect(numberOfCalls).toBe(1)
+			expect(valueFromViews).toBe('initial')
+
+			store.changeValue('test')
+			valueFromViews = store.getValueofLevel3()
+			expect(numberOfCalls).toBe(2)
+			expect(valueFromViews).toBe('test')
+
+			store.append('test')
+			store.getValueofLevel3()
+			expect(numberOfCalls).toBe(2)
+			expect(store.$state()).toEqual([
+				{
+					level1: {
+						level2: {
+							level3: 'test',
+						},
+					},
+				},
+				'test',
+			])
+		})
+
+		test('this.$state().[property] and this.[property] share different cache, even accessing the same property of the state', () => {
+			let numberOfCalls = 0
+			const model = defineModel({
+				name: 'model',
+				state: {
+					level1: {
+						level2: {
+							level3: 'initial',
+						},
+					},
+				},
+				reducers: {
+					changeValue: (state, payload: string) => {
+						state.level1.level2.level3 = payload
+					},
+				},
+				views: {
+					getValue() {
+						numberOfCalls++
+						return this.level1.level2.level3
+					},
+					getValueViaFunction() {
+						numberOfCalls++
+						return this.$state().level1.level2.level3
+					},
+				},
+			})
+
+			const store = manager.get(model)
+
+			let viewsValue
+
+			expect(numberOfCalls).toBe(0)
+			viewsValue = store.getValueViaFunction()
+			expect(numberOfCalls).toBe(1)
+			expect(viewsValue).toBe('initial')
+
+			store.changeValue('test')
+			viewsValue = store.getValueViaFunction()
+			expect(numberOfCalls).toBe(2)
+			expect(viewsValue).toBe('test')
+
+			viewsValue = store.getValue()
+			expect(numberOfCalls).toBe(3)
+			expect(viewsValue).toBe('test')
+
+			store.changeValue('test 2')
+			viewsValue = store.getValueViaFunction()
+			expect(numberOfCalls).toBe(4)
+			expect(viewsValue).toBe('test 2')
+
+			viewsValue = store.getValue()
+			expect(numberOfCalls).toBe(5)
+			expect(viewsValue).toBe('test 2')
+		})
+
+		test('this.$dep.dependModel.$state() should not call function if dependent value not changed', () => {
+			const dependModel = defineModel({
+				name: 'dependModel',
+				state: {
+					value: 0,
+					dependentValue: 'depenent value',
+				},
+				reducers: {
+					change(state) {
+						state.value = 1
+					},
+				},
+			})
+
+			let numberOfCalls = 0
+			const model = defineModel(
+				{
+					name: 'model',
+					state: {},
+					reducers: {},
+					views: {
+						getDependentValue() {
+							numberOfCalls++
+							return this.$dep.dependModel.$state().dependentValue
+						},
+					},
+				},
+				[dependModel]
+			)
+			const store = manager.get(model)
+
+			let valueFromViews
+
+			expect(numberOfCalls).toBe(0)
+
+			valueFromViews = store.getDependentValue()
+			expect(numberOfCalls).toBe(1)
+
+			manager.get(dependModel).change()
+			expect(store.getDependentValue() === valueFromViews).toBeTruthy
+			expect(numberOfCalls).toBe(1)
+		})
+
+		test('this.$dep.dependModel.$state().[property] and this.$dep.dependModel.[property] share different cache, even accessing the same property of the state', () => {
+			const dependModel = defineModel({
+				name: 'dependModel',
+				state: {
+					dependentValue: 'depenent value',
+				},
+				reducers: {
+					changeValue(state, payload) {
+						state.dependentValue = payload
+					},
+				},
+			})
+
+			let numberOfCalls = 0
+			const model = defineModel(
+				{
+					name: 'model',
+					state: {},
+					reducers: {},
+					views: {
+						getValue() {
+							numberOfCalls++
+							return this.$dep.dependModel.dependentValue
+						},
+						getValueViaFunction() {
+							numberOfCalls++
+							return this.$dep.dependModel.$state().dependentValue
+						},
+					},
+				},
+				[dependModel]
+			)
+			const store = manager.get(model)
+			const dependStore = manager.get(dependModel)
+
+			let viewsValue
+
+			expect(numberOfCalls).toBe(0)
+			viewsValue = store.getValueViaFunction()
+			expect(numberOfCalls).toBe(1)
+			expect(viewsValue).toBe('depenent value')
+
+			viewsValue = store.getValue()
+			expect(numberOfCalls).toBe(2)
+			expect(viewsValue).toBe('depenent value')
+
+			dependStore.changeValue('test')
+			viewsValue = store.getValueViaFunction()
+			expect(numberOfCalls).toBe(3)
+			expect(viewsValue).toBe('test')
+
+			viewsValue = store.getValue()
+			expect(numberOfCalls).toBe(4)
+			expect(viewsValue).toBe('test')
+		})
+	})
 })

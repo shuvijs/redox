@@ -52,12 +52,83 @@ describe('defineModel worked:', () => {
 			}).toThrow()
 		})
 
-		test('state should be object', () => {
+		test('state could be a number', () => {
 			expect(() => {
-				const modelA = defineModel({
+				const model = defineModel({
+					name: 'a',
+					state: 1,
+					reducers: {},
+				})
+			}).not.toThrow()
+		})
+
+		test('state could be a string', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					state: 'test',
+					reducers: {},
+				})
+			}).not.toThrow()
+		})
+
+		test('state could be a array', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					state: [],
+					reducers: {},
+				})
+			}).not.toThrow()
+		})
+
+		test('state could be a boolean', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					state: false,
+					reducers: {},
+				})
+			}).not.toThrow()
+		})
+
+		test('state could be a undefined', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					state: undefined,
+					reducers: {},
+				})
+			}).not.toThrow()
+		})
+
+		test('state could be a null', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					state: null,
+					reducers: {},
+				})
+			}).not.toThrow()
+		})
+
+		test('state could not be a bigint', () => {
+			expect(() => {
+				const model = defineModel({
 					name: 'a',
 					// @ts-ignore
-					state: 1,
+					state: BigInt(1),
+					reducers: {},
+				})
+			}).toThrow()
+		})
+
+		test('state could not be a symbol', () => {
+			expect(() => {
+				const model = defineModel({
+					name: 'a',
+					// @ts-ignore
+					state: Symbol('1'),
 					reducers: {},
 				})
 			}).toThrow()
