@@ -11,7 +11,8 @@ import { validate, redox } from '@shuvi/redox'
 import type { IModelManager, AnyModel, RedoxOptions } from '@shuvi/redox'
 import { createUseModel, getStateActions } from './useModel'
 import { createBatchManager } from './batchManager'
-import { IUseModel, ISelector } from './types'
+import { shadowEqual } from './utils'
+import { IUseModel, IUseStaticModel, ISelector } from './types'
 
 const createContainer = function (options?: RedoxOptions) {
 	const Context = createContext<{
@@ -41,16 +42,11 @@ const createContainer = function (options?: RedoxOptions) {
 			[propsModelManager]
 		)
 
-		const [contextValue, setContextValue] = useState(memoContext)
-
-		const modelManagerPos = useRef(propsModelManager) // for hmr
+		const [contextValue, setContextValue] = useState(memoContext) // for hmr keep contextValue
 
 		useEffect(
 			function () {
-				if (modelManagerPos.current !== propsModelManager) {
-					modelManagerPos.current = propsModelManager
-					setContextValue(memoContext)
-				}
+				setContextValue(memoContext)
 			},
 			[propsModelManager]
 		)
@@ -86,7 +82,7 @@ const createContainer = function (options?: RedoxOptions) {
 		)(model, selector)
 	}
 
-	const useStaticModel: IUseModel = <
+	const useStaticModel: IUseStaticModel = <
 		IModel extends AnyModel,
 		Selector extends ISelector<IModel>
 	>(
@@ -111,38 +107,33 @@ const createContainer = function (options?: RedoxOptions) {
 			return getStateActions(model, modelManager, selector)
 		}, [modelManager, batchManager])
 
-		const value = useRef<[any, any]>([
-			// deep clone state in case mutate origin state accidentlly.
-			JSON.parse(JSON.stringify(initialValue[0])),
-			initialValue[1],
-		])
+		const stateRef = useRef<any>(initialValue[0])
 
-		const isUpdate = useRef(false)
+		const value = useRef<[any, any]>([stateRef, initialValue[1]])
 
 		useEffect(() => {
 			const fn = () => {
 				const newValue = getStateActions(model, modelManager, selector)
-				if (
-					Object.prototype.toString.call(value.current[0]) === '[object Object]'
-				) {
-					// merge data to old reference
-					Object.assign(value.current[0], newValue[0])
+				if (!shadowEqual(stateRef.current, newValue[0])) {
+					stateRef.current = newValue[0]
 				}
 			}
-			if (isUpdate.current) {
-				value.current = [
-					JSON.parse(JSON.stringify(initialValue[0])),
-					initialValue[1],
-				]
-			} else {
-				isUpdate.current = true
-			}
-			// useEffect is async ,there's maybe some async update state between init and useEffect, trigger fn once
-			fn()
 
 			const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
+
+			// useEffect is async, there's maybe some async update state before store subscribe
+			// check state and actions once, need update if it changed
+			const newValue = getStateActions(model, modelManager, selector)
+			if (
+				// selector maybe return new object each time, compare value with shadowEqual
+				!shadowEqual(stateRef.current, newValue[0]) ||
+				value.current[1] !== newValue[1]
+			) {
+				stateRef.current = newValue[0]
+				value.current = [stateRef, newValue[1]]
+			}
+
 			return () => {
-				isUpdate.current = false
 				unSubscribe()
 			}
 		}, [modelManager, batchManager])

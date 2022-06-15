@@ -4,7 +4,7 @@ import App from './App'
 import { redox } from '@shuvi/redox'
 import redoxLog from '@shuvi/redox-log'
 import persist, { createWebStorage } from '@shuvi/redox-persist'
-import { RedoxRoot } from './Container'
+import { RedoxRoot } from '@shuvi/redox-react'
 
 const modelManager = redox({
 	initialState: {},

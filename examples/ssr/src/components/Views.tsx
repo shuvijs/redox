@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { defineModel } from '@shuvi/redox'
-import { ISelectorParams } from '@shuvi/redox-react'
-import { useRootModel } from '../Container'
+import { ISelectorParams, useRootModel } from '@shuvi/redox-react'
 
 const otherDep = defineModel({
 	name: 'otherDep',

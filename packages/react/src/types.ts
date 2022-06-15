@@ -23,3 +23,15 @@ export interface IUseModel {
 		selectors: Selector
 	): [ReturnType<Selector>, IActions<IModel>]
 }
+
+export interface IUseStaticModel {
+	<IModel extends AnyModel>(model: IModel): [
+		{ current: IState<IModel> },
+		IActions<IModel>
+	]
+
+	<IModel extends AnyModel, Selector extends ISelector<IModel>>(
+		model: IModel,
+		selectors: Selector
+	): [{ current: ReturnType<Selector> }, IActions<IModel>]
+}
