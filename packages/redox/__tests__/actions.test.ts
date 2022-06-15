@@ -291,7 +291,7 @@ describe('actions worked:', () => {
 		expect(newValue).toEqual(valueFromStore)
 	})
 
-	test('this.$modify should modify nothing if typeof state is number', () => {
+	test('this.$modify should modify nothing if typeof state is number, string or boolean', () => {
 		const count = defineModel({
 			name: 'count',
 			state: 4,
@@ -304,7 +304,7 @@ describe('actions worked:', () => {
 		})
 
 		const store = manager.get(count)
-		const originalValue = store.$state()
+		const originalNumber = store.$state()
 
 		const addedValue: number = 2
 		const modifier = (state: any) => {
@@ -312,54 +312,25 @@ describe('actions worked:', () => {
 			return state + addedValue
 		}
 		store.makeCall(modifier)
-		expect(originalValue).toEqual(store.$state())
-	})
+		expect(originalNumber).toEqual(store.$state())
 
-	test('this.$modify should modify nothing if typeof state is string', () => {
-		const count = defineModel({
-			name: 'count',
-			state: 'test',
-			reducers: {},
-			actions: {
-				makeCall(modifier: (state: any) => void): void {
-					this.$modify(modifier)
-				},
-			},
-		})
+		store.$set('test')
+		const originalString = store.$state()
 
-		const store = manager.get(count)
-		const originalValue = store.$state()
-
-		const appendedString: string = 'append'
-		const modifier = (state: any) => {
-			state += appendedString
-			return state + appendedString
+		const stringModifier = (state: any) => {
+			return state + 'modify'
 		}
-		store.makeCall(modifier)
-		expect(originalValue).toEqual(store.$state())
-	})
+		store.makeCall(stringModifier)
+		expect(originalString).toEqual(store.$state())
 
-	test('this.$modify should modify nothing if typeof state is boolean', () => {
-		const count = defineModel({
-			name: 'count',
-			state: true,
-			reducers: {},
-			actions: {
-				makeCall(modifier: (state: any) => void): void {
-					this.$modify(modifier)
-				},
-			},
-		})
+		store.$set(false)
+		const originalBoolean = store.$state()
 
-		const store = manager.get(count)
-		const originalValue = store.$state()
-
-		const modifier = (state: any) => {
-			state = false
-			return false
+		const booleanModifier = (state: any) => {
+			return !state
 		}
-		store.makeCall(modifier)
-		expect(originalValue).toEqual(store.$state())
+		store.makeCall(booleanModifier)
+		expect(originalBoolean).toEqual(store.$state())
 	})
 
 	test('this should contain $dep', async () => {
@@ -790,7 +761,7 @@ describe('actions worked:', () => {
 			store.makeCall()
 		})
 
-		test("$dep's $modify should modify nothing if typeof state is number", () => {
+		test("$dep's $modify should modify nothing if typeof state is number, string or boolean", () => {
 			const depModel = defineModel({
 				name: 'depModel',
 				state: 0,
@@ -801,7 +772,7 @@ describe('actions worked:', () => {
 					name: 'count',
 					state: { count: 0 },
 					actions: {
-						makeCall() {
+						checkNumber() {
 							this.$dep.depModel.$modify((_) => {
 								return 100
 							})
@@ -813,56 +784,14 @@ describe('actions worked:', () => {
 
 							expect(this.$dep.depModel.$state()).toEqual(0)
 						},
-					},
-				},
-				[depModel]
-			)
-
-			const store = manager.get(count)
-
-			store.makeCall()
-		})
-
-		test("$dep's $modify should modify nothing if typeof state is string", () => {
-			const depModel = defineModel({
-				name: 'depModel',
-				state: 'initial',
-			})
-
-			const count = defineModel(
-				{
-					name: 'count',
-					state: { count: 0 },
-					actions: {
-						makeCall() {
+						checkString() {
 							this.$dep.depModel.$modify((_) => {
 								return 'test'
 							})
 							expect(this.$dep.depModel.$state()).not.toEqual('test')
 							expect(this.$dep.depModel.$state()).toEqual('initial')
 						},
-					},
-				},
-				[depModel]
-			)
-
-			const store = manager.get(count)
-
-			store.makeCall()
-		})
-
-		test("$dep's $modify should modify nothing if typeof state is boolean", () => {
-			const depModel = defineModel({
-				name: 'depModel',
-				state: false,
-			})
-
-			const count = defineModel(
-				{
-					name: 'count',
-					state: { count: 0 },
-					actions: {
-						makeCall() {
+						checkBoolean() {
 							this.$dep.depModel.$modify((_) => {
 								return true
 							})
@@ -875,8 +804,17 @@ describe('actions worked:', () => {
 			)
 
 			const store = manager.get(count)
+			const depStore = manager.get(depModel)
 
-			store.makeCall()
+			store.checkNumber()
+
+			depStore.$set('initial')
+
+			store.checkString()
+
+			depStore.$set(false)
+
+			store.checkBoolean()
 		})
 
 		test("$dep's reducer should worked", async () => {
