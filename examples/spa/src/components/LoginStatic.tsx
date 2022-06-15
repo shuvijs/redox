@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useRootStaticModel } from '../Container'
+import { useRootStaticModel } from '@shuvi/redox-react'
 
 import { login } from '../models/login'
 
@@ -8,8 +8,10 @@ function Login() {
 	const [state] = useRootStaticModel(login)
 	return (
 		<div>
-			<h3>useRootStaticModel isLogin: {state.isLogin.toString()}</h3>
-			<button onClick={() => alert(state.isLogin)}>alert isLogin</button>
+			<h3>useRootStaticModel isLogin: {state.current.isLogin.toString()}</h3>
+			<button onClick={() => alert(state.current.isLogin)}>
+				alert isLogin
+			</button>
 			<hr />
 		</div>
 	)

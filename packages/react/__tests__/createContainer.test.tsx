@@ -6,8 +6,12 @@ import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { defineModel, redox } from '@shuvi/redox'
 import { act } from 'react-dom/test-utils'
-import { createContainer } from '../src'
-import { RedoxRoot, useRootStaticModel, useRootModel } from './Container'
+import {
+	createContainer,
+	RedoxRoot,
+	useRootStaticModel,
+	useRootModel,
+} from '../src'
 
 import { sleep, countModel, countSelectorParameters } from './models'
 
@@ -664,7 +668,7 @@ describe('useRootStaticModel', () => {
 
 				return (
 					<>
-						<div id="value">{state.value}</div>
+						<div id="value">{state.current.value}</div>
 						<button id="button" type="button" onClick={() => actions.add()}>
 							add
 						</button>
@@ -702,7 +706,7 @@ describe('useRootStaticModel', () => {
 
 				return (
 					<>
-						<div id="value">{state.value}</div>
+						<div id="value">{state.current.value}</div>
 						<button id="button" type="button" onClick={() => actions.add()}>
 							add
 						</button>
@@ -740,7 +744,7 @@ describe('useRootStaticModel', () => {
 
 				return (
 					<>
-						<div id="value">{state.value}</div>
+						<div id="value">{state.current.value}</div>
 						<button id="button" type="button" onClick={() => actions.add()}>
 							add
 						</button>
@@ -765,11 +769,11 @@ describe('useRootStaticModel', () => {
 
 			const [state, dispatch] = useRootStaticModel(countModel)
 
-			currentCount = state.value
+			currentCount = state.current.value
 
 			return (
 				<>
-					<div id="state">{state.value}</div>
+					<div id="state">{state.current.value}</div>
 					<button id="add" type="button" onClick={() => dispatch.add()}>
 						add
 					</button>
@@ -777,7 +781,7 @@ describe('useRootStaticModel', () => {
 						id="updateCount"
 						type="button"
 						onClick={() => {
-							currentCount = state.value
+							currentCount = state.current.value
 						}}
 					>
 						updateCount
@@ -813,6 +817,55 @@ describe('useRootStaticModel', () => {
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
 		expect(currentCount).toBe(2)
+	})
+
+	test('useRootStaticModel should state keep same ref', () => {
+		let stateRef: any
+		let stateRef1: any
+
+		const StaticApp = () => {
+			const [state, dispatch] = useRootStaticModel(countModel)
+			const [_, setValue] = React.useState(false)
+
+			if (!stateRef) {
+				stateRef = state
+			}
+
+			stateRef1 = state
+
+			return (
+				<>
+					<div id="state">{state.current.value}</div>
+					<button
+						id="add"
+						type="button"
+						onClick={() => {
+							dispatch.add()
+							setValue(true)
+						}}
+					>
+						add
+					</button>
+				</>
+			)
+		}
+
+		act(() => {
+			ReactDOM.render(
+				<RedoxRoot>
+					<StaticApp />
+				</RedoxRoot>,
+				node
+			)
+		})
+
+		act(() => {
+			node
+				.querySelector('#add')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+
+		expect(stateRef === stateRef1).toBeTruthy()
 	})
 })
 
