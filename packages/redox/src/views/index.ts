@@ -144,9 +144,10 @@ const getStateCollection = () => {
 // @ts-ignore
 function compareObject(prevObj: any, nextObj: any, compare: ICompare) {
 	if (!isComplexObject(prevObj)) {
-		// $state function comparison
+		// $state function and view fucntion comparison
 		if (typeof prevObj === 'function') {
 			const treeMap = compare.tree.get(prevObj)
+			// $state function comparison
 			if (treeMap) {
 				const child = treeMap!.children
 				const nextChild = nextObj()
@@ -155,12 +156,8 @@ function compareObject(prevObj: any, nextObj: any, compare: ICompare) {
 				}
 				return compareObject(child, nextChild, compare)
 			}
-		}
-		// simple value like string number just call ===
-		return prevObj === nextObj
-	} else if (prevObj === nextObj) {
-		// view compare, call function with arguments and compare result
-		if (typeof prevObj === 'function') {
+
+			// view compare, call function with arguments and compare result
 			const viewMap = compare.view.get(prevObj)
 			if (viewMap) {
 				for (const [viewArg, viewRes] of viewMap.entries()) {
@@ -170,9 +167,13 @@ function compareObject(prevObj: any, nextObj: any, compare: ICompare) {
 				}
 			}
 		}
+		// simple value like string number just call ===
+		return prevObj === nextObj
+	} else if (prevObj === nextObj) {
 		// Object address has not changed, children are same
 		return true
 	}
+
 	const treeNode = compare.tree.get(prevObj)
 	if (!treeNode) {
 		// not visit prevObj any key, just compare with ===
