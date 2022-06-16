@@ -1,4 +1,4 @@
-import { defineModel, redox } from '../src'
+import { defineModel, redox, IPlugin } from '../src'
 let manager: ReturnType<typeof redox>
 
 describe('redox', () => {
@@ -245,5 +245,41 @@ describe('redox', () => {
 		store.addOne(1)
 		expect(dependCount).toBe(2)
 		expect(storeCount).toBe(3)
+	})
+
+	describe('plugin', () => {
+		it('should have the proper api', () => {
+			const onInit = jest.fn()
+			const onModel = jest.fn()
+			const onStoreCreated = jest.fn()
+			const onDestroy = jest.fn()
+			const plugin: IPlugin = () => {
+				return {
+					onInit,
+					onModel,
+					onStoreCreated,
+					onDestroy,
+				}
+			}
+
+			let initialState = {}
+			const manager = redox({
+				initialState,
+				plugins: [[plugin, {}]],
+			})
+
+			expect(onInit).toHaveBeenCalledWith(manager, initialState)
+
+			const model = defineModel({
+				name: 'model',
+				state: { value: '' },
+			})
+			manager.get(model)
+			expect(onModel).toHaveBeenCalledWith(model)
+			expect(typeof onStoreCreated.mock.calls[0][0].dispatch).toBe('function')
+
+			manager.destroy()
+			expect(onDestroy).toHaveBeenCalledWith()
+		})
 	})
 })
