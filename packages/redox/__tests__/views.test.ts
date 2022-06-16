@@ -249,7 +249,7 @@ describe('defineModel/views', () => {
 		expect(calltime).toBe(3)
 	})
 
-	it('should return last value （change view args)', () => {
+	it('should return last value (change view args)', () => {
 		const model = defineModel({
 			name: 'model',
 			state: {
@@ -288,7 +288,7 @@ describe('defineModel/views', () => {
 		expect(store.wrapA({})).not.toBe(r)
 	})
 
-	it('should return last value （replace state)', () => {
+	it('should return last value (replace state)', () => {
 		let initState = {
 			a: 0,
 		}

@@ -7,20 +7,8 @@ beforeEach(() => {
 	process.env.NODE_ENV = 'development'
 })
 
-describe('defineModel worked:', () => {
-	test('should return the model', () => {
-		const model = {
-			name: 'a',
-			state: {},
-			reducers: {},
-		}
-
-		const modelA = defineModel(model)
-
-		expect(model).toBe(modelA)
-	})
-
-	describe('defineModel valid:', () => {
+describe('defineModel', () => {
+	describe('type checking', () => {
 		test('model is necessary', () => {
 			expect(() => {
 				// @ts-ignore
@@ -30,11 +18,10 @@ describe('defineModel worked:', () => {
 
 		test('name is not necessary', () => {
 			expect(() => {
-				const modelA = defineModel(
+				defineModel(
 					// @ts-ignore
 					{
 						state: {},
-						reducers: {},
 					}
 				)
 			}).not.toThrow()
@@ -42,11 +29,10 @@ describe('defineModel worked:', () => {
 
 		test('state is necessary', () => {
 			expect(() => {
-				const modelA = defineModel(
+				defineModel(
 					// @ts-ignore
 					{
 						name: 'a',
-						reducers: {},
 					}
 				)
 			}).toThrow()
@@ -54,89 +40,81 @@ describe('defineModel worked:', () => {
 
 		test('state could be a number', () => {
 			expect(() => {
-				const model = defineModel({
+				defineModel({
 					name: 'a',
 					state: 1,
-					reducers: {},
 				})
 			}).not.toThrow()
 		})
 
 		test('state could be a string', () => {
 			expect(() => {
-				const model = defineModel({
+				defineModel({
 					name: 'a',
 					state: 'test',
-					reducers: {},
 				})
 			}).not.toThrow()
 		})
 
 		test('state could be a array', () => {
 			expect(() => {
-				const model = defineModel({
+				defineModel({
 					name: 'a',
 					state: [],
-					reducers: {},
 				})
 			}).not.toThrow()
 		})
 
 		test('state could be a boolean', () => {
 			expect(() => {
-				const model = defineModel({
+				defineModel({
 					name: 'a',
 					state: false,
-					reducers: {},
 				})
 			}).not.toThrow()
 		})
 
 		test('state could be a undefined', () => {
 			expect(() => {
-				const model = defineModel({
+				defineModel({
 					name: 'a',
 					state: undefined,
-					reducers: {},
 				})
 			}).not.toThrow()
 		})
 
 		test('state could be a null', () => {
 			expect(() => {
-				const model = defineModel({
+				defineModel({
 					name: 'a',
 					state: null,
-					reducers: {},
 				})
 			}).not.toThrow()
 		})
 
 		test('state could not be a bigint', () => {
 			expect(() => {
-				const model = defineModel({
+				defineModel({
 					name: 'a',
 					// @ts-ignore
 					state: BigInt(1),
-					reducers: {},
 				})
 			}).toThrow()
 		})
 
 		test('state could not be a symbol', () => {
 			expect(() => {
-				const model = defineModel({
+				defineModel({
 					name: 'a',
 					// @ts-ignore
 					state: Symbol('1'),
-					reducers: {},
 				})
 			}).toThrow()
 		})
 
 		test('reducers should be object', () => {
 			expect(() => {
-				const modelA = defineModel({
+				defineModel({
 					name: 'a',
 					state: {},
 					// @ts-ignore
@@ -147,7 +125,7 @@ describe('defineModel worked:', () => {
 
 		test('reducer should be function', () => {
 			expect(() => {
-				const modelA = defineModel({
+				defineModel({
 					name: 'a',
 					state: {},
 					reducers: {
@@ -160,10 +138,9 @@ describe('defineModel worked:', () => {
 
 		test('actions should be object', () => {
 			expect(() => {
-				const modelA = defineModel({
+				defineModel({
 					name: 'a',
 					state: {},
-					reducers: {},
 					// @ts-ignore
 					actions: 1,
 				})
@@ -172,10 +149,9 @@ describe('defineModel worked:', () => {
 
 		test('action should be function', () => {
 			expect(() => {
-				const modelA = defineModel({
+				defineModel({
 					name: 'a',
 					state: {},
-					reducers: {},
 					actions: {
 						// @ts-ignore
 						1: 1,
@@ -186,10 +162,9 @@ describe('defineModel worked:', () => {
 
 		test('views should be object', () => {
 			expect(() => {
-				const modelA = defineModel({
+				defineModel({
 					name: 'a',
 					state: {},
-					reducers: {},
 					// @ts-ignore
 					views: 1,
 				})
@@ -198,10 +173,9 @@ describe('defineModel worked:', () => {
 
 		test('view should be function', () => {
 			expect(() => {
-				const modelA = defineModel({
+				defineModel({
 					name: 'a',
 					state: {},
-					reducers: {},
 					views: {
 						// @ts-ignore
 						1: 1,
@@ -212,12 +186,11 @@ describe('defineModel worked:', () => {
 
 		test('not allow repeat key state views', () => {
 			expect(() => {
-				const model = defineModel({
+				defineModel({
 					name: 'a',
 					state: {
 						a: 0,
 					},
-					reducers: {},
 					views: {
 						a() {},
 					},
@@ -227,25 +200,13 @@ describe('defineModel worked:', () => {
 
 		test('not allow repeat key reducers actions views', () => {
 			expect(() => {
-				const model = defineModel({
+				defineModel({
 					name: 'a',
 					state: {},
 					reducers: {
 						a() {},
 					},
 					actions: {
-						async a() {},
-					},
-				})
-			}).toThrow()
-			expect(() => {
-				const model = defineModel({
-					name: 'a',
-					state: {},
-					reducers: {
-						a() {},
-					},
-					views: {
 						a() {},
 					},
 				})
@@ -254,7 +215,7 @@ describe('defineModel worked:', () => {
 
 		test('depends should be array or undefined', () => {
 			expect(() => {
-				const modelA = defineModel(
+				defineModel(
 					{
 						name: 'a',
 						state: {},
@@ -266,20 +227,162 @@ describe('defineModel worked:', () => {
 			}).toThrow()
 
 			expect(() => {
-				const modelB = defineModel({
+				defineModel({
 					name: 'a',
 					state: {},
-					reducers: {},
 				})
-				const modelC = defineModel(
+				defineModel(
 					{
 						name: 'a',
 						state: {},
-						reducers: {},
 					},
 					[]
 				)
 			}).not.toThrow()
+		})
+	})
+
+	it('should return the model', () => {
+		const model = {
+			name: 'a',
+			state: {},
+			reducers: {},
+		}
+
+		const modelA = defineModel(model)
+
+		expect(model).toBe(modelA)
+	})
+
+	describe('dependencies', () => {
+		it('should access dependent models by this.$dep', () => {
+			let deps: any
+			const depOne = defineModel({
+				name: 'one',
+				state: { count: 0 },
+				reducers: {
+					add: (s, p: number) => ({
+						count: s.count + p,
+					}),
+				},
+				actions: {
+					actionAdd(n: number) {
+						this.add(n)
+					},
+				},
+			})
+
+			const depTwo = defineModel({
+				name: 'two',
+				state: { count: 0 },
+				reducers: {
+					add: (s, p: number) => ({
+						count: s.count + p,
+					}),
+				},
+			})
+
+			const model = defineModel(
+				{
+					name: 'model',
+					state: { value: 0 },
+					reducers: {
+						add: (s, p: number) => ({ value: s.value + p }),
+					},
+					actions: {
+						addByReducer(_: void) {
+							deps = this.$dep
+							this.$dep.one.add(1)
+							this.$dep.two.add(1)
+							this.add(1)
+						},
+						addByAction(_: void) {
+							this.$dep.one.actionAdd(1)
+						},
+					},
+				},
+				[depOne, depTwo]
+			)
+
+			const depOneStore = manager.get(depOne)
+			const depTwoStore = manager.get(depTwo)
+			const store = manager.get(model)
+
+			store.addByReducer()
+			expect(store.$state()).toEqual({ value: 1 })
+			expect(depOneStore.$state()).toEqual({ count: 1 })
+			expect(depTwoStore.$state()).toEqual({ count: 1 })
+
+			expect(deps.one).toBe(depOneStore)
+			expect(deps.two).toBe(depTwoStore)
+
+			store.addByAction()
+			expect(depOneStore.$state()).toEqual({ count: 2 })
+			expect(depTwoStore.$state()).toEqual({ count: 1 })
+		})
+
+		it("should reactive to dep's view", async () => {
+			const dep = defineModel({
+				name: 'dep',
+				state: { count: 1 },
+				reducers: {
+					add: (s, p: number) => ({
+						count: s.count + p,
+					}),
+				},
+				views: {
+					double() {
+						return this.count * 2
+					},
+				},
+			})
+
+			const model = defineModel(
+				{
+					name: 'model',
+					state: { value: 0 },
+					reducers: {
+						add: (s, p: number) => ({
+							value: s.value + p,
+						}),
+					},
+					views: {
+						all() {
+							return {
+								value: this.value,
+								depDouble: this.$dep.dep.double(),
+							}
+						},
+					},
+				},
+				[dep]
+			)
+
+			const store = manager.get(model)
+			const depStore = manager.get(dep)
+
+			let v = store.all()
+			expect(v).toEqual({
+				value: 0,
+				depDouble: 2,
+			})
+			expect(store.all()).toBe(v)
+
+			depStore.add(1)
+			v = store.all()
+			expect(v).toEqual({
+				value: 0,
+				depDouble: 4,
+			})
+			expect(store.all()).toBe(v)
+
+			store.add(1)
+			v = store.all()
+			expect(v).toEqual({
+				value: 1,
+				depDouble: 4,
+			})
+			expect(store.all()).toBe(v)
 		})
 	})
 })
