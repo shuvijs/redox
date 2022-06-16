@@ -193,8 +193,8 @@ describe('defineModel/actions', () => {
 			const store = manager.get(anyModal)
 			expect(store.$state()).toEqual({ value: 0 })
 
-			expect(store.$set(Symbol('foo') as any)).toThrow()
-			expect(store.$set(BigInt(1111) as any)).toThrow()
+			expect(() => store.$set(Symbol('foo') as any)).toThrow()
+			expect(() => store.$set(BigInt(1111) as any)).toThrow()
 		})
 	})
 
