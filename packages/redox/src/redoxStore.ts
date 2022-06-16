@@ -192,7 +192,7 @@ export class RedoxStore<IModel extends AnyModel> {
 			let lastState = this.getState()
 			let $stateCache = readonlyDeepClone(lastState)
 			this.$state = () => {
-				if (lastState === this.getState() && $stateCache) {
+				if (lastState === this.getState()) {
 					return $stateCache
 				}
 				lastState = this.getState()
