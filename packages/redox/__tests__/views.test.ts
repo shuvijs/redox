@@ -387,6 +387,25 @@ describe('defineModel/views', () => {
 		expect(numberOfCalls).toBe(4)
 	})
 
+	it('should throw error if changed state in a view', () => {
+		let initState = {
+			a: 0,
+		}
+		const model = defineModel({
+			name: 'model',
+			state: initState,
+			views: {
+				view() {
+					const state = this.$state()
+					state.a = 1
+					return this.$state()
+				},
+			},
+		})
+		const store = manager.get(model)
+		expect(() => store.view()).toThrow()
+	})
+
 	describe('view with depends', () => {
 		it('should not be invoked if no dep update', () => {
 			const modelA = defineModel({

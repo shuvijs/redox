@@ -131,6 +131,12 @@ const getStateCollection = () => {
 			}
 			return result
 		},
+		set() {
+			if (process.env.NODE_ENV === 'development') {
+				validate(() => [[true, `not allow change any state in the view !`]])
+			}
+			return false
+		},
 	}
 }
 
@@ -291,7 +297,7 @@ export const createViews = <IModel extends AnyModel>(
 				)
 				// @ts-ignore
 				proxyObj[viewsKey] = function (...args: any[]) {
-					const state = redoxStore.$state()
+					const state = redoxStore.getState()
 					const view = redoxStore.$views
 					const selfStateAndView = Object.assign(
 						Object.create(null),
@@ -308,9 +314,9 @@ export const createViews = <IModel extends AnyModel>(
 							dependsStateAndView[depend.name] = Object.assign(
 								tempDependStateAndView,
 								{
-									$state: dependRedoxStore.$state,
+									$state: dependRedoxStore.getState,
 								},
-								dependRedoxStore.$state(),
+								dependRedoxStore.getState(),
 								dependRedoxStore.$views
 							)
 						})
@@ -318,7 +324,7 @@ export const createViews = <IModel extends AnyModel>(
 					const thisPoint = {
 						...selfStateAndView,
 						$dep: dependsStateAndView,
-						$state: redoxStore.$state,
+						$state: redoxStore.getState,
 					}
 					return cacheFun(thisPoint, args)
 				}
