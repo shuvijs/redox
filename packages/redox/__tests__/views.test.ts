@@ -181,6 +181,7 @@ describe('defineModel/views', () => {
 	})
 
 	it('should return last value', () => {
+		let calltime = 0
 		const sample = defineModel({
 			name: 'sample',
 			state: {
@@ -215,12 +216,15 @@ describe('defineModel/views', () => {
 			},
 			views: {
 				viewA() {
+					calltime++
 					return this.a
 				},
 				viewB() {
+					calltime++
 					return this.b
 				},
 				viewC() {
+					calltime++
 					return this.c.foo
 				},
 			},
@@ -228,12 +232,21 @@ describe('defineModel/views', () => {
 		const store = manager.get(sample)
 
 		store.changeA(10)
+		expect(calltime).toBe(0)
 		expect(store.viewA()).toBe(10)
+		expect(store.viewA()).toBe(10)
+		expect(calltime).toBe(1)
 		let newB = {}
 		store.changeB(newB)
+		expect(calltime).toBe(1)
 		expect(store.viewB()).toBe(newB)
+		expect(store.viewB()).toBe(newB)
+		expect(calltime).toBe(2)
 		store.changeC('zoo')
+		expect(calltime).toBe(2)
 		expect(store.viewC()).toBe('zoo')
+		expect(store.viewC()).toBe('zoo')
+		expect(calltime).toBe(3)
 	})
 
 	it('should return last value （change view args)', () => {
