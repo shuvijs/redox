@@ -1,75 +1,81 @@
 import { defineModel, redox } from '../src'
+
 let manager: ReturnType<typeof redox>
+
 beforeEach(() => {
 	manager = redox()
 })
-describe('reducer worked:', () => {
-	describe('action:', () => {
-		test('should be called in the form "reducerName"', () => {
-			const count = defineModel({
-				name: 'count',
-				state: { value: 0 },
-				reducers: {
-					add: (state) => ({
-						value: state.value + 1,
-					}),
-				},
-			})
 
-			const store = manager.get(count)
-
-			store.add()
-
-			expect(store.$state()).toEqual({ value: 1 })
+describe('defineModel/reducers', () => {
+	it('should change the state"', () => {
+		const count = defineModel({
+			name: 'count',
+			state: { value: 0 },
+			reducers: {
+				add: (state) => ({
+					value: state.value + 1,
+				}),
+				sub: (state) => ({
+					value: state.value - 1,
+				}),
+			},
 		})
 
-		test('should return an action', () => {
-			const count = defineModel({
-				name: 'count',
-				state: { value: 0 },
-				reducers: {
-					add: (state) => ({
-						value: state.value + 1,
-					}),
-				},
-			})
+		const store = manager.get(count)
 
-			const store = manager.get(count)
+		store.add()
+		expect(store.$state()).toEqual({ value: 1 })
 
-			const dispatched = store.add()
-
-			expect(store.$state()).toEqual({ value: 1 })
-			expect(dispatched).toEqual({ type: 'add' })
-		})
-
-		test('should dispatch multiple actions', () => {
-			const count = defineModel({
-				name: 'count',
-				state: { value: 0 },
-				reducers: {
-					add: (state) => ({
-						value: state.value + 1,
-					}),
-				},
-			})
-
-			const store = manager.get(count)
-
-			store.add()
-			store.add()
-
-			expect(store.$state()).toEqual({ value: 2 })
-		})
+		store.sub()
+		expect(store.$state()).toEqual({ value: 0 })
 	})
 
-	test('should include a payload if it is a false value', () => {
+	it('should return an action', () => {
+		const count = defineModel({
+			name: 'count',
+			state: { value: 0 },
+			reducers: {
+				add: (state) => ({
+					value: state.value + 1,
+				}),
+			},
+		})
+
+		const store = manager.get(count)
+
+		const dispatched = store.add()
+
+		expect(store.$state()).toEqual({ value: 1 })
+		expect(dispatched).toEqual({ type: 'add' })
+	})
+
+	it('should receive the state', () => {
+		const count = defineModel({
+			name: 'count',
+			state: { value: 0 },
+			reducers: {
+				plusOne: (state) => ({
+					...state,
+					value: state.value + 1,
+				}),
+			},
+		})
+
+		const store = manager.get(count)
+
+		store.plusOne()
+
+		expect(store.$state()).toEqual({ value: 1 })
+	})
+
+	it('should recieve the payload', () => {
 		const count = defineModel({
 			name: 'a',
 			state: {
-				value: true,
+				value: '',
 			},
 			reducers: {
-				toggle: (_, payload: boolean) => ({
+				set: (_, payload: any) => ({
 					value: payload,
 				}),
 			},
@@ -77,13 +83,22 @@ describe('reducer worked:', () => {
 
 		const store = manager.get(count)
 
-		store.toggle(false)
-
+		store.set(false)
 		expect(store.$state()).toEqual({ value: false })
+
+		store.set(null)
+		expect(store.$state()).toEqual({ value: null })
+
+		store.set(0)
+		expect(store.$state()).toEqual({ value: 0 })
+
+		let obj = { foo: 'bar' }
+		store.set(obj)
+		expect(store.$state().value).toEqual(obj)
 	})
 
-	describe('support immer:', () => {
-		test('should load the immer plugin with a basic literal', () => {
+	describe('immer', () => {
+		it('should work with a basic literal', () => {
 			const count = defineModel({
 				name: 'count',
 				state: { value: 0 },
@@ -101,7 +116,7 @@ describe('reducer worked:', () => {
 			expect(store.$state()).toEqual({ value: 1 })
 		})
 
-		test('should load the immer plugin with a nullable basic literal', () => {
+		it('should with a nullable basic literal', () => {
 			const model = defineModel({
 				name: 'model',
 				state: { value: null } as { value: number | null },
@@ -119,7 +134,7 @@ describe('reducer worked:', () => {
 			expect(store.$state()).toEqual({ value: 1 })
 		})
 
-		test('should load the immer plugin with a object condition', () => {
+		it('should work with a object', () => {
 			const todo = [
 				{
 					todo: 'Learn typescript',
@@ -154,101 +169,25 @@ describe('reducer worked:', () => {
 			expect(todo[1].done).toBe(false)
 			expect(newState.value[1].done).toEqual(true)
 		})
-	})
 
-	describe('params:', () => {
-		test('should pass state as the first reducer param', () => {
-			const count = defineModel({
-				name: 'count',
-				state: { value: 0 },
+		// FIXME: what's the correct behavior
+		it('should ignore or accept the return value?', () => {
+			const model = defineModel({
+				name: 'model',
+				state: { value: null } as { value: number | null },
 				reducers: {
-					doNothing: (state) => state,
-				},
-			})
-
-			const store = manager.get(count)
-
-			store.doNothing()
-
-			expect(store.$state()).toEqual({ value: 0 })
-		})
-
-		test('should pass payload as the second param', () => {
-			const count = defineModel({
-				name: 'count',
-				state: {
-					countIds: [] as number[],
-				},
-				reducers: {
-					incrementBy: (state, payload: number) => {
-						return {
-							countIds: [...state.countIds, payload],
-						}
+					set(state, payload: number) {
+						state.value = payload
+						return { foo: 'bar' } as any
 					},
 				},
 			})
 
-			const store = manager.get(count)
+			const store = manager.get(model)
 
-			store.incrementBy(5)
+			store.set(1)
 
-			expect(store.$state().countIds).toStrictEqual([5])
-		})
-	})
-
-	describe('promise action', () => {
-		beforeEach(() => {
-			manager = redox()
-		})
-
-		test('should return a promise from an action', () => {
-			const count = defineModel({
-				name: 'count',
-				state: { value: 0 },
-				reducers: {
-					addOne: (state) => {
-						value: state.value + 1
-					},
-				},
-				actions: {
-					async callAddOne(): Promise<void> {
-						this.addOne()
-					},
-				},
-			})
-
-			const store = manager.get(count)
-
-			const dispatched = store.callAddOne()
-
-			expect(typeof dispatched.then).toBe('function')
-		})
-
-		test('should return a promise that resolves to a value from an action', async () => {
-			const count = defineModel({
-				name: 'count',
-				state: { value: 0 },
-				reducers: {
-					addOne: (state) => ({ value: state.value + 1 }),
-				},
-				actions: {
-					async callAddOne(): Promise<Record<string, any>> {
-						this.addOne()
-						return {
-							added: true,
-						}
-					},
-				},
-			})
-
-			const store = manager.get(count)
-
-			const dispatched = store.callAddOne()
-
-			expect(typeof (dispatched as any).then).toBe('function')
-
-			const value = await dispatched
-			expect(value).toEqual({ added: true })
+			expect(store.$state()).toEqual({ value: 1 })
 		})
 	})
 })

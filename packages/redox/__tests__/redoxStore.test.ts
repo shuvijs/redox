@@ -1,134 +1,66 @@
 import { defineModel, redox } from '../src'
 let manager: ReturnType<typeof redox>
 
-describe('redox worked:', () => {
-	test('always return a new instance', () => {
+describe('redox', () => {
+	it('always return a new instance', () => {
 		const managerA = redox()
 		const managerB = redox()
 		expect(managerA).not.toBe(managerB)
 	})
 
-	test('initialize state as an Object should work', () => {
-		manager = redox({
-			initialState: {
-				count: {
-					value: 1,
-				},
-			},
-		})
-		const count = defineModel({
-			name: 'count',
+	it('should have the proper api', () => {
+		manager = redox()
+		const model = defineModel({
+			name: 'model',
 			state: { value: 0 },
 			reducers: {
-				increment(state, payload: number) {
-					state.value = state.value + payload
+				reducerOne: (state) => {
+					return { value: state.value + 1 }
 				},
+			},
+			actions: {
+				actionOne() {},
+			},
+			views: {
+				viewOne() {},
 			},
 		})
 
-		const store = manager.get(count)
-		expect(store.$state()).toEqual({ value: 1 })
-		store.increment(1)
-		expect(store.$state()).toEqual({ value: 2 })
+		const store = manager.get(model)
+		expect(typeof store.$state).toBe('function')
+		expect(typeof store.$modify).toBe('function')
+		expect(typeof store.$set).toBe('function')
+		expect(typeof store.reducerOne).toBe('function')
+		expect(typeof store.actionOne).toBe('function')
+		expect(typeof store.viewOne).toBe('function')
 	})
 
-	test('initialize state as an Array should work', () => {
+	it('should init store by initialStage', () => {
 		manager = redox({
 			initialState: {
-				count: [0, 1, 2],
-			},
-		})
-		const count = defineModel({
-			name: 'count',
-			state: [0],
-			reducers: {
-				modify(
-					state,
-					payload: {
-						index: number
-						value: any
-					}
-				) {
-					state[payload.index] = payload.value
+				one: {
+					value: 'one',
+				},
+				two: {
+					value: 'two',
 				},
 			},
 		})
-
-		const store = manager.get(count)
-		expect(store.$state()).toEqual([0, 1, 2])
-		store.modify({
-			index: 1,
-			value: 10,
+		const modelOne = defineModel({
+			name: 'one',
+			state: { value: 0 },
 		})
-		expect(store.$state()).toEqual([0, 10, 2])
+		const modelTwo = defineModel({
+			name: 'two',
+			state: { value: 0 },
+		})
+		const storeOne = manager.get(modelOne)
+		const storeTwo = manager.get(modelTwo)
+		expect(storeOne.$state().value).toBe('one')
+		expect(storeTwo.$state().value).toBe('two')
 	})
 
-	test('initialize state as a Number should work', () => {
-		manager = redox({
-			initialState: {
-				countNumber: 1,
-			},
-		})
-		const countNumber = defineModel({
-			name: 'countNumber',
-			state: 0,
-			reducers: {
-				increment(state) {
-					return ++state
-				},
-			},
-		})
-
-		const store = manager.get(countNumber)
-		expect(store.$state()).toEqual(1)
-		store.increment()
-		expect(store.$state()).toEqual(2)
-	})
-
-	test('initialize state as a String should work', () => {
-		manager = redox({
-			initialState: {
-				textModel: 'initial',
-			},
-		})
-		const textModel = defineModel({
-			name: 'textModel',
-			state: '',
-			reducers: {
-				append(state, payload) {
-					return `${state}${payload}`
-				},
-				replace(_, payload) {
-					return payload
-				},
-			},
-		})
-
-		const store = manager.get(textModel)
-		expect(store.$state()).toEqual('initial')
-		store.append('_test')
-		expect(store.$state()).toEqual('initial_test')
-	})
-
-	test('initialize state as a Boolean should work', () => {
-		manager = redox()
-		const booleanModel = defineModel({
-			name: 'booleanModel',
-			state: false,
-			reducers: {
-				toggle(state) {
-					return !state
-				},
-			},
-		})
-
-		const store = manager.get(booleanModel)
-		expect(store.$state()).toEqual(false)
-		store.toggle()
-		expect(store.$state()).toEqual(true)
-	})
-
-	test('depends will be initial auto', () => {
+	it('should init dependencies', () => {
 		manager = redox()
 		const depend = defineModel({
 			name: 'depend',
@@ -165,7 +97,7 @@ describe('redox worked:', () => {
 		})
 	})
 
-	test('getSnapshot only collect changed state', () => {
+	it('getSnapshot should return the newest state', () => {
 		manager = redox()
 		const count0 = defineModel({
 			name: 'count0',
@@ -188,8 +120,10 @@ describe('redox worked:', () => {
 
 		const store0 = manager.get(count0)
 		const store1 = manager.get(count1)
-		expect(store0.$state()).toEqual({ value: 0 })
-		expect(store1.$state()).toEqual({ value: 0 })
+		expect(manager.getSnapshot()).toEqual({
+			count0: { value: 0 },
+			count1: { value: 0 },
+		})
 		store0.increment(1)
 		expect(manager.getSnapshot()).toEqual({
 			count0: { value: 1 },
@@ -197,10 +131,10 @@ describe('redox worked:', () => {
 		})
 	})
 
-	test('destroy without error ', () => {
+	test('should destroy', () => {
 		manager = redox()
-		const count = defineModel({
-			name: 'count',
+		const model = defineModel({
+			name: 'model',
 			state: { value: 0 },
 			reducers: {
 				increment(state, payload: number = 1) {
@@ -209,186 +143,83 @@ describe('redox worked:', () => {
 			},
 		})
 
-		const other = defineModel(
-			{
-				name: 'other',
-				state: {
-					other: ['other'],
-				},
-				reducers: {
-					add: (state, step: string) => {
-						return {
-							...state,
-							other: [...state.other, step],
-						}
-					},
-				},
-			},
-			[count]
-		)
+		const store = manager.get(model)
+		store.increment(1)
+		expect(store.$state().value).toBe(1)
 
-		const dome = defineModel({
-			name: 'dome',
-			state: {
-				number: 1,
-			},
-			reducers: {
-				add: (state, step: number) => {
-					// return state;
-					return {
-						...state,
-						number: state.number + step,
-					}
-				},
-			},
-		})
-
-		const otherCount = defineModel(
-			{
-				name: 'other|count',
-				state: {
-					value: [] as string[],
-				},
-				reducers: {
-					add: (state, step: string) => {
-						return {
-							value: [...state.value, step],
-						}
-					},
-				},
-				actions: {
-					useCount(_payload: any) {
-						const countState = this.$dep.count.$state()
-						this.add(countState.value.toString())
-					},
-				},
-			},
-			[other, count]
-		)
-
-		const user = defineModel(
-			{
-				name: 'user-other_dome',
-				state: {
-					id: 1,
-					name: 'haha',
-				},
-				reducers: {
-					add: (state, step) => {
-						return {
-							...state,
-							id: state.id + step,
-						}
-					},
-				},
-				actions: {
-					async depends(_payload: string) {
-						const domeState = this.$dep.dome.$state()
-						this.$dep.other.add('use1 paly')
-						this.$dep.other.add(domeState.toString())
-						this.$dep.dome.add(1)
-						this.$dep
-						this.add(1)
-					},
-				},
-				views: {
-					d() {
-						console.log(this.id)
-						const a = this.$dep.other
-						console.log(this.$dep.dome.number)
-						console.log(a.other[0])
-						console.log('d computed')
-						return this.$dep.dome
-					},
-					one(): number {
-						return this.$dep.dome.number
-					},
-					s(args: any): string {
-						// console.log('views', state, rootState, views, args);
-						// console.log('this', this)
-						// console.log('this', views.one)
-						// return state.id * args;
-						console.log('double computed')
-						return `state.id=>${
-							this.id
-						}, args=>${args},views.one=>${this.one()}`
-					},
-				},
-			},
-			[other, dome]
-		)
-		const countStore = manager.get(count)
-		const domeStore = manager.get(dome)
-
-		expect(manager.getSnapshot()).toEqual({
-			count: {
-				value: 0,
-			},
-			dome: {
-				number: 1,
-			},
-		})
-
-		expect(manager.get(user).d()).toHaveProperty('number')
-		expect(manager.get(user).d()['number']).toBe(1)
-		expect(manager.get(user).one()).toEqual(1)
-		expect(manager.get(user).s(2)).toEqual('state.id=>1, args=>2,views.one=>1')
-		countStore.increment(1)
-		domeStore.add(2)
-		expect(manager.getSnapshot()).toEqual({
-			count: {
-				value: 1,
-			},
-			dome: {
-				number: 3,
-			},
-			other: {
-				other: ['other'],
-			},
-			'user-other_dome': {
-				id: 1,
-				name: 'haha',
-			},
-		})
-		expect(manager.get(user).d()).toHaveProperty('number')
-		expect(manager.get(user).d()['number']).toBe(3)
-		expect(manager.get(user).one()).toEqual(3)
-		expect(manager.get(user).s(undefined)).toEqual(
-			'state.id=>1, args=>undefined,views.one=>3'
-		)
-
-		const otherCountStore = manager.get(otherCount)
-		otherCountStore.useCount(undefined)
-
-		expect(otherCountStore.$state()).toEqual({ value: ['1'] })
-
-		expect(() => {
-			manager.destroy()
-		}).not.toThrow()
+		manager.destroy()
+		const newStore = manager.get(model)
+		expect(newStore).not.toBe(store)
+		expect(newStore.$state().value).toBe(0)
 	})
 
-	describe('manager subscribes worked:', () => {
-		beforeEach(() => {
-			manager = redox()
+	test('subscribes and unsubscribes should work', () => {
+		manager = redox()
+		let firstCount = 0
+		const first = defineModel({
+			name: 'first',
+			state: { value: 0 },
+			reducers: {
+				addOne: (state) => {
+					return { value: state.value + 1 }
+				},
+			},
+		})
+		const firstStore = manager.get(first)
+		manager.subscribe(first, () => {
+			firstCount++
+		})
+		let secondCount = 0
+		const second = defineModel({
+			name: 'second',
+			state: { value: 0 },
+			reducers: {
+				addOne: (state, payload: number) => ({
+					value: state.value + payload,
+				}),
+			},
+		})
+		const secondStore = manager.get(second)
+		const unSubscribeSecond = manager.subscribe(second, () => {
+			secondCount++
 		})
 
-		test('subscribes and unsubscribes should work', () => {
-			let firstCount = 0
-			const first = defineModel({
-				name: 'first',
-				state: { value: 0 },
-				reducers: {
-					addOne: (state) => {
-						return { value: state.value + 1 }
-					},
+		firstStore.addOne()
+		expect(firstCount).toBe(1)
+		firstStore.addOne()
+		expect(firstCount).toBe(2)
+		expect(firstStore.$state()).toStrictEqual({ value: 2 })
+		expect(secondStore.$state()).toStrictEqual({ value: 0 })
+
+		secondStore.addOne(5)
+		expect(secondCount).toBe(1)
+		expect(secondStore.$state()).toStrictEqual({ value: 5 })
+
+		unSubscribeSecond()
+		secondStore.addOne(5)
+		expect(secondCount).toBe(1)
+	})
+
+	it('should trigger change when dependencies have changed', () => {
+		manager = redox()
+		let dependCount = 0
+		let storeCount = 0
+		const first = defineModel({
+			name: 'first',
+			state: { value: 0 },
+			reducers: {
+				addOne: (state) => {
+					return { value: state.value + 1 }
 				},
-			})
-			const firstStore = manager.get(first)
-			manager.subscribe(first, () => {
-				firstCount++
-			})
-			let secondCount = 0
-			const second = defineModel({
+			},
+		})
+		const depend = manager.get(first)
+		manager.subscribe(first, () => {
+			console.log('dependCount: ', dependCount)
+			dependCount++
+		})
+		const second = defineModel(
+			{
 				name: 'second',
 				state: { value: 0 },
 				reducers: {
@@ -396,72 +227,23 @@ describe('redox worked:', () => {
 						value: state.value + payload,
 					}),
 				},
-			})
-			const secondStore = manager.get(second)
-			const unSubscribeSecond = manager.subscribe(second, () => {
-				secondCount++
-			})
+			},
+			[first]
+		)
 
-			firstStore.addOne()
-			expect(firstCount).toBe(1)
-			firstStore.addOne()
-			expect(firstCount).toBe(2)
-			expect(firstStore.$state()).toStrictEqual({ value: 2 })
-			expect(secondStore.$state()).toStrictEqual({ value: 0 })
-
-			secondStore.addOne(5)
-			expect(secondCount).toBe(1)
-			expect(secondStore.$state()).toStrictEqual({ value: 5 })
-
-			unSubscribeSecond()
-			secondStore.addOne(5)
-			expect(secondCount).toBe(1)
+		const store = manager.get(second)
+		manager.subscribe(second, () => {
+			storeCount++
 		})
 
-		test('depends store changed trigger beDepends listener', () => {
-			let dependCount = 0
-			let storeCount = 0
-			const first = defineModel({
-				name: 'first',
-				state: { value: 0 },
-				reducers: {
-					addOne: (state) => {
-						return { value: state.value + 1 }
-					},
-				},
-			})
-			const depend = manager.get(first)
-			manager.subscribe(first, () => {
-				console.log('dependCount: ', dependCount)
-				dependCount++
-			})
-			const second = defineModel(
-				{
-					name: 'second',
-					state: { value: 0 },
-					reducers: {
-						addOne: (state, payload: number) => ({
-							value: state.value + payload,
-						}),
-					},
-				},
-				[first]
-			)
-
-			const store = manager.get(second)
-			manager.subscribe(second, () => {
-				storeCount++
-			})
-
-			depend.addOne()
-			expect(dependCount).toBe(1)
-			expect(storeCount).toBe(1)
-			depend.addOne()
-			expect(dependCount).toBe(2)
-			expect(storeCount).toBe(2)
-			store.addOne(1)
-			expect(dependCount).toBe(2)
-			expect(storeCount).toBe(3)
-		})
+		depend.addOne()
+		expect(dependCount).toBe(1)
+		expect(storeCount).toBe(1)
+		depend.addOne()
+		expect(dependCount).toBe(2)
+		expect(storeCount).toBe(2)
+		store.addOne(1)
+		expect(dependCount).toBe(2)
+		expect(storeCount).toBe(3)
 	})
 })
