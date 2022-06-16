@@ -170,8 +170,7 @@ describe('defineModel/reducers', () => {
 			expect(newState.value[1].done).toEqual(true)
 		})
 
-		// FIXME: what's the correct behavior
-		it('should ignore or accept the return value?', () => {
+		it('should not modify draft and return new state at the same time', () => {
 			const model = defineModel({
 				name: 'model',
 				state: { value: null } as { value: number | null },
@@ -185,9 +184,9 @@ describe('defineModel/reducers', () => {
 
 			const store = manager.get(model)
 
-			store.set(1)
+			expect(() => store.set(1)).toThrow()
 
-			expect(store.$state()).toEqual({ value: 1 })
+			expect(store.$state()).toEqual({ value: null })
 		})
 	})
 })

@@ -209,6 +209,14 @@ export class RedoxStore<IModel extends AnyModel> {
 	}
 
 	$set = (newState: State) => {
+		if (process.env.NODE_ENV === 'development') {
+			validate(() => [
+				[
+					typeof newState === 'bigint' || typeof newState === 'symbol',
+					"'BigInt' and 'Symbol' are not assignable to the State",
+				],
+			])
+		}
 		return this.dispatch({
 			type: ActionTypes.SET,
 			payload: newState,
