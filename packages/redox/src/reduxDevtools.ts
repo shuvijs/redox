@@ -14,7 +14,7 @@ const reduxDevTools: IPlugin = function () {
 			) {
 				const originReducer = Store.$reducer
 				const devTools = (window as any).__REDUX_DEVTOOLS_EXTENSION__!.connect({
-					name: Store.model.name || `userModel_${id++}`,
+					name: Store.model.name || `model_${id++}`,
 				})
 
 				const initialState = Store.$state()
