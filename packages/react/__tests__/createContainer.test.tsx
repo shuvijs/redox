@@ -337,59 +337,6 @@ describe('useRootModel', () => {
 		expect(node.querySelector('#t')?.innerHTML).toEqual('5')
 	})
 
-	test('should throw error if change readonly state in development', async () => {
-		process.env.NODE_ENV = 'development'
-		const AppRender = () => {
-			const [state] = useRootModel(countModel)
-
-			state.value = 1
-
-			return null
-		}
-
-		expect(() => {
-			act(() => {
-				ReactDOM.render(
-					<RedoxRoot>
-						<AppRender />
-					</RedoxRoot>,
-					node
-				)
-			})
-		}).toThrow()
-
-		const deepModel = defineModel({
-			name: 'deepModel',
-			state: {
-				value: {
-					a: {
-						b: 'b',
-					},
-				},
-			},
-		})
-
-		const AppSelector = () => {
-			const [_] = useRootModel(deepModel, function (stateAndViews) {
-				stateAndViews.value.a.b = '1'
-				return null
-			})
-
-			return null
-		}
-
-		expect(() => {
-			act(() => {
-				ReactDOM.render(
-					<RedoxRoot>
-						<AppSelector />
-					</RedoxRoot>,
-					node
-				)
-			})
-		}).toThrow()
-	})
-
 	test('depends worked:', async () => {
 		const newModel = defineModel(
 			{
@@ -919,59 +866,6 @@ describe('useRootStaticModel', () => {
 		})
 
 		expect(stateRef === stateRef1).toBeTruthy()
-	})
-
-	test('should throw error if change readonly state in development', async () => {
-		process.env.NODE_ENV = 'development'
-		const AppRender = () => {
-			const [state] = useRootStaticModel(countModel)
-
-			state.current.value = 1
-
-			return null
-		}
-
-		expect(() => {
-			act(() => {
-				ReactDOM.render(
-					<RedoxRoot>
-						<AppRender />
-					</RedoxRoot>,
-					node
-				)
-			})
-		}).toThrow()
-
-		const deepModel = defineModel({
-			name: 'deepModel',
-			state: {
-				value: {
-					a: {
-						b: 'b',
-					},
-				},
-			},
-		})
-
-		const AppSelector = () => {
-			const [_] = useRootStaticModel(deepModel, function (stateAndViews) {
-				stateAndViews.value.a.b = '1'
-				return null
-			})
-
-			return null
-		}
-
-		expect(() => {
-			act(() => {
-				ReactDOM.render(
-					<RedoxRoot>
-						<AppSelector />
-					</RedoxRoot>,
-					node
-				)
-			})
-		}).toThrow()
 	})
 })
 

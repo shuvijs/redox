@@ -76,59 +76,6 @@ test('no model name worked:', async () => {
 	expect(node.querySelector('#value')?.innerHTML).toEqual('2')
 })
 
-test('should throw error if change readonly state in development', async () => {
-	process.env.NODE_ENV = 'development'
-	const AppRender = () => {
-		const [state] = useModel(countModel)
-
-		state.value = 1
-
-		return null
-	}
-
-	expect(() => {
-		act(() => {
-			ReactDOM.render(
-				<RedoxRoot>
-					<AppRender />
-				</RedoxRoot>,
-				node
-			)
-		})
-	}).toThrow()
-
-	const deepModel = defineModel({
-		name: 'deepModel',
-		state: {
-			value: {
-				a: {
-					b: 'b',
-				},
-			},
-		},
-	})
-
-	const AppSelector = () => {
-		const [_] = useModel(deepModel, function (stateAndViews) {
-			stateAndViews.value.a.b = '1'
-			return null
-		})
-
-		return null
-	}
-
-	expect(() => {
-		act(() => {
-			ReactDOM.render(
-				<RedoxRoot>
-					<AppSelector />
-				</RedoxRoot>,
-				node
-			)
-		})
-	}).toThrow()
-})
-
 test('reducer worked:', async () => {
 	const App = () => {
 		const [state, actions] = useModel(countModel)
