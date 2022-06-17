@@ -1313,3 +1313,85 @@ describe('createContainer:', () => {
 		expect(node.querySelector('#state')?.innerHTML).toEqual('2')
 	})
 })
+
+// https://github.com/reactwg/react-18/discussions/70#discussioncomment-981298
+describe('fix tearing bugs:', () => {
+	test('Local RedoxRoot and useSharedModel should work:', () => {
+		const { Provider: LocalProvider, useSharedModel } = createContainer()
+
+		const counterModel = defineModel({
+			name: 'counter',
+			state: {
+				counter: 0,
+			},
+			actions: {
+				increment() {
+					this.$modify((state) => state.counter++)
+				},
+			},
+		})
+
+		const modelManger = redox()
+
+		const counterStore = modelManger.get(counterModel)
+
+		const timer = setInterval(() => {
+			counterStore.increment()
+		}, 50)
+
+		function SlowComponent() {
+			let now = performance.now()
+			while (performance.now() - now < 200) {
+				// do nothing
+			}
+			const [state] = useSharedModel(counterModel)
+			return <h3>Counter: {state.counter}</h3>
+		}
+
+		function App() {
+			const [show, setShow] = React.useState(false)
+			return (
+				<div className="App">
+					<button
+						onClick={() => {
+							React.startTransition(() => {
+								setShow(!show)
+								setTimeout(() => {
+									clearInterval(timer)
+								}, 60)
+							})
+						}}
+					>
+						toggle content
+					</button>
+					{show && (
+						<>
+							<SlowComponent />
+							<SlowComponent />
+							<SlowComponent />
+							<SlowComponent />
+							<SlowComponent />
+						</>
+					)}
+				</div>
+			)
+		}
+
+		act(() => {
+			ReactDOM.render(
+				<LocalProvider>
+					<App />
+				</LocalProvider>,
+				node
+			)
+		})
+
+		expect(node.querySelector('#state')?.innerHTML).toEqual('1')
+		act(() => {
+			node
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(node.querySelector('#state')?.innerHTML).toEqual('2')
+	})
+})
