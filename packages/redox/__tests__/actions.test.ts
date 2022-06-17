@@ -154,6 +154,20 @@ describe('defineModel/actions', () => {
 
 			expect(state).toEqual([2, 4])
 		})
+
+		it('should throw error if changed state not by reducer in development', async () => {
+			process.env.NODE_ENV = 'development'
+			const count = defineModel({
+				name: 'count',
+				state: { value: 0 },
+			})
+
+			const store = manager.get(count)
+
+			const state = store.$state()
+
+			expect(() => (state.value = 1)).toThrow()
+		})
 	})
 
 	describe('this.$set()', () => {

@@ -18,7 +18,7 @@ import { createReducers } from './reducers'
 import { createActions } from './actions'
 import { createViews } from './views'
 import validate from './validate'
-import { emptyObject } from './utils'
+import { emptyObject, readonlyDeepClone } from './utils'
 import reduxDevTools from './reduxDevtools'
 
 const randomString = () =>
@@ -167,6 +167,7 @@ export class RedoxStore<IModel extends AnyModel> {
 	public model: Readonly<IModel>
 	public storeApi: Store<IModel>
 	public storeDepends: Record<string, Store<AnyModel>>
+	public $state: () => IModel['state']
 	public $actions = {} as DispatchOfModel<IModel>
 	public $views = {} as RedoxViews<IModel['views']>
 	public $reducer: ReduxReducer<IModel['state']> | null
@@ -187,6 +188,21 @@ export class RedoxStore<IModel extends AnyModel> {
 			model.state
 		this.isDispatching = false
 
+		if (process.env.NODE_ENV === 'development') {
+			let lastState = this.getState()
+			let $stateCache = readonlyDeepClone(lastState)
+			this.$state = () => {
+				if (lastState === this.getState()) {
+					return $stateCache
+				}
+				lastState = this.getState()
+				$stateCache = readonlyDeepClone(lastState)
+				return $stateCache
+			}
+		} else {
+			this.$state = this.getState
+		}
+
 		this.dispatch({ type: ActionTypes.INIT })
 
 		enhanceModel(this)
@@ -204,7 +220,7 @@ export class RedoxStore<IModel extends AnyModel> {
 		}
 	}
 
-	$state = () => {
+	getState = () => {
 		return this.currentState!
 	}
 
