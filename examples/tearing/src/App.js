@@ -32,18 +32,18 @@ function useExternalData() {
 	return state
 }
 
-// setInterval(() => {
-// 	dispatch({ type: 'increment' })
-// }, 50)
+const timer = setInterval(() => {
+	dispatch({ type: 'increment' })
+}, 50)
 
-// function SlowComponent() {
-// 	let now = performance.now()
-// 	while (performance.now() - now < 200) {
-// 		// do nothing
-// 	}
-// 	const state = useExternalData()
-// 	return <h3>Counter: {state.counter}</h3>
-// }
+function SlowComponent() {
+	let now = performance.now()
+	while (performance.now() - now < 200) {
+		// do nothing
+	}
+	const state = useExternalData()
+	return <h3>Counter: {state.counter}</h3>
+}
 
 export default function App() {
 	const [show, setShow] = useState(false)
@@ -53,6 +53,9 @@ export default function App() {
 				onClick={() => {
 					startTransition(() => {
 						setShow(!show)
+						setTimeout(() => {
+							clearInterval(timer)
+						}, 60)
 					})
 				}}
 			>
@@ -71,31 +74,31 @@ export default function App() {
 	)
 }
 
-const counterModel = defineModel({
-	name: 'counter',
-	state: {
-		counter: 0,
-	},
-	actions: {
-		increment() {
-			this.$modify((state) => state.counter++)
-		},
-	},
-})
+// const counterModel = defineModel({
+// 	name: 'counter',
+// 	state: {
+// 		counter: 0,
+// 	},
+// 	actions: {
+// 		increment() {
+// 			this.$modify((state) => state.counter++)
+// 		},
+// 	},
+// })
 
-const counterStore = modelManager.get(counterModel)
+// const counterStore = modelManager.get(counterModel)
 
-window.counterStore = counterStore
+// window.counterStore = counterStore
 
-setInterval(() => {
-	counterStore.increment()
-}, 50)
+// setInterval(() => {
+// 	counterStore.increment()
+// }, 50)
 
-function SlowComponent() {
-	let now = performance.now()
-	while (performance.now() - now < 200) {
-		// do nothing
-	}
-	const [state] = useRootModel(counterModel)
-	return <h3>Counter: {state.counter}</h3>
-}
+// function SlowComponent() {
+// 	let now = performance.now()
+// 	while (performance.now() - now < 200) {
+// 		// do nothing
+// 	}
+// 	const [state] = useRootModel(counterModel)
+// 	return <h3>Counter: {state.counter}</h3>
+// }
