@@ -2,10 +2,10 @@
  * @jest-environment jsdom
  */
 
-import * as React from 'react'
-import * as ReactDOM from 'react-dom'
-import { defineModel, redox } from '@shuvi/redox'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
 import { act } from 'react-dom/test-utils'
+import { defineModel, redox } from '@shuvi/redox'
 import { useModel, RedoxRoot, useRootModel } from '../src'
 
 const countModel = defineModel({
@@ -38,15 +38,16 @@ const countModel = defineModel({
 	},
 })
 
-let node: HTMLDivElement
+let container: HTMLDivElement
 beforeEach(() => {
-	node = document.createElement('div')
-	document.body.appendChild(node)
+	jest.useFakeTimers()
+	container = document.createElement('div')
+	document.body.appendChild(container)
 })
 
 afterEach(() => {
-	document.body.removeChild(node)
-	;(node as unknown as null) = null
+	document.body.removeChild(container)
+	;(container as unknown as null) = null
 })
 
 describe('batchedUpdates worked:', () => {
@@ -78,25 +79,24 @@ describe('batchedUpdates worked:', () => {
 		}
 
 		act(() => {
-			ReactDOM.render(
+			ReactDOM.createRoot(container).render(
 				<RedoxRoot>
 					<App />
-				</RedoxRoot>,
-				node
+				</RedoxRoot>
 			)
 		})
 
 		expect(AppRenderCount).toBe(1)
 
 		act(() => {
-			node
+			container
 				.querySelector('#button')
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
 		expect(AppRenderCount).toBe(2)
 	})
 
-	test("render should be batched when update occurs out of react's lifecycle", () => {
+	test("render should be batched when update occurs out of react's lifecycle", async () => {
 		let _actions: any
 		let AppRenderCount = 0
 		function App() {
@@ -114,23 +114,24 @@ describe('batchedUpdates worked:', () => {
 		}
 
 		act(() => {
-			ReactDOM.render(
+			ReactDOM.createRoot(container).render(
 				<RedoxRoot>
 					<App />
-				</RedoxRoot>,
-				node
+				</RedoxRoot>
 			)
 		})
 
 		expect(AppRenderCount).toBe(1)
-		expect(node.querySelector('#v')!.textContent).toEqual('1')
-		expect(node.querySelector('#v1')!.textContent).toEqual('2')
+		expect(container.querySelector('#v')!.textContent).toEqual('1')
+		expect(container.querySelector('#v1')!.textContent).toEqual('2')
 
-		_actions.addValue()
+		act(() => {
+			_actions.addValue()
+		})
 
 		expect(AppRenderCount).toBe(2)
-		expect(node.querySelector('#v')!.textContent).toEqual('2')
-		expect(node.querySelector('#v1')!.textContent).toEqual('3')
+		expect(container.querySelector('#v')!.textContent).toEqual('2')
+		expect(container.querySelector('#v1')!.textContent).toEqual('3')
 	})
 
 	test('it can trigger component render outside of component', () => {
@@ -151,11 +152,10 @@ describe('batchedUpdates worked:', () => {
 		const modelManager = redox()
 
 		act(() => {
-			ReactDOM.render(
+			ReactDOM.createRoot(container).render(
 				<RedoxRoot modelManager={modelManager}>
 					<App />
-				</RedoxRoot>,
-				node
+				</RedoxRoot>
 			)
 		})
 
@@ -163,7 +163,9 @@ describe('batchedUpdates worked:', () => {
 
 		const countStore = modelManager.get(countModel)
 
-		countStore.addValue()
+		act(() => {
+			countStore.addValue()
+		})
 
 		expect(AppRenderCount).toBe(2)
 	})
@@ -212,18 +214,17 @@ describe('batchedUpdates worked:', () => {
 		const modelManager = redox()
 
 		act(() => {
-			ReactDOM.render(
+			ReactDOM.createRoot(container).render(
 				<RedoxRoot modelManager={modelManager}>
 					<App />
-				</RedoxRoot>,
-				node
+				</RedoxRoot>
 			)
 		})
 
 		expect(AppRenderCount).toBe(1)
 
 		act(() => {
-			node
+			container
 				.querySelector('#button')
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
@@ -281,34 +282,33 @@ describe('batchedUpdates worked:', () => {
 		const modelManager = redox()
 
 		act(() => {
-			ReactDOM.render(
+			ReactDOM.createRoot(container).render(
 				<RedoxRoot modelManager={modelManager}>
 					<App />
-				</RedoxRoot>,
-				node
+				</RedoxRoot>
 			)
 		})
 
-		expect(node.querySelector('#sub-value')?.innerHTML).toEqual('1')
-		expect(node.querySelector('#app-value')?.innerHTML).toEqual('1')
+		expect(container.querySelector('#sub-value')?.innerHTML).toEqual('1')
+		expect(container.querySelector('#app-value')?.innerHTML).toEqual('1')
 
 		act(() => {
-			node
+			container
 				.querySelector('#button-remove-sub')
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
 
-		expect(node.querySelector('#sub-value')?.innerHTML).toEqual(undefined)
-		expect(node.querySelector('#app-value')?.innerHTML).toEqual('1')
+		expect(container.querySelector('#sub-value')?.innerHTML).toEqual(undefined)
+		expect(container.querySelector('#app-value')?.innerHTML).toEqual('1')
 
 		act(() => {
-			node
+			container
 				.querySelector('#app-button')
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
 
-		expect(node.querySelector('#sub-value')?.innerHTML).toEqual(undefined)
-		expect(node.querySelector('#app-value')?.innerHTML).toEqual('2')
+		expect(container.querySelector('#sub-value')?.innerHTML).toEqual(undefined)
+		expect(container.querySelector('#app-value')?.innerHTML).toEqual('2')
 	})
 
 	test('selector and shadowEqual with return state can reduce the rerender times', () => {
@@ -342,20 +342,19 @@ describe('batchedUpdates worked:', () => {
 
 		const modelManager = redox()
 		act(() => {
-			ReactDOM.render(
+			ReactDOM.createRoot(container).render(
 				<RedoxRoot modelManager={modelManager}>
 					<App />
-				</RedoxRoot>,
-				node
+				</RedoxRoot>
 			)
 		})
 
 		expect(renderCount).toBe(1)
 
-		expect(node.querySelector('#value')?.innerHTML).toEqual('value:1')
+		expect(container.querySelector('#value')?.innerHTML).toEqual('value:1')
 
 		act(() => {
-			node
+			container
 				.querySelector('#button1')
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
@@ -423,29 +422,28 @@ describe('batchedUpdates worked:', () => {
 		}
 
 		act(() => {
-			ReactDOM.render(
+			ReactDOM.createRoot(container).render(
 				<RedoxRoot>
 					<App />
-				</RedoxRoot>,
-				node
+				</RedoxRoot>
 			)
 		})
 
 		expect(parentRenderCount).toBe(1)
 		expect(childRenderCount).toBe(1)
 
-		expect(node.querySelector('#test')?.innerHTML).toEqual('test:2')
-		expect(node.querySelector('#value')?.innerHTML).toEqual('value:1')
+		expect(container.querySelector('#test')?.innerHTML).toEqual('test:2')
+		expect(container.querySelector('#value')?.innerHTML).toEqual('value:1')
 
 		act(() => {
-			node
+			container
 				.querySelector('#button')
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
 		expect(parentRenderCount).toBe(2)
 		expect(childRenderCount).toBe(2)
-		expect(node.querySelector('#test')?.innerHTML).toEqual('test:4')
-		expect(node.querySelector('#value')?.innerHTML).toEqual('value:2')
+		expect(container.querySelector('#test')?.innerHTML).toEqual('test:4')
+		expect(container.querySelector('#value')?.innerHTML).toEqual('value:2')
 	})
 
 	test('depends model case render depend and beDepend subscribe component should batch in one time render', () => {
@@ -505,28 +503,27 @@ describe('batchedUpdates worked:', () => {
 		}
 
 		act(() => {
-			ReactDOM.render(
+			ReactDOM.createRoot(container).render(
 				<RedoxRoot>
 					<App />
-				</RedoxRoot>,
-				node
+				</RedoxRoot>
 			)
 		})
 
 		expect(parentRenderCount).toBe(1)
 		expect(childRenderCount).toBe(1)
 
-		expect(node.querySelector('#SubApp')?.innerHTML).toEqual('1')
-		expect(node.querySelector('#App')?.innerHTML).toEqual('2')
+		expect(container.querySelector('#SubApp')?.innerHTML).toEqual('1')
+		expect(container.querySelector('#App')?.innerHTML).toEqual('2')
 
 		act(() => {
-			node
+			container
 				.querySelector('#button')
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
 		expect(parentRenderCount).toBe(2)
 		expect(childRenderCount).toBe(2)
-		expect(node.querySelector('#SubApp')?.innerHTML).toEqual('2')
-		expect(node.querySelector('#App')?.innerHTML).toEqual('3')
+		expect(container.querySelector('#SubApp')?.innerHTML).toEqual('2')
+		expect(container.querySelector('#App')?.innerHTML).toEqual('3')
 	})
 })
