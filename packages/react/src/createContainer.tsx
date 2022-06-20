@@ -9,7 +9,8 @@ import React, {
 } from 'react'
 import { validate, redox } from '@shuvi/redox'
 import type { IModelManager, AnyModel, RedoxOptions } from '@shuvi/redox'
-import { createUseModel, getStateActions } from './useModel'
+import { createUseModel } from './createUseModel'
+import { getStateActions } from './getStateActions'
 import { createBatchManager } from './batchManager'
 import { shadowEqual } from './utils'
 import { IUseModel, IUseStaticModel, ISelector } from './types'
@@ -147,5 +148,13 @@ const createContainer = function (options?: RedoxOptions) {
 		useStaticModel,
 	}
 }
+
+const {
+	Provider: RedoxRoot,
+	useSharedModel: useRootModel,
+	useStaticModel: useRootStaticModel,
+} = createContainer()
+
+export { RedoxRoot, useRootModel, useRootStaticModel }
 
 export default createContainer

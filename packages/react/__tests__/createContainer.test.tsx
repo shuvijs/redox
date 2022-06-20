@@ -5,7 +5,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { act } from 'react-dom/test-utils'
-import { defineModel, redox } from '@shuvi/redox'
+import { defineModel, redox, IPlugin } from '@shuvi/redox'
 import {
 	createContainer,
 	RedoxRoot,
@@ -13,7 +13,7 @@ import {
 	useRootModel,
 } from '../src'
 
-import { countModel, countSelectorParameters } from './models'
+import { countModel } from './models'
 
 let container: HTMLDivElement
 beforeEach(() => {
@@ -28,925 +28,8 @@ afterEach(() => {
 	;(container as unknown as null) = null
 })
 
-describe('useRootModel', () => {
-	describe('useRootModel valid:', () => {
-		test('valid name is required:', async () => {
-			const tempModel = defineModel({
-				state: {
-					value: 1,
-				},
-				reducers: {
-					add(state, payload: number = 1) {
-						state.value += payload
-					},
-				},
-			})
-
-			const App = () => {
-				const [state, actions] = useRootModel(tempModel)
-
-				return (
-					<>
-						<div id="value">{state.value}</div>
-						<button id="button" type="button" onClick={() => actions.add()}>
-							add
-						</button>
-					</>
-				)
-			}
-
-			expect(() => {
-				act(() => {
-					ReactDOM.createRoot(container).render(
-						<RedoxRoot>
-							<App />
-						</RedoxRoot>
-					)
-				})
-			}).toThrow()
-		})
-
-		test('valid name should not be empty:', async () => {
-			const tempModel = defineModel({
-				name: '',
-				state: {
-					value: 1,
-				},
-				reducers: {
-					add(state, payload: number = 1) {
-						state.value += payload
-					},
-				},
-			})
-
-			const App = () => {
-				const [state, actions] = useRootModel(tempModel)
-
-				return (
-					<>
-						<div id="value">{state.value}</div>
-						<button id="button" type="button" onClick={() => actions.add()}>
-							add
-						</button>
-					</>
-				)
-			}
-
-			expect(() => {
-				act(() => {
-					ReactDOM.createRoot(container).render(
-						<RedoxRoot>
-							<App />
-						</RedoxRoot>
-					)
-				})
-			}).toThrow()
-		})
-
-		test('valid useRootModel should has parent RedoxRoot:', async () => {
-			const tempModel = defineModel({
-				name: 'tempModel',
-				state: {
-					value: 1,
-				},
-				reducers: {
-					add(state, payload: number = 1) {
-						state.value += payload
-					},
-				},
-			})
-
-			const App = () => {
-				const [state, actions] = useRootModel(tempModel)
-
-				return (
-					<>
-						<div id="value">{state.value}</div>
-						<button id="button" type="button" onClick={() => actions.add()}>
-							add
-						</button>
-					</>
-				)
-			}
-
-			expect(() => {
-				act(() => {
-					ReactDOM.createRoot(container).render(<App />)
-				})
-			}).toThrow()
-		})
-	})
-
-	test('reducer worked:', async () => {
-		const App = () => {
-			const [state, actions] = useRootModel(countModel)
-
-			return (
-				<>
-					<div id="value">{state.value}</div>
-					<button id="button" type="button" onClick={() => actions.add()}>
-						add
-					</button>
-				</>
-			)
-		}
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<App />
-				</RedoxRoot>
-			)
-		})
-
-		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-		act(() => {
-			container
-				.querySelector('#button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
-	})
-
-	test('immer worked:', async () => {
-		const immer = defineModel({
-			name: 'immer',
-			state: {
-				value: 1,
-			},
-			reducers: {
-				add(state, payload: number = 1) {
-					state.value += payload
-				},
-			},
-		})
-		const App = () => {
-			const [state, actions] = useRootModel(immer)
-
-			return (
-				<>
-					<div id="value">{state.value}</div>
-					<button id="button" type="button" onClick={() => actions.add()}>
-						add
-					</button>
-				</>
-			)
-		}
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<App />
-				</RedoxRoot>
-			)
-		})
-
-		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-		act(() => {
-			container
-				.querySelector('#button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
-	})
-
-	test('action worked:', async () => {
-		const App = () => {
-			const [state, actions] = useRootModel(countModel)
-
-			return (
-				<>
-					<div id="value">{state.value}</div>
-					<button id="button" type="button" onClick={() => actions.asyncAdd(2)}>
-						add
-					</button>
-				</>
-			)
-		}
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<App />
-				</RedoxRoot>
-			)
-		})
-
-		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-		act(() => {
-			container
-				.querySelector('#button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		await act(async () => {
-			jest.runAllTimers()
-		})
-		expect(container.querySelector('#value')?.innerHTML).toEqual('3')
-	})
-
-	test('views worked:', async () => {
-		let viewComputedTime = 0
-		const views = defineModel({
-			name: 'views',
-			state: {
-				value: 1,
-				value1: 1,
-			},
-			reducers: {
-				add(state, payload: number = 1) {
-					state.value += payload
-				},
-			},
-			views: {
-				test() {
-					viewComputedTime++
-					return this.value1
-				},
-			},
-		})
-		const App = () => {
-			const [state, actions] = useRootModel(views, function (stateAndViews) {
-				return stateAndViews.test()
-			})
-
-			return (
-				<>
-					<div id="value">{state}</div>
-					<button id="button" type="button" onClick={() => actions.add()}>
-						add
-					</button>
-				</>
-			)
-		}
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<App />
-				</RedoxRoot>
-			)
-		})
-
-		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-		expect(viewComputedTime).toBe(1)
-		act(() => {
-			container
-				.querySelector('#button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		expect(viewComputedTime).toBe(1)
-		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-	})
-
-	test('selector worked:', async () => {
-		const countSelector = function (stateAndViews: countSelectorParameters) {
-			return {
-				v: stateAndViews.value,
-				t: stateAndViews.test(2),
-			}
-		}
-		const App = () => {
-			const [state, actions] = useRootModel(countModel, countSelector)
-
-			return (
-				<>
-					<div id="v">{state.v}</div>
-					<div id="t">{state.t}</div>
-					<button id="button" type="button" onClick={() => actions.add(2)}>
-						add
-					</button>
-				</>
-			)
-		}
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<App />
-				</RedoxRoot>
-			)
-		})
-
-		expect(container.querySelector('#v')?.innerHTML).toEqual('1')
-		expect(container.querySelector('#t')?.innerHTML).toEqual('3')
-		act(() => {
-			container
-				.querySelector('#button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		expect(container.querySelector('#v')?.innerHTML).toEqual('3')
-		expect(container.querySelector('#t')?.innerHTML).toEqual('5')
-	})
-
-	test('depends worked:', async () => {
-		const newModel = defineModel(
-			{
-				name: 'newModel',
-				state: { value: 0 },
-				reducers: {
-					add(state, payload: number = 1) {
-						state.value += payload
-					},
-				},
-				actions: {
-					async asyncAdd() {
-						await this.$dep.countModel.asyncAdd(1)
-						this.add(this.$dep.countModel.$state().value)
-					},
-				},
-				views: {
-					test() {
-						return this.$dep.countModel.value * 2
-					},
-				},
-			},
-			[countModel]
-		)
-
-		const App = () => {
-			const [state, actions] = useRootModel(newModel, function (stateAndViews) {
-				return {
-					v: stateAndViews.value,
-					t: stateAndViews.test(),
-				}
-			})
-
-			return (
-				<>
-					<div id="v">{state.v}</div>
-					<div id="t">{state.t}</div>
-					<button id="button" type="button" onClick={() => actions.asyncAdd()}>
-						add
-					</button>
-				</>
-			)
-		}
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<App />
-				</RedoxRoot>
-			)
-		})
-
-		expect(container.querySelector('#v')?.innerHTML).toEqual('0')
-		expect(container.querySelector('#t')?.innerHTML).toEqual('2')
-		act(() => {
-			container
-				.querySelector('#button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		await act(async () => {
-			jest.runAllTimers()
-		})
-		expect(container.querySelector('#v')?.innerHTML).toEqual('2')
-		expect(container.querySelector('#t')?.innerHTML).toEqual('4')
-	})
-
-	describe('selector only run init and state changed:', () => {
-		test('inlined selector:', async () => {
-			let selectorRunCount = 0
-			const App = () => {
-				const [_state, actions] = useRootModel(countModel, function () {
-					selectorRunCount++
-					return 1
-				})
-				const [_index, setIndex] = React.useState(0)
-
-				return (
-					<>
-						<button id="button" type="button" onClick={() => setIndex(1)}>
-							setIndex
-						</button>
-						<button id="action" type="button" onClick={() => actions.add()}>
-							action
-						</button>
-					</>
-				)
-			}
-			act(() => {
-				ReactDOM.createRoot(container).render(
-					<RedoxRoot>
-						<App />
-					</RedoxRoot>
-				)
-			})
-
-			expect(selectorRunCount).toBe(2)
-			act(() => {
-				container
-					.querySelector('#button')
-					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-			})
-			expect(selectorRunCount).toBe(2)
-			act(() => {
-				container
-					.querySelector('#action')
-					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-			})
-			expect(selectorRunCount).toBe(3)
-		})
-
-		test('selector outside:', async () => {
-			let selectorRunCount = 0
-			const countSelector = function () {
-				selectorRunCount++
-				return 1
-			}
-			const App = () => {
-				const [_state, actions] = useRootModel(countModel, countSelector)
-				const [_index, setIndex] = React.useState(0)
-
-				return (
-					<>
-						<button id="button" type="button" onClick={() => setIndex(1)}>
-							setIndex
-						</button>
-						<button id="action" type="button" onClick={() => actions.add()}>
-							action
-						</button>
-					</>
-				)
-			}
-			act(() => {
-				ReactDOM.createRoot(container).render(
-					<RedoxRoot>
-						<App />
-					</RedoxRoot>
-				)
-			})
-
-			expect(selectorRunCount).toBe(2)
-			act(() => {
-				container
-					.querySelector('#button')
-					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-			})
-			expect(selectorRunCount).toBe(2)
-			act(() => {
-				container
-					.querySelector('#action')
-					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-			})
-			expect(selectorRunCount).toBe(3)
-		})
-	})
-
-	test('useRootModel should keep state same ref:', async () => {
-		let AppState: any = null
-		let AppState1: any = null
-		const App = () => {
-			const [state, actions] = useRootModel(countModel)
-			const [state1, _actions1] = useRootModel(countModel)
-			AppState = state
-			AppState1 = state1
-			return (
-				<>
-					<div id="value">{state.value}</div>
-					<button id="button" type="button" onClick={() => actions.add(1)}>
-						add
-					</button>
-					<SubApp></SubApp>
-				</>
-			)
-		}
-		let SubAppState: any = null
-		function SubApp() {
-			const [state, _actions] = useRootModel(countModel)
-			SubAppState = state
-			return <></>
-		}
-
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<App />
-				</RedoxRoot>
-			)
-		})
-
-		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-
-		expect(AppState).toBeTruthy()
-		expect(AppState === AppState1).toBeTruthy()
-		expect(AppState === SubAppState).toBeTruthy()
-		act(() => {
-			container
-				.querySelector('#button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-
-		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
-		expect(AppState === AppState1).toBeTruthy()
-		expect(AppState === SubAppState).toBeTruthy()
-	})
-
-	test('useRootModel should keep actions same ref:', async () => {
-		let AppActions: any = null
-		let AppActions1: any = null
-		const App = () => {
-			const [state, actions] = useRootModel(countModel)
-			const [_state1, actions1] = useRootModel(countModel)
-			AppActions = actions
-			AppActions1 = actions1
-			return (
-				<>
-					<div id="value">{state.value}</div>
-					<button id="button" type="button" onClick={() => actions.add(1)}>
-						add
-					</button>
-					<SubApp></SubApp>
-				</>
-			)
-		}
-		let SubAppActions: any = null
-		function SubApp() {
-			const [_state, actions] = useRootModel(countModel)
-			SubAppActions = actions
-			return <></>
-		}
-
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<App />
-				</RedoxRoot>
-			)
-		})
-
-		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-
-		expect(AppActions).toBeTruthy()
-		expect(AppActions === AppActions1).toBeTruthy()
-		expect(AppActions === SubAppActions).toBeTruthy()
-		act(() => {
-			container
-				.querySelector('#button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-
-		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
-		expect(AppActions === AppActions1).toBeTruthy()
-		expect(AppActions === SubAppActions).toBeTruthy()
-	})
-
-	test('useRootModel should keep state no care component unmount or not:', async () => {
-		const SubApp = () => {
-			const [state, actions] = useRootModel(countModel)
-
-			return (
-				<>
-					<div id="state">{state.value}</div>
-					<button id="button" type="button" onClick={() => actions.add()}>
-						add
-					</button>
-				</>
-			)
-		}
-
-		const App = () => {
-			const [toggle, setToggle] = React.useState(true)
-			return (
-				<>
-					<button id="toggle" type="button" onClick={() => setToggle(!toggle)}>
-						add
-					</button>
-					{toggle ? <SubApp /> : null}
-				</>
-			)
-		}
-
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<App></App>
-				</RedoxRoot>
-			)
-		})
-
-		expect(container.querySelector('#state')?.innerHTML).toEqual('1')
-		act(() => {
-			container
-				.querySelector('#button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		expect(container.querySelector('#state')?.innerHTML).toEqual('2')
-		act(() => {
-			container
-				.querySelector('#toggle')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		expect(container.querySelector('#state')?.innerHTML).toEqual(undefined)
-		act(() => {
-			container
-				.querySelector('#toggle')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		expect(container.querySelector('#state')?.innerHTML).toEqual('2')
-	})
-})
-
-describe('useRootStaticModel', () => {
-	describe('useRootStaticModel valid:', () => {
-		test('name should be required:', async () => {
-			const tempModel = defineModel({
-				state: {
-					value: 1,
-				},
-				reducers: {
-					add(state, payload: number = 1) {
-						state.value += payload
-					},
-				},
-			})
-
-			const App = () => {
-				const [state, actions] = useRootStaticModel(tempModel)
-
-				return (
-					<>
-						<div id="value">{state.current.value}</div>
-						<button id="button" type="button" onClick={() => actions.add()}>
-							add
-						</button>
-					</>
-				)
-			}
-
-			expect(() => {
-				act(() => {
-					ReactDOM.createRoot(container).render(
-						<RedoxRoot>
-							<App />
-						</RedoxRoot>
-					)
-				})
-			}).toThrow()
-		})
-
-		test('valid name should not be empty:', async () => {
-			const tempModel = defineModel({
-				name: '',
-				state: {
-					value: 1,
-				},
-				reducers: {
-					add(state, payload: number = 1) {
-						state.value += payload
-					},
-				},
-			})
-
-			const App = () => {
-				const [state, actions] = useRootStaticModel(tempModel)
-
-				return (
-					<>
-						<div id="value">{state.current.value}</div>
-						<button id="button" type="button" onClick={() => actions.add()}>
-							add
-						</button>
-					</>
-				)
-			}
-
-			expect(() => {
-				act(() => {
-					ReactDOM.createRoot(container).render(
-						<RedoxRoot>
-							<App />
-						</RedoxRoot>
-					)
-				})
-			}).toThrow()
-		})
-
-		test('valid useRootStaticModel should has parent RedoxRoot:', async () => {
-			const tempModel = defineModel({
-				name: 'tempModel',
-				state: {
-					value: 1,
-				},
-				reducers: {
-					add(state, payload: number = 1) {
-						state.value += payload
-					},
-				},
-			})
-
-			const App = () => {
-				const [state, actions] = useRootStaticModel(tempModel)
-
-				return (
-					<>
-						<div id="value">{state.current.value}</div>
-						<button id="button" type="button" onClick={() => actions.add()}>
-							add
-						</button>
-					</>
-				)
-			}
-
-			expect(() => {
-				act(() => {
-					ReactDOM.createRoot(container).render(<App />)
-				})
-			}).toThrow()
-		})
-	})
-
-	test('useRootStaticModel should update value, but not rendered', () => {
-		let renderTime = 0
-		let currentCount = 0
-
-		const StaticApp = () => {
-			renderTime += 1
-
-			const [state, dispatch] = useRootStaticModel(countModel)
-
-			currentCount = state.current.value
-
-			return (
-				<>
-					<div id="state">{state.current.value}</div>
-					<button id="add" type="button" onClick={() => dispatch.add()}>
-						add
-					</button>
-					<button
-						id="updateCount"
-						type="button"
-						onClick={() => {
-							currentCount = state.current.value
-						}}
-					>
-						updateCount
-					</button>
-				</>
-			)
-		}
-
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<StaticApp />
-				</RedoxRoot>
-			)
-		})
-
-		expect(renderTime).toBe(1)
-		expect(currentCount).toBe(1)
-
-		act(() => {
-			container
-				.querySelector('#add')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-
-		expect(renderTime).toBe(1)
-		expect(currentCount).toBe(1)
-
-		act(() => {
-			container
-				.querySelector('#updateCount')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		expect(currentCount).toBe(2)
-	})
-
-	test('useRootStaticModel should state keep same ref', () => {
-		let stateRef: any
-		let stateRef1: any
-
-		const StaticApp = () => {
-			const [state, dispatch] = useRootStaticModel(countModel)
-			const [_, setValue] = React.useState(false)
-
-			if (!stateRef) {
-				stateRef = state
-			}
-
-			stateRef1 = state
-
-			return (
-				<>
-					<div id="state">{state.current.value}</div>
-					<button
-						id="add"
-						type="button"
-						onClick={() => {
-							dispatch.add()
-							setValue(true)
-						}}
-					>
-						add
-					</button>
-				</>
-			)
-		}
-
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<StaticApp />
-				</RedoxRoot>
-			)
-		})
-
-		act(() => {
-			container
-				.querySelector('#add')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-
-		expect(stateRef === stateRef1).toBeTruthy()
-	})
-})
-
-describe('RedoxRoot', () => {
-	test('RedoxRoot worked with useRootModel:', () => {
-		const App = () => {
-			const [state, actions] = useRootModel(countModel)
-			return (
-				<>
-					<div id="value">{state.value}</div>
-					<button id="button" type="button" onClick={() => actions.add()}>
-						add
-					</button>
-				</>
-			)
-		}
-
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<App />
-				</RedoxRoot>
-			)
-		})
-
-		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-		act(() => {
-			container
-				.querySelector('#button')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
-	})
-
-	test('RedoxRoot worked with modelManager props:', () => {
-		const App = () => {
-			const [state] = useRootModel(countModel)
-			return (
-				<>
-					<div id="value">{state.value}</div>
-				</>
-			)
-		}
-
-		const modelManager = redox()
-
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot modelManager={modelManager}>
-					<App />
-				</RedoxRoot>
-			)
-		})
-
-		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-		act(() => {
-			modelManager.get(countModel).add(1)
-		})
-		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
-	})
-
-	test('RedoxRoot worked with modelManager props and initial state:', () => {
-		const App = () => {
-			const [state] = useRootModel(countModel)
-			return (
-				<>
-					<div id="value">{state.value}</div>
-				</>
-			)
-		}
-
-		const modelManager = redox({
-			initialState: {
-				countModel: {
-					value: 2,
-				},
-			},
-		})
-
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot modelManager={modelManager}>
-					<App />
-				</RedoxRoot>
-			)
-		})
-
-		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
-	})
-})
-
-describe('createContainer:', () => {
-	test('createContainer should return RedoxRoot and useSharedModel, useRootStaticModel:', () => {
+describe('createContainer', () => {
+	test('createContainer should return RedoxRoot and useSharedModel, useRootStaticModel', () => {
 		const {
 			Provider: _Provider,
 			useSharedModel: _useSharedModel,
@@ -958,7 +41,47 @@ describe('createContainer:', () => {
 		expect(_useStaticModel).toBeTruthy()
 	})
 
-	test('Local RedoxRoot and useSharedModel should work:', () => {
+	test('createContainer should accept redox argument', () => {
+		const onInit = jest.fn()
+		const onModel = jest.fn()
+		const onStoreCreated = jest.fn()
+		const onDestroy = jest.fn()
+		const plugin: IPlugin = () => {
+			return {
+				onInit,
+				onModel,
+				onStoreCreated,
+				onDestroy,
+			}
+		}
+
+		let initialState = {}
+
+		const { Provider: LocalProvider, useSharedModel } = createContainer({
+			initialState,
+			plugins: [[plugin, {}]],
+		})
+
+		const SubApp = () => {
+			const [_state] = useSharedModel(countModel)
+
+			return null
+		}
+
+		act(() => {
+			ReactDOM.createRoot(container).render(
+				<LocalProvider>
+					<SubApp />
+				</LocalProvider>
+			)
+		})
+
+		expect(onInit).toHaveBeenCalled()
+		expect(onModel).toHaveBeenCalled()
+		expect(typeof onStoreCreated.mock.calls[0][0].dispatch).toBe('function')
+	})
+
+	test('Local RedoxRoot and useSharedModel should work', () => {
 		const { Provider: LocalProvider, useSharedModel } = createContainer()
 
 		const SubApp = () => {
@@ -991,7 +114,7 @@ describe('createContainer:', () => {
 		expect(container.querySelector('#state')?.innerHTML).toEqual('2')
 	})
 
-	test('nest useSharedModel should get it own RedoxRoot:', () => {
+	test('nest useSharedModel should get it own context', () => {
 		const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
 			createContainer()
 		const { Provider: LocalProviderB, useSharedModel: useSharedModelB } =
@@ -1063,7 +186,7 @@ describe('createContainer:', () => {
 		expect(container.querySelector('#stateCB')?.innerHTML).toEqual('1')
 	})
 
-	test('each container should be isolation:', () => {
+	test('each container should be isolation', () => {
 		const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
 			createContainer()
 
@@ -1112,7 +235,7 @@ describe('createContainer:', () => {
 		expect(container.querySelector('#stateA2')?.innerHTML).toEqual('1')
 	})
 
-	test('share same modelManager can connect containers', () => {
+	test('different containers share same modelManager should has same state', () => {
 		const modelManager = redox()
 		const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
 			createContainer()
@@ -1185,7 +308,7 @@ describe('createContainer:', () => {
 		expect(container.querySelector('#stateCB')?.innerHTML).toEqual('2')
 	})
 
-	test('when container unmount state change should not throw an error:', () => {
+	test('modelManager can exist independently wether the component is unmount', () => {
 		const { Provider: LocalProvider, useSharedModel } = createContainer()
 
 		const SubApp = () => {
@@ -1238,7 +361,7 @@ describe('createContainer:', () => {
 		modelManager.get(countModel).add(1)
 	})
 
-	test('modelManager changed state change should be changed directly:', () => {
+	test('container state should sync with modelManager', () => {
 		const { Provider: LocalProvider, useSharedModel } = createContainer()
 
 		const SubApp = () => {
@@ -1297,45 +420,542 @@ describe('createContainer:', () => {
 	})
 })
 
-test('should render with newest state when update state during render', () => {
-	const counterModel = defineModel({
-		name: 'counter',
-		state: {
-			counter: 0,
-		},
-		actions: {
-			increment() {
-				this.$modify((state) => state.counter++)
-			},
-		},
-	})
-
-	const modelManger = redox()
-
-	const counterStore = modelManger.get(counterModel)
-
-	let isFirstRender = true
-
-	function App() {
-		const [state] = useRootModel(countModel)
-		if (isFirstRender) {
-			isFirstRender = false
-			counterStore.increment()
+describe('createContainer/RedoxRoot', () => {
+	test('RedoxRoot should worked without props modelManager', () => {
+		const App = () => {
+			const [state, actions] = useRootModel(countModel)
+			return (
+				<>
+					<div id="value">{state.value}</div>
+					<button id="button" type="button" onClick={() => actions.add()}>
+						add
+					</button>
+				</>
+			)
 		}
-		return (
-			<>
-				<div id="state">{state.value}</div>
-			</>
-		)
-	}
 
-	act(() => {
-		ReactDOM.createRoot(container).render(
-			<RedoxRoot modelManager={modelManger}>
-				<App />
-			</RedoxRoot>
-		)
+		act(() => {
+			ReactDOM.createRoot(container).render(
+				<RedoxRoot>
+					<App />
+				</RedoxRoot>
+			)
+		})
+
+		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
+		act(() => {
+			container
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
 	})
 
-	expect(container.querySelector('#state')?.innerHTML).toEqual('1')
+	test('RedoxRoot props modelManager could overwrite default modelManager', () => {
+		const App = () => {
+			const [state] = useRootModel(countModel)
+			return (
+				<>
+					<div id="value">{state.value}</div>
+				</>
+			)
+		}
+
+		const modelManager = redox({
+			initialState: {
+				countModel: {
+					value: 2,
+				},
+			},
+		})
+
+		act(() => {
+			ReactDOM.createRoot(container).render(
+				<RedoxRoot modelManager={modelManager}>
+					<App />
+				</RedoxRoot>
+			)
+		})
+
+		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
+	})
+})
+
+describe('createContainer/useRootModel', () => {
+	describe('valid', () => {
+		test('name should be required', async () => {
+			const tempModel = defineModel({
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.createRoot(container).render(
+						<RedoxRoot>
+							<App />
+						</RedoxRoot>
+					)
+				})
+			}).toThrow()
+		})
+
+		test('name should not be empty', async () => {
+			const tempModel = defineModel({
+				name: '',
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.createRoot(container).render(
+						<RedoxRoot>
+							<App />
+						</RedoxRoot>
+					)
+				})
+			}).toThrow()
+		})
+
+		test('useRootModel should has parent RedoxRoot', async () => {
+			const tempModel = defineModel({
+				name: 'tempModel',
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.createRoot(container).render(<App />)
+				})
+			}).toThrow()
+		})
+	})
+
+	test('should keep state same ref in different component', async () => {
+		let AppState: any = null
+		let AppState1: any = null
+		const App = () => {
+			const [state, actions] = useRootModel(countModel)
+			const [state1, _actions1] = useRootModel(countModel)
+			AppState = state
+			AppState1 = state1
+			return (
+				<>
+					<div id="value">{state.value}</div>
+					<button id="button" type="button" onClick={() => actions.add(1)}>
+						add
+					</button>
+					<SubApp></SubApp>
+				</>
+			)
+		}
+		let SubAppState: any = null
+		function SubApp() {
+			const [state, _actions] = useRootModel(countModel)
+			SubAppState = state
+			return <></>
+		}
+
+		act(() => {
+			ReactDOM.createRoot(container).render(
+				<RedoxRoot>
+					<App />
+				</RedoxRoot>
+			)
+		})
+
+		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
+
+		expect(AppState).toBeTruthy()
+		expect(AppState === AppState1).toBeTruthy()
+		expect(AppState === SubAppState).toBeTruthy()
+		act(() => {
+			container
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+
+		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
+		expect(AppState === AppState1).toBeTruthy()
+		expect(AppState === SubAppState).toBeTruthy()
+	})
+
+	test('should keep actions same ref', async () => {
+		let AppActions: any = null
+		let AppActions1: any = null
+		const App = () => {
+			const [state, actions] = useRootModel(countModel)
+			const [_state1, actions1] = useRootModel(countModel)
+			AppActions = actions
+			AppActions1 = actions1
+			return (
+				<>
+					<div id="value">{state.value}</div>
+					<button id="button" type="button" onClick={() => actions.add(1)}>
+						add
+					</button>
+					<SubApp></SubApp>
+				</>
+			)
+		}
+		let SubAppActions: any = null
+		function SubApp() {
+			const [_state, actions] = useRootModel(countModel)
+			SubAppActions = actions
+			return <></>
+		}
+
+		act(() => {
+			ReactDOM.createRoot(container).render(
+				<RedoxRoot>
+					<App />
+				</RedoxRoot>
+			)
+		})
+
+		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
+
+		expect(AppActions).toBeTruthy()
+		expect(AppActions === AppActions1).toBeTruthy()
+		expect(AppActions === SubAppActions).toBeTruthy()
+		act(() => {
+			container
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+
+		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
+		expect(AppActions === AppActions1).toBeTruthy()
+		expect(AppActions === SubAppActions).toBeTruthy()
+	})
+
+	test("should keep data's state with component unmount or not", async () => {
+		const SubApp = () => {
+			const [state, actions] = useRootModel(countModel)
+
+			return (
+				<>
+					<div id="state">{state.value}</div>
+					<button id="button" type="button" onClick={() => actions.add()}>
+						add
+					</button>
+				</>
+			)
+		}
+
+		const App = () => {
+			const [toggle, setToggle] = React.useState(true)
+			return (
+				<>
+					<button id="toggle" type="button" onClick={() => setToggle(!toggle)}>
+						add
+					</button>
+					{toggle ? <SubApp /> : null}
+				</>
+			)
+		}
+
+		act(() => {
+			ReactDOM.createRoot(container).render(
+				<RedoxRoot>
+					<App></App>
+				</RedoxRoot>
+			)
+		})
+
+		expect(container.querySelector('#state')?.innerHTML).toEqual('1')
+		act(() => {
+			container
+				.querySelector('#button')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(container.querySelector('#state')?.innerHTML).toEqual('2')
+		act(() => {
+			container
+				.querySelector('#toggle')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(container.querySelector('#state')?.innerHTML).toEqual(undefined)
+		act(() => {
+			container
+				.querySelector('#toggle')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(container.querySelector('#state')?.innerHTML).toEqual('2')
+	})
+})
+
+describe('createContainer/useRootStaticModel', () => {
+	describe('valid', () => {
+		test('name should be required', async () => {
+			const tempModel = defineModel({
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootStaticModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.current.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.createRoot(container).render(
+						<RedoxRoot>
+							<App />
+						</RedoxRoot>
+					)
+				})
+			}).toThrow()
+		})
+
+		test('name should not be empty', async () => {
+			const tempModel = defineModel({
+				name: '',
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootStaticModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.current.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.createRoot(container).render(
+						<RedoxRoot>
+							<App />
+						</RedoxRoot>
+					)
+				})
+			}).toThrow()
+		})
+
+		test('useRootStaticModel should has parent RedoxRoot', async () => {
+			const tempModel = defineModel({
+				name: 'tempModel',
+				state: {
+					value: 1,
+				},
+				reducers: {
+					add(state, payload: number = 1) {
+						state.value += payload
+					},
+				},
+			})
+
+			const App = () => {
+				const [state, actions] = useRootStaticModel(tempModel)
+
+				return (
+					<>
+						<div id="value">{state.current.value}</div>
+						<button id="button" type="button" onClick={() => actions.add()}>
+							add
+						</button>
+					</>
+				)
+			}
+
+			expect(() => {
+				act(() => {
+					ReactDOM.createRoot(container).render(<App />)
+				})
+			}).toThrow()
+		})
+	})
+
+	test('state updated, but component should not rendered', () => {
+		let renderTime = 0
+		let currentCount = 0
+
+		const StaticApp = () => {
+			renderTime += 1
+
+			const [state, dispatch] = useRootStaticModel(countModel)
+
+			currentCount = state.current.value
+
+			return (
+				<>
+					<div id="state">{state.current.value}</div>
+					<button id="add" type="button" onClick={() => dispatch.add()}>
+						add
+					</button>
+					<button
+						id="updateCount"
+						type="button"
+						onClick={() => {
+							currentCount = state.current.value
+						}}
+					>
+						updateCount
+					</button>
+				</>
+			)
+		}
+
+		act(() => {
+			ReactDOM.createRoot(container).render(
+				<RedoxRoot>
+					<StaticApp />
+				</RedoxRoot>
+			)
+		})
+
+		expect(renderTime).toBe(1)
+		expect(currentCount).toBe(1)
+
+		act(() => {
+			container
+				.querySelector('#add')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+
+		expect(renderTime).toBe(1)
+		expect(currentCount).toBe(1)
+
+		act(() => {
+			container
+				.querySelector('#updateCount')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(currentCount).toBe(2)
+	})
+
+	test('should state keep same ref in one component', () => {
+		let stateRef: any
+		let stateRef1: any
+
+		const StaticApp = () => {
+			const [state, dispatch] = useRootStaticModel(countModel)
+			const [_, setValue] = React.useState(false)
+
+			if (!stateRef) {
+				stateRef = state
+			}
+
+			stateRef1 = state
+
+			return (
+				<>
+					<div id="state">{state.current.value}</div>
+					<button
+						id="add"
+						type="button"
+						onClick={() => {
+							dispatch.add()
+							setValue(true)
+						}}
+					>
+						add
+					</button>
+				</>
+			)
+		}
+
+		act(() => {
+			ReactDOM.createRoot(container).render(
+				<RedoxRoot>
+					<StaticApp />
+				</RedoxRoot>
+			)
+		})
+
+		act(() => {
+			container
+				.querySelector('#add')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+
+		expect(stateRef === stateRef1).toBeTruthy()
+	})
 })
