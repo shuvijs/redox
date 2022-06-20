@@ -1,14 +1,16 @@
-import createContainer from './createContainer'
+import createContainer, {
+	RedoxRoot,
+	useRootModel,
+	useRootStaticModel,
+} from './createContainer'
 import { useModel } from './useModel'
 
-const {
-	Provider: RedoxRoot,
-	useSharedModel: useRootModel,
-	useStaticModel: useRootStaticModel,
-} = createContainer()
-
-export { RedoxRoot, useRootModel, useRootStaticModel }
-
-export { useModel, createContainer }
+export {
+	createContainer,
+	RedoxRoot,
+	useModel,
+	useRootModel,
+	useRootStaticModel,
+}
 
 export { ISelectorParams } from './types'

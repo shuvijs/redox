@@ -151,16 +151,16 @@ importers:
   packages/react:
     specifiers:
       '@shuvi/redox': 0.0.1-pre.6
-      '@types/react': ^16.9.43
-      '@types/react-dom': ^16.9.6
-      react: 16.14.0
-      react-dom: 16.14.0
+      '@types/react': ^18.0.5
+      '@types/react-dom': ^18.0.5
+      react: 18.1.0
+      react-dom: 18.1.0
     devDependencies:
       '@shuvi/redox': link:../redox
-      '@types/react': 16.14.24
-      '@types/react-dom': 16.9.14
-      react: 16.14.0
-      react-dom: 16.14.0_react@16.14.0
+      '@types/react': 18.0.12
+      '@types/react-dom': 18.0.5
+      react: 18.1.0
+      react-dom: 18.1.0_react@18.1.0
 
   packages/redox:
     specifiers:
@@ -3586,12 +3586,26 @@ packages:
     dependencies:
       '@types/react': 16.14.24
 
+  /@types/react-dom/18.0.5:
+    resolution: {integrity: sha512-OWPWTUrY/NIrjsAPkAk1wW9LZeIjSvkXRhclsFO8CZcZGCOg2G0YZy4ft+rOyYxy8B7ui5iZzi9OkDebZ7/QSA==}
+    dependencies:
+      '@types/react': 18.0.12
+    dev: true
+
   /@types/react/16.14.24:
     resolution: {integrity: sha512-e7U2WC8XQP/xfR7bwhOhNFZKPTfW1ph+MiqtudKb8tSV8RyCsovQx2sNVtKoOryjxFKpHPPC/yNiGfdeVM5Gyw==}
     dependencies:
       '@types/prop-types': 15.7.5
       '@types/scheduler': 0.16.2
       csstype: 3.0.11
+
+  /@types/react/18.0.12:
+    resolution: {integrity: sha512-duF1OTASSBQtcigUvhuiTB1Ya3OvSy+xORCiEf20H0P0lzx+/KeVsA99U5UjLXSbyo1DRJDlLKqTeM1ngosqtg==}
+    dependencies:
+      '@types/prop-types': 15.7.5
+      '@types/scheduler': 0.16.2
+      csstype: 3.0.11
+    dev: true
 
   /@types/resolve/1.17.1:
     resolution: {integrity: sha512-yy7HuzQhj0dhGpD8RLXSZWEkLsV9ibvxvi6EiJ3bkqLAO1RGo0WbkWQiwpRlSFymTJRz0d3k5LM3kkx8ArDbLw==}
@@ -15588,6 +15602,16 @@ packages:
       react: 16.14.0
       scheduler: 0.19.1
 
+  /react-dom/18.1.0_react@18.1.0:
+    resolution: {integrity: sha512-fU1Txz7Budmvamp7bshe4Zi32d0ll7ect+ccxNu9FlObT605GOEB8BfO4tmRJ39R5Zj831VCpvQ05QPBW5yb+w==}
+    peerDependencies:
+      react: ^18.1.0
+    dependencies:
+      loose-envify: 1.4.0
+      react: 18.1.0
+      scheduler: 0.22.0
+    dev: true
+
   /react-dom/18.2.0-next-7a5b8227c-20220602_rbucyfknqvga7u674vw4made5u:
     resolution: {integrity: sha512-/SH0mW4oy/GzKua8W78GpfJ8va9y9n46e2gthSYabMfNzIsuwnrEl3xHp0GKCLsmgsbYdNOulD8OaH7yrKue6w==}
     peerDependencies:
@@ -15791,6 +15815,13 @@ packages:
       loose-envify: 1.4.0
       object-assign: 4.1.1
       prop-types: 15.8.1
+
+  /react/18.1.0:
+    resolution: {integrity: sha512-4oL8ivCz5ZEPyclFQXaNksK3adutVS8l2xzZU0cqEFrE9Sb7fC0EFK5uEk74wIreL1DERyjvsU915j1pcT2uEQ==}
+    engines: {node: '>=0.10.0'}
+    dependencies:
+      loose-envify: 1.4.0
+    dev: true
 
   /react/18.2.0-next-7a5b8227c-20220602:
     resolution: {integrity: sha512-DnGy8o3YZFAPsm/twTlWurZz4dawLKPzg4ujYX//VWLf3u37Exdx4rYKhQem0Xp7T8PLSmwEF9lNkkg8IbT1jQ==}
@@ -16446,6 +16477,12 @@ packages:
     dependencies:
       loose-envify: 1.4.0
       object-assign: 4.1.1
+
+  /scheduler/0.22.0:
+    resolution: {integrity: sha512-6QAm1BgQI88NPYymgGQLCZgvep4FyePDWFpXVK+zNSUgHwlqpJy8VEh8Et0KxTACS4VWwMousBElAZOH9nkkoQ==}
+    dependencies:
+      loose-envify: 1.4.0
+    dev: true
 
   /scheduler/0.23.0-next-7a5b8227c-20220602:
     resolution: {integrity: sha512-ItdCq2vIYaBf4mG3r0GdkkHjOQCNA3O3TqQAurwcN2fYiOfnOpfiidzQ8r9hzDWFSAF7PfT/EOvYJtdzPo8NaA==}
