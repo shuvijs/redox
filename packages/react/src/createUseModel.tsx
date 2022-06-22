@@ -14,6 +14,13 @@ const createUseModel =
 		model: IModel,
 		selector?: Selector
 	) => {
+		// const selectorFn = useMemo(function(selector?: Selector){
+		// 	if(!selector){
+		// 		return undefined;
+		// 	}
+		// 	return selector
+		// }, [selector])
+
 		const initialValue = useMemo(
 			function () {
 				return getStateActions(model, modelManager, selector)

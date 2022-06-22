@@ -21,7 +21,7 @@ function isComplexObject(obj: any): boolean {
  * 1. map key is view function
  * 2. map value is Map<arguments, result>
  */
-interface ICompare {
+export interface ICompare {
 	tree: Map<
 		Record<string, any>,
 		{
@@ -34,9 +34,7 @@ interface ICompare {
 const isProxy = Symbol('__isProxy')
 const getTarget = Symbol('__target')
 
-let isCollectionKeys = false
-
-function createProxyObjFactory() {
+export function createProxyObjFactory() {
 	const proxyObjMap = new WeakMap<Record<string, any>, typeof Proxy>()
 	return function createProxyObj(
 		target: Record<string | symbol, any>,
@@ -55,17 +53,101 @@ function createProxyObjFactory() {
 	}
 }
 
+/**
+ *
+ * @param prevObj
+ * @param compareObj
+ * @param tree
+ * @returns true: need computed, false: don't need computed, and use cached value
+ */
+// @ts-ignore
+function compareObject(prevObj: any, nextObj: any, compare: ICompare) {
+	if (!isComplexObject(prevObj)) {
+		// $state function and view fucntion comparison
+		if (typeof prevObj === 'function') {
+			const treeMap = compare.tree.get(prevObj)
+			// $state function comparison
+			if (treeMap) {
+				const child = treeMap!.children
+				const nextChild = nextObj()
+				if (!isComplexObject(child)) {
+					return child === nextChild
+				}
+				return compareObject(child, nextChild, compare)
+			}
+
+			// view compare, call function with arguments and compare result
+			const viewMap = compare.view.get(prevObj)
+			if (viewMap) {
+				for (const [viewArg, viewRes] of viewMap.entries()) {
+					if (prevObj(...viewArg) !== viewRes) {
+						return false
+					}
+				}
+			}
+		}
+		// simple value like string number just call ===
+		return prevObj === nextObj
+	} else if (prevObj === nextObj) {
+		// Object address has not changed, children are same
+		return true
+	}
+
+	const treeNode = compare.tree.get(prevObj)
+	if (!treeNode) {
+		// not visit prevObj any key, just compare with ===
+		return prevObj === nextObj
+	}
+	const child = treeNode!.children
+	const keys = Object.keys(child)
+	for (let i = 0; i < keys.length; i++) {
+		const key = keys[i]
+		const childObj = child[key]
+		if (!compareObject(childObj, nextObj[key], compare)) {
+			return false
+		}
+	}
+	return true
+}
+
+/**
+ * compare is arguments changed
+ * @param next current arguments
+ * @param compare previous arguments, store as a tree, and collect what keys been used
+ * @returns false => need recomputed, true => use cache value
+ */
+export function compareArguments(next: any, compare: ICompare) {
+	const tree = compare.tree
+	const root = Array.from(tree.keys())[0] // the Map first is tree root
+	if (!root) {
+		// use nothings
+		return true
+	}
+	return compareObject(root, next, compare)
+}
+
 const stateCreateProxyObj = createProxyObjFactory()
 
 let compareStatePos: ICompare
 
-function getRawValue(target: any) {
-	return isComplexObject(target)
-		? target[isProxy]
-			? target[getTarget]
-			: target
-		: target
+/**
+ * if object value is Proxy return origin value
+ * @param obj any obj, Proxy(origin object) or {xxx: Proxy(origin object)}
+ * @returns origin object or {xxx: origin object}
+ */
+export const getRawValueDeep = (obj: any) => {
+	if (!isComplexObject(obj)) {
+		return obj
+	}
+	obj = obj[isProxy] ? obj[getTarget] : obj
+	const keys = Object.keys(obj)
+	keys.forEach((key) => {
+		return ((obj as Record<string, any>)[key] = getRawValueDeep(obj[key]))
+	})
+	return obj
 }
+
+let isCollectionKeys = false
 
 const getStateCollection = () => {
 	return {
@@ -140,79 +222,6 @@ const getStateCollection = () => {
 	}
 }
 
-/**
- *
- * @param prevObj
- * @param compareObj
- * @param tree
- * @returns true: need computed, false: don't need computed, and use cached value
- */
-// @ts-ignore
-function compareObject(prevObj: any, nextObj: any, compare: ICompare) {
-	if (!isComplexObject(prevObj)) {
-		// $state function and view fucntion comparison
-		if (typeof prevObj === 'function') {
-			const treeMap = compare.tree.get(prevObj)
-			// $state function comparison
-			if (treeMap) {
-				const child = treeMap!.children
-				const nextChild = nextObj()
-				if (!isComplexObject(child)) {
-					return child === nextChild
-				}
-				return compareObject(child, nextChild, compare)
-			}
-
-			// view compare, call function with arguments and compare result
-			const viewMap = compare.view.get(prevObj)
-			if (viewMap) {
-				for (const [viewArg, viewRes] of viewMap.entries()) {
-					if (prevObj(...viewArg) !== viewRes) {
-						return false
-					}
-				}
-			}
-		}
-		// simple value like string number just call ===
-		return prevObj === nextObj
-	} else if (prevObj === nextObj) {
-		// Object address has not changed, children are same
-		return true
-	}
-
-	const treeNode = compare.tree.get(prevObj)
-	if (!treeNode) {
-		// not visit prevObj any key, just compare with ===
-		return prevObj === nextObj
-	}
-	const child = treeNode!.children
-	const keys = Object.keys(child)
-	for (let i = 0; i < keys.length; i++) {
-		const key = keys[i]
-		const childObj = child[key]
-		if (!compareObject(childObj, nextObj[key], compare)) {
-			return false
-		}
-	}
-	return true
-}
-
-/**
- * compare is arguments changed
- * @param next current arguments
- * @param compare previous arguments, store as a tree, and collect what keys been used
- * @returns false => need recomputed, true => use cache value
- */
-function compareArguments(next: any, compare: ICompare) {
-	const tree = compare.tree
-	const root = Array.from(tree.keys())[0] // the Map first is tree root
-	if (!root) {
-		// use nothings
-		return true
-	}
-	return compareObject(root, next, compare)
-}
-
 function cacheFactory(
 	fn: (...args: any[]) => any
 	// _modelName: string, // just for debugging
@@ -246,7 +255,12 @@ function cacheFactory(
 			// 	_viewsKey,
 			// 	thisCompare
 			// )
-			res = getRawValue(res)
+
+			// case 1 return Proxy()
+			// return Proxy(origin Object) need return origin Object
+			// case 2 user define xxx key
+			// return {xxx: Proxy(origin Object)} need return {xxx: origin Object}
+			res = getRawValueDeep(res)
 			return res
 		},
 		{

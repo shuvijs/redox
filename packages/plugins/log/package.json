@@ -4,24 +4,26 @@
   "description": "A Redux Framework",
   "homepage": "https://shuvijs.github.io/shuvijs.org",
   "sideEffects": false,
-  "main": "dist/index.js",
-  "module": "dist/redox-log.esm.js",
-  "browser": "dist/redox-log.esm.js",
-  "unpkg": "dist/redox-log.umd.production.min.js",
-  "types": "dist/index.d.ts",
+  "main": "lib/index.js",
+  "module": "esm/index.js",
+  "browser": "esm/index.js",
+  "types": "lib/index.d.ts",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
   "scripts": {
-    "dev": "dts watch --tsconfig ./tsconfig.build.json",
-    "build": "dts build --format cjs,esm,umd --tsconfig ./tsconfig.build.json",
-    "lint": "dts lint",
-    "clean": "rimraf dist"
+    "dev": "run-p watch:*",
+    "watch:esm": "tsc -p tsconfig.build.json -m esnext --outDir esm -w",
+    "watch:cjs": "tsc -p tsconfig.build.json -m commonjs --outDir lib -w",
+    "build": "run-p clean && run-p build:*",
+    "build:esm": "tsc -p tsconfig.build.json -m esnext --outDir esm",
+    "build:cjs": "tsc -p tsconfig.build.json -m commonjs --outDir lib",
+    "clean": "rimraf lib esm"
   },
   "files": [
-    "dist",
-    "src"
+    "esm",
+    "lib"
   ],
   "engines": {
     "node": ">=10"
