@@ -55,6 +55,10 @@ const countSelector = function (stateAndViews: countSelectorParameters) {
 	}
 }
 
+const count$State = function (stateAndViews: countSelectorParameters) {
+	return stateAndViews.$state()
+}
+
 function Test() {
 	const [state, action] = useModel(count, countSelector)
 	expectType<number>(state.n)
@@ -73,4 +77,14 @@ function Test() {
 	expectType<Action<number | undefined>>(rootAction.addValue())
 	expectType<Action<customType>>(rootAction.setString('custom'))
 	expectType<Promise<void>>(rootAction.asyncAdd(0))
+}
+
+function Test$State() {
+	const [state] = useModel(count, count$State)
+	expectType<number>(state.value)
+	expectType<string>(state.s)
+
+	const [rootState] = useRootModel(count, count$State)
+	expectType<number>(rootState.value)
+	expectType<string>(rootState.s)
 }

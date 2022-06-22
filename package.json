@@ -28,8 +28,6 @@
     "clean": "pnpm -r --parallel exec rm -rf node_modules dist && pnpm exec rm -rf node_modules",
     "test": "jest",
     "release": "pnpm clean && pnpm i && pnpm build && pnpm test && pnpm changeset publish",
-    "lint": "pnpm -r run lint",
-    "lint:fix": "pnpm -r run lint:fix",
     "prepare": "husky install"
   },
   "devDependencies": {
@@ -40,7 +38,6 @@
     "@types/node": "^13.11.0",
     "@typescript-eslint/eslint-plugin": "^4.30.0",
     "@typescript-eslint/parser": "^4.30.0",
-    "dts-cli": "^0.19.7",
     "eslint": "^7.32.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-prettier": "^8.3.0",
@@ -50,13 +47,15 @@
     "jest": "27.5.1",
     "lint-staged": "^11.1.2",
     "prettier": "2.3.2",
+    "npm-run-all": "^4.1.5",
     "rimraf": "^3.0.2",
     "ts-jest": "27.1.4",
     "tslib": "^2.3.1",
-    "typescript": "^4.4.2"
+    "typescript": "^4.7.4"
   },
   "resolutions": {
-    "jest-environment-jsdom": "27.5.1"
+    "jest-environment-jsdom": "27.5.1",
+    "@types/eslint": "^8.4.3"
   },
   "lint-staged": {
     "*.js": [
