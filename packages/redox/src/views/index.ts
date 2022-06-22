@@ -5,7 +5,7 @@ import validate, { isObject } from '../validate'
 
 const objectToString = Object.prototype.toString
 
-function isComplexObject(obj: any): boolean {
+export function isComplexObject(obj: any): boolean {
 	return objectToString.call(obj) === '[object Object]' || Array.isArray(obj)
 }
 
@@ -31,8 +31,8 @@ export interface ICompare {
 	view: Map<Function, Map<any[], any>>
 }
 
-const isProxy = Symbol('__isProxy')
-const getTarget = Symbol('__target')
+export const isProxy = Symbol('__isProxy')
+export const getTarget = Symbol('__target')
 
 export function createProxyObjFactory() {
 	const proxyObjMap = new WeakMap<Record<string, any>, typeof Proxy>()

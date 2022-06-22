@@ -6,12 +6,19 @@
   "sideEffects": false,
   "exports": {
     ".": {
+      "types": "./esm/index.d.ts",
       "import": "./esm/index.js",
       "require": "./lib/index.js"
     },
+    "./views": {
+      "types": "./esm/views/index.d.ts",
+      "import": "./esm/views/index.js",
+      "require": "./lib/views/index.js"
+    },
     "./createSelector": {
-      "import": "./feature-node.mjs",
-      "require": "./feature-node.cjs"
+      "types": "./esm/views/createSelector.d.ts",
+      "import": "./esm/views/createSelector.js",
+      "require": "./lib/views/createSelector.js"
     }
   },
   "main": "lib/index.js",

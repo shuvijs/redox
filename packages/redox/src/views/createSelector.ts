@@ -6,25 +6,11 @@ type EqualityFn = (a: any, b: any, i: number) => boolean
 /** Any function with arguments */
 type UnknownFunction = (...args: any[]) => unknown
 
-type IThisPoint = {
-	[K: string]: any
-	$dep: Record<string, any>
-}
+type MemoizeFunction = typeof defaultMemoize
 
-type resultF<thisPoint extends IThisPoint = { $dep: {} }, OtherArgs = any[]> = (
-	param1: thisPoint,
-	param3: OtherArgs
-) => any
-
-function createSelectorCreator<
-	/** A memoizer such as defaultMemoize that accepts a function + some possible options */
-	MemoizeFunction extends typeof defaultMemoize
->(memoize: MemoizeFunction) {
-	const createSelector = <
-		thisPoint extends IThisPoint = { $dep: {} },
-		OtherArgs = any[]
-	>(
-		resultFunc: resultF<thisPoint, OtherArgs>,
+function createSelectorCreator(memoize: MemoizeFunction) {
+	const createSelector = <F extends UnknownFunction>(
+		resultFunc: F,
 		memoizeOption: { equalityCheck: EqualityFn }
 	) => {
 		if (process.env.NODE_ENV === 'development') {
@@ -43,9 +29,9 @@ function createSelectorCreator<
 		const { equalityCheck } = memoizeOption
 
 		// If a selector is called with the exact same arguments we don't need to traverse our dependencies again.
-		const selector = memoize(function (thisPoint: thisPoint, args: OtherArgs) {
+		const selector = memoize(function (...args: any[]) {
 			// apply arguments instead of spreading for performance.
-			return resultFunc.call(null, thisPoint, args)
+			return resultFunc.call(null, ...args)
 		}, equalityCheck)
 		return selector
 	}
