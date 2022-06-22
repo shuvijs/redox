@@ -4,6 +4,7 @@
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+// @ts-ignore
 import { act } from 'react-dom/test-utils'
 import { defineModel } from '@shuvi/redox'
 import { useModel, useRootModel, RedoxRoot } from '../src'

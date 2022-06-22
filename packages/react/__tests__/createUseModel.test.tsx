@@ -4,10 +4,11 @@
 
 import React, { useMemo } from 'react'
 import ReactDOM from 'react-dom/client'
+// @ts-ignore
 import { act } from 'react-dom/test-utils'
 import { defineModel, redox, AnyModel } from '@shuvi/redox'
 import { createBatchManager } from '../src/batchManager'
-import { IUseModel, ISelector } from '../src/types'
+import { IUseModel, ISelector, ISelectorParams } from '../src/types'
 import { createUseModel } from '../src/createUseModel'
 import { countModel } from './models'
 
@@ -211,10 +212,13 @@ describe('createUseModel', () => {
 		test('inlined selector', async () => {
 			let selectorRunCount = 0
 			const App = () => {
-				const [_state, actions] = useTestModel(countModel, function () {
-					selectorRunCount++
-					return 1
-				})
+				const [_state, actions] = useTestModel(
+					countModel,
+					function (stateAndViews) {
+						selectorRunCount++
+						return stateAndViews.value
+					}
+				)
 				const [_index, setIndex] = React.useState(0)
 
 				return (
@@ -238,26 +242,28 @@ describe('createUseModel', () => {
 				ReactDOM.createRoot(container).render(<App />)
 			})
 
-			expect(selectorRunCount).toBe(2)
+			expect(selectorRunCount).toBe(1)
 			act(() => {
 				container
 					.querySelector('#button')
 					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 			})
-			expect(selectorRunCount).toBe(2)
+			expect(selectorRunCount).toBe(1)
 			act(() => {
 				container
 					.querySelector('#action')
 					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 			})
-			expect(selectorRunCount).toBe(3)
+			expect(selectorRunCount).toBe(2)
 		})
 
 		test('selector outside', async () => {
 			let selectorRunCount = 0
-			const countSelector = function () {
+			const countSelector = function (
+				stateAndViews: ISelectorParams<typeof countModel>
+			) {
 				selectorRunCount++
-				return 1
+				return stateAndViews.value
 			}
 			const App = () => {
 				const [_state, actions] = useTestModel(countModel, countSelector)
@@ -278,19 +284,19 @@ describe('createUseModel', () => {
 				ReactDOM.createRoot(container).render(<App />)
 			})
 
-			expect(selectorRunCount).toBe(2)
+			expect(selectorRunCount).toBe(1)
 			act(() => {
 				container
 					.querySelector('#button')
 					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 			})
-			expect(selectorRunCount).toBe(2)
+			expect(selectorRunCount).toBe(1)
 			act(() => {
 				container
 					.querySelector('#action')
 					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 			})
-			expect(selectorRunCount).toBe(3)
+			expect(selectorRunCount).toBe(2)
 		})
 	})
 

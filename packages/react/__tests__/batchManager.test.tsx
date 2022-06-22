@@ -4,6 +4,7 @@
 
 import React, { useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
+// @ts-ignore
 import { act } from 'react-dom/test-utils'
 import { redox } from '@shuvi/redox'
 import { createBatchManager } from '../src/batchManager'
