@@ -1,4 +1,5 @@
 import { defineModel, redox } from '../src'
+import { isProxy } from '../src/views'
 
 let manager: ReturnType<typeof redox>
 beforeEach(() => {
@@ -6,6 +7,25 @@ beforeEach(() => {
 })
 
 describe('defineModel/views', () => {
+	it('should throw error if changed state in a view', () => {
+		let initState = {
+			a: 0,
+		}
+		const model = defineModel({
+			name: 'model',
+			state: initState,
+			views: {
+				view() {
+					const state = this.$state()
+					state.a = 1
+					return this.$state()
+				},
+			},
+		})
+		const store = manager.get(model)
+		expect(() => store.view()).toThrow()
+	})
+
 	it('should return same reference if no update', () => {
 		const sample = defineModel({
 			name: 'sample',
@@ -387,25 +407,6 @@ describe('defineModel/views', () => {
 		expect(numberOfCalls).toBe(4)
 	})
 
-	it('should throw error if changed state in a view', () => {
-		let initState = {
-			a: 0,
-		}
-		const model = defineModel({
-			name: 'model',
-			state: initState,
-			views: {
-				view() {
-					const state = this.$state()
-					state.a = 1
-					return this.$state()
-				},
-			},
-		})
-		const store = manager.get(model)
-		expect(() => store.view()).toThrow()
-	})
-
 	describe('view with depends', () => {
 		it('should not be invoked if no dep update', () => {
 			const modelA = defineModel({
@@ -693,6 +694,82 @@ describe('defineModel/views', () => {
 			valueFromViews = arrayStore.getArr(1)
 			expect(numberOfCalls).toBe(5)
 			expect(valueFromViews).toEqual(1)
+		})
+	})
+
+	describe('should not return proxy data', () => {
+		function isProxyObj(obj: any) {
+			if (!obj || typeof obj !== 'object') {
+				return false
+			}
+			// is a proxy obj
+			if (obj[isProxy]) {
+				return true
+			}
+			const keys = Object.keys(obj)
+			// value maybe proxy
+			for (let i = 0; i < keys.length; i++) {
+				const key = keys[i]
+				if (isProxyObj(obj[key])) {
+					return true
+				}
+			}
+			return false
+		}
+
+		it('return part state direct', () => {
+			const deepObjModel = defineModel({
+				name: 'deepObj',
+				state: {
+					a: {
+						b: {
+							c: 'c',
+						},
+					},
+				},
+				reducers: {},
+				views: {
+					getB() {
+						return this.a.b
+					},
+				},
+			})
+
+			const deepObjStore = manager.get(deepObjModel)
+
+			const b = deepObjStore.getB()
+
+			expect(isProxyObj(b)).toBeFalsy()
+		})
+
+		it('state is part of result', () => {
+			const deepObjModel = defineModel({
+				name: 'deepObj',
+				state: {
+					a: {
+						b: {
+							c: 'c',
+						},
+					},
+				},
+				reducers: {},
+				views: {
+					getNewObj() {
+						return {
+							newB: this.a.b,
+							newC: {
+								newC: this.a.b.c,
+							},
+						}
+					},
+				},
+			})
+
+			const deepObjStore = manager.get(deepObjModel)
+
+			const newObj = deepObjStore.getNewObj()
+
+			expect(isProxyObj(newObj)).toBeFalsy()
 		})
 	})
 })

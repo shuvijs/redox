@@ -298,9 +298,167 @@ describe('createUseModel', () => {
 			})
 			expect(selectorRunCount).toBe(2)
 		})
+
+		test('condition selector', async () => {
+			const countSelector0 = function () {
+				return 0
+			}
+			const countSelector1 = function () {
+				return 1
+			}
+			const App = () => {
+				const [index, setIndex] = React.useState(0)
+				const [state, actions] = useTestModel(
+					countModel,
+					index % 2 === 0 ? countSelector0 : countSelector1
+				)
+
+				return (
+					<>
+						<div id="value">{state}</div>
+						<button id="button" type="button" onClick={() => setIndex(1)}>
+							setIndex
+						</button>
+						<button id="action" type="button" onClick={() => actions.add()}>
+							action
+						</button>
+					</>
+				)
+			}
+			act(() => {
+				ReactDOM.createRoot(container).render(<App />)
+			})
+
+			expect(container.querySelector('#value')?.innerHTML).toEqual('0')
+			act(() => {
+				container
+					.querySelector('#button')
+					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+			})
+			expect(container.querySelector('#value')?.innerHTML).toEqual('0')
+			act(() => {
+				container
+					.querySelector('#action')
+					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+			})
+			expect(container.querySelector('#value')?.innerHTML).toEqual('1')
+		})
+
+		test('should clear prev selector cache', async () => {
+			let selectorRunTime0 = 0
+			const countSelector0 = function () {
+				selectorRunTime0++
+				console.log('selectorRunTime0: ', selectorRunTime0)
+				return 0
+			}
+			let selectorRunTime1 = 0
+			const countSelector1 = function () {
+				selectorRunTime1++
+				console.log('selectorRunTime1: ', selectorRunTime1)
+				return 1
+			}
+			const App = () => {
+				let [index, setIndex] = React.useState(1)
+				console.log('index: ', index, index % 3 === 0)
+				const [state, actions] = useTestModel(
+					countModel,
+					index % 3 === 0 ? countSelector0 : countSelector1
+				)
+
+				return (
+					<>
+						<div id="value">{state}</div>
+						<button
+							id="button"
+							type="button"
+							onClick={() => setIndex(index + 1)}
+						>
+							setIndex
+						</button>
+						<button id="action" type="button" onClick={() => actions.add()}>
+							action
+						</button>
+					</>
+				)
+			}
+
+			act(() => {
+				ReactDOM.createRoot(container).render(<App />)
+			})
+
+			// countSelector1 run and cache countSelector1
+			expect(selectorRunTime0).toBe(0)
+			expect(selectorRunTime1).toBe(1)
+			expect(container.querySelector('#value')?.innerHTML).toEqual('1')
+			act(() => {
+				container
+					.querySelector('#button')
+					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+			})
+			act(() => {
+				// trigger selector run
+				container
+					.querySelector('#action')
+					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+			})
+			// valid cache worked, use countSelector1 cache, not computed
+			expect(selectorRunTime0).toBe(0)
+			expect(selectorRunTime1).toBe(1)
+			expect(container.querySelector('#value')?.innerHTML).toEqual('1')
+			act(() => {
+				container
+					.querySelector('#button')
+					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				container
+					.querySelector('#button')
+					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+			})
+			act(() => {
+				// trigger selector run
+				container
+					.querySelector('#action')
+					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+			})
+			// valid drop countSelector1 cache,  countSelector0 run and cache countSelector0
+			expect(selectorRunTime0).toBe(1)
+			expect(selectorRunTime1).toBe(1)
+			expect(container.querySelector('#value')?.innerHTML).toEqual('0')
+			act(() => {
+				container
+					.querySelector('#button')
+					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+			})
+			act(() => {
+				// trigger selector run
+				container
+					.querySelector('#action')
+					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+			})
+			// valid should drop countSelector0 cache,  countSelector1 run and cache countSelector1
+			expect(selectorRunTime0).toBe(1)
+			expect(selectorRunTime1).toBe(2)
+			expect(container.querySelector('#value')?.innerHTML).toEqual('1')
+		})
+
+		test('should throw error if changed state in a selector', () => {
+			const App = () => {
+				const [_state] = useTestModel(countModel, function (stateAndViews) {
+					stateAndViews.value = 1
+					return stateAndViews.value
+				})
+				return null
+			}
+			expect(() => {
+				act(() => {
+					ReactDOM.createRoot(container).render(<App />)
+				})
+			}).toThrow()
+		})
+
+		describe('support selector', () => {})
 	})
 
-	test('should trigger component render outside of component', () => {
+	test('cloud trigger component render outside of component', () => {
 		let AppRenderCount = 0
 
 		function App() {

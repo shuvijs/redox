@@ -9,9 +9,10 @@ import React, {
 } from 'react'
 import { validate, redox } from '@shuvi/redox'
 import type { IModelManager, AnyModel, RedoxOptions } from '@shuvi/redox'
-import { createUseModel, cacheFactory } from './createUseModel'
+import { createUseModel } from './createUseModel'
 import { getStateActions } from './getStateActions'
 import { createBatchManager } from './batchManager'
+import { cacheSelector } from './cacheSelector'
 import { IUseModel, IUseStaticModel, ISelector } from './types'
 
 const createContainer = function (options?: RedoxOptions) {
@@ -103,27 +104,32 @@ const createContainer = function (options?: RedoxOptions) {
 		}
 
 		const { modelManager, batchManager } = context
-		const selectorFn = useMemo(
+		const selectorFn = useRef<undefined | ReturnType<typeof cacheSelector>>(
+			undefined
+		)
+
+		const cacheFn = useMemo(
 			function () {
 				if (!selector) {
 					return undefined
 				}
-				return cacheFactory(selector)
+				selectorFn.current = cacheSelector(selector)
+				return selectorFn.current
 			},
-			[selector]
+			[modelManager, batchManager, selector]
 		)
 
 		useEffect(
 			function () {
 				return function () {
-					selectorFn?.clearCache()
+					cacheFn?.clearCache()
 				}
 			},
-			[selectorFn]
+			[cacheFn]
 		)
 
 		const initialValue = useMemo(() => {
-			return getStateActions(model, modelManager, selectorFn)
+			return getStateActions(model, modelManager, selectorFn.current)
 		}, [modelManager, batchManager])
 
 		const stateRef = useRef<any>(initialValue[0])
@@ -132,7 +138,11 @@ const createContainer = function (options?: RedoxOptions) {
 
 		useEffect(() => {
 			const fn = () => {
-				const newValue = getStateActions(model, modelManager, selectorFn)
+				const newValue = getStateActions(
+					model,
+					modelManager,
+					selectorFn.current
+				)
 				if (stateRef.current !== newValue[0]) {
 					stateRef.current = newValue[0]
 				}
@@ -142,7 +152,7 @@ const createContainer = function (options?: RedoxOptions) {
 
 			// useEffect is async, there's maybe some async update state before store subscribe
 			// check state and actions once, need update if it changed
-			const newValue = getStateActions(model, modelManager, selectorFn)
+			const newValue = getStateActions(model, modelManager, selectorFn.current)
 			if (
 				stateRef.current !== newValue[0] ||
 				value.current[1] !== newValue[1]
