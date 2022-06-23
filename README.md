@@ -2,54 +2,46 @@
 <h1>redox-react</h1>
 </div>
 
-Redox-react is a decentralized store management solution base on redox, All stores do not need to be initialized at the very beginning, but will only be initialized when it needed.
-
-1. It is tiny, after gzip redox/2kB，redox-react/1kB, support esmodule and treeShaking.
-
-2. There is a subscription relationship between the model and the components that subscribe to it. If the state changes, only the components that subscribe to it will be rendered.
-
-3. In the same component, regardless of whether it is in the same context, the any data changes are triggered at the same time, and only rendered once
-
-4. Based on TS writing, TS type hints are very friendly
-
-5. Keep state status when [hmr](https://webpack.js.org/concepts/hot-module-replacement/)
-
-1. SSR supported very well
+redox-react is a decentralized state management solution based on redox. Stores are created on demand, which prevents from initializing all of the stores at very first time.
 
 <hr />
 
+## Features
+1. A lightweight solution, redox/**2kB**redox-react/**1kB** 
+2. esmodule and Tree Shaking are supported.
+3. [React Devtools](https://github.com/facebook/react/tree/master/packages/react-devtools) support
+4. TypeScript support
+5. SSR support
+6. Components monitor the state of stores, rerender if the state change
+7. Optimize render times across multiple contexts 
+8. Keep state when [hmr](https://webpack.js.org/concepts/hot-module-replacement/)
 ## producer consumer model
 
-  - **producer** is `defineModel`
+  - **producer** `defineModel`
+
     The model like react component, which can be run separately or combined through the second parameter `depend`
-  - **consumer** is `usexxModel` eg `useModel` `useRootModel` `useSharedModel` `useRootStaticModel`
-    xxModel consumes the model in the Provider context, and only creates the store when it is called.
+    
+  - **consumer** `useModel` `useRootModel` `useSharedModel` `useRootStaticModel`
 
-## `defineModel`
+    These several hooks consume the model in the `Provider` context, create the store at the moment it have been called.
 
-  strongly typed supported.
+## `defineModel(options, depends?)`
 
-- first params is **model** self
-  - name*
-    name is necessary and should be unique
-  - reducers*
-    - is the reducer concept of Redux
-    - [immer](https://github.com/immerjs/immer) support by default
-  - actions?
-    some actions functions, like fetch data
-  - views?
-    define view by property, when a view been called, it will collect dependencies with automatic. if depends on changes, view return value with cache.
-
-- second option params depends
-
-    depends should be the value defineModel returned. if a model is depends other model, it is very useful. eg: depends isLogin status.
-
-
+### `options [object]`
+| Name         | Type  |   Description  |
+|--------------|--------------------------------------|------------------------------------------|
+| `name?`       | `string`                            | `optional` for **useModel**, `required` for **useRootModel**, **useSharedModel** and **useRootStaticModel**. Since `name` is treated as the key of `cache`, it should be `unique`.                                                                            |
+| `state`      | `object`, `string`, `number`, `boolean`, `array`, `undefined` or `null`                              | `required`. It could be any primitive type except `bigint` and `symbol`. |
+| `reducers?`      | `object`                          | `optional`. Define your reducers here, the corresponding actions will be `generated automatically`.  [immer](https://github.com/immerjs/immer) support out of the box.  |
+| `actions?`  | `object`| `optional`. Normally user defined actions have more complex logic than actions of reducers, like fetching data then dispatch actions. |
+| `views?`     | `object` | `optional`. Functions in views have `cache` mechanism. It holds the returned value of functions. Upadte the `cache` if the state of dependencies has changed. |
+### `depends? [array]`
+`optional`. It collects other models that the defined model depends on. Defined model would be aware of the `change of state` if it ever happened in any of model dependencies. 
 ```ts
 import { defineModel } from '@shuvi/redox'
 
 const count = defineModel({
-    name: 'count', // necessary and should be unique
+    name: 'count',
     state: { value: 0 },
     // concept of Redux
     reducers: {
@@ -118,21 +110,21 @@ const user = defineModel(
 );
 ```
 
-> `this` in `actions` and `views` can be accessed to itself, `ts` automatically infers the type, and when there is an error in the type related to `this` returned, it can actively mark the type
+> `this` in `actions` and `views` could access itself. `TypeScript` support very well, it could automatically infers the available types and actively mark the given errors. Easily debug and understand what's going wrong. 
 
-## `usexxModel`
+## `usexxModel(model, selector?)`
 
-### selector
+### `model [IModel]`
+`required`. The model created by `defineModel`.
+### `selector [ISelector]` 
 
-`usexxModel`, first param is `model`, second optional param is `selector`.
-
-`selector` selects the state what the react component needed, and purpose is to reduce render times.
+`optional`. It selects the state for what react component need, the reason of doing this has considered the `performance` issue, avoiding `unnecessary rendering` for the component.
 
 > `ISelector` is typescript tips for create selector.
 
 ```ts
 import type { ISelectorParams } from '@shuvi/redox-react'
-const selector= function (stateAndViews: ISelectorParams<typeof user>) {
+const selector = function (stateAndViews: ISelectorParams<typeof user>) {
   return {
     stateData: stateAndViews.id,
     double: stateAndViews.anyView(3),
@@ -168,7 +160,7 @@ All the models in same `Provider` can be shared by each other. `useModel, useSta
 
 ### `useStaticModel`
 
-`useStaticModel` is similar to `useSharedModel`, the different is that, `useStaticModel` will not rerender on state changed.
+It acts same as `useSharedModel`, except `useStaticModel` does nothing if the state has changed.
 
 > `useStaticModel` not support [Destructuring Assignment](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment). no error eg `const [state, _] = useStaticModel(model)`
 
