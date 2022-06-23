@@ -24,7 +24,7 @@
   "main": "lib/index.js",
   "module": "esm/index.js",
   "browser": "esm/index.js",
-  "types": "lib/index.d.ts",
+  "types": "esm/index.d.ts",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
     "access": "public"
