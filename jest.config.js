@@ -11,8 +11,8 @@ module.exports = {
 				allowJs: true,
 				target: 'es6',
 				lib: ['dom', 'esnext'],
-				module: 'commonjs',
-				moduleResolution: 'node',
+				module: 'esnext',
+				moduleResolution: 'nodenext',
 				skipLibCheck: true,
 				esModuleInterop: true,
 				noUnusedLocals: false,
@@ -23,8 +23,5 @@ module.exports = {
 	testEnvironment: 'node',
 	moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 	rootDir: __dirname,
-	moduleNameMapper: {
-		'^@shuvi/(.*?)$': '<rootDir>/packages/$1/src',
-	},
 	testMatch: ['<rootDir>/packages/**/__tests__/**/*.test.[jt]s?(x)'],
 }
