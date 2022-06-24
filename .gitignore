@@ -34,3 +34,6 @@ _book
 
 # examples
 *.bundle.js
+
+**/esm
+**/lib

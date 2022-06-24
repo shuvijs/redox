@@ -11,7 +11,9 @@ export type ISelector<IModel extends AnyModel, TReturn = any> = (
 	stateAndViews: ISelectorParams<IModel>
 ) => TReturn
 
-export type ISelectorParams<IModel extends AnyModel> = IState<IModel> &
+export type ISelectorParams<IModel extends AnyModel> = {
+	$state: () => IModel['state']
+} & IState<IModel> &
 	IViews<IModel> &
 	noExist
 

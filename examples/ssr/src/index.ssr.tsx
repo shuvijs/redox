@@ -11,7 +11,7 @@
  * the development environment. That request handler is plugged into the local webpack dev server started by `npm start`.
  */
 import React from 'react'
-import { renderToNodeStream } from 'react-dom/server'
+import { renderToPipeableStream } from 'react-dom/server'
 // @ts-ignore
 import express from 'express'
 import * as fs from 'fs'
@@ -46,13 +46,37 @@ router.use(
 			.replace(/%CLIENT_ENV%/g, JSON.stringify(modelManager.getSnapshot()))
 
 		const [head, tail] = template.split('%ROOT%')
-		const stream = renderToNodeStream(<App modelManager={modelManager} />)
-		response.type('html')
-		response.write(head)
-		stream.pipe(response, { end: false })
-		stream.on('end', () => {
-			response.write(tail)
-			response.end()
+		let didError = false
+		const stream = renderToPipeableStream(<App modelManager={modelManager} />, {
+			onShellReady() {
+				// The content above all Suspense boundaries is ready.
+				// If something errored before we started streaming, we set the error code appropriately.
+				response.statusCode = didError ? 500 : 200
+				response.setHeader('Content-type', 'text/html')
+				response.write(head)
+				stream.pipe(response)
+			},
+			onShellError(error) {
+				// Something errored before we could complete the shell so we emit an alternative shell.
+				response.statusCode = 500
+				response.send(
+					'<!doctype html><p>Loading...</p><script src="clientrender.js"></script>'
+				)
+			},
+			onAllReady() {
+				// If you don't want streaming, use this instead of onShellReady.
+				// This will fire after the entire page content is ready.
+				// You can use this for crawlers or static generation.
+				// res.statusCode = didError ? 500 : 200;
+				// res.setHeader('Content-type', 'text/html');
+				// stream.pipe(res);
+				response.write(tail)
+				response.end()
+			},
+			onError(err) {
+				didError = true
+				console.error(err)
+			},
 		})
 	}
 )

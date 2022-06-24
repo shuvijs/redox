@@ -1,5 +1,5 @@
 import React from 'react'
-import ReactDOM from 'react-dom'
+import { hydrateRoot } from 'react-dom/client'
 import App from './App'
 import { redox } from '@shuvi/redox'
 
@@ -13,9 +13,11 @@ if (window.clientEnv) {
 	modelManager = redox()
 }
 
-ReactDOM.render(
+const container = document.getElementById('root')
+
+hydrateRoot(
+	container!,
 	<React.StrictMode>
 		<App modelManager={modelManager}></App>
-	</React.StrictMode>,
-	document.getElementById('root')
+	</React.StrictMode>
 )

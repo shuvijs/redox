@@ -12,7 +12,7 @@ import type { IModelManager, AnyModel, RedoxOptions } from '@shuvi/redox'
 import { createUseModel } from './createUseModel'
 import { getStateActions } from './getStateActions'
 import { createBatchManager } from './batchManager'
-import { shadowEqual } from './utils'
+import { cacheSelector } from './cacheSelector'
 import { IUseModel, IUseStaticModel, ISelector } from './types'
 
 const createContainer = function (options?: RedoxOptions) {
@@ -104,8 +104,32 @@ const createContainer = function (options?: RedoxOptions) {
 		}
 
 		const { modelManager, batchManager } = context
+		const selectorFn = useRef<undefined | ReturnType<typeof cacheSelector>>(
+			undefined
+		)
+
+		const cacheFn = useMemo(
+			function () {
+				if (!selector) {
+					return undefined
+				}
+				selectorFn.current = cacheSelector(selector)
+				return selectorFn.current
+			},
+			[modelManager, batchManager, selector]
+		)
+
+		useEffect(
+			function () {
+				return function () {
+					cacheFn?.clearCache()
+				}
+			},
+			[cacheFn]
+		)
+
 		const initialValue = useMemo(() => {
-			return getStateActions(model, modelManager, selector)
+			return getStateActions(model, modelManager, selectorFn.current)
 		}, [modelManager, batchManager])
 
 		const stateRef = useRef<any>(initialValue[0])
@@ -114,8 +138,12 @@ const createContainer = function (options?: RedoxOptions) {
 
 		useEffect(() => {
 			const fn = () => {
-				const newValue = getStateActions(model, modelManager, selector)
-				if (!shadowEqual(stateRef.current, newValue[0])) {
+				const newValue = getStateActions(
+					model,
+					modelManager,
+					selectorFn.current
+				)
+				if (stateRef.current !== newValue[0]) {
 					stateRef.current = newValue[0]
 				}
 			}
@@ -124,10 +152,9 @@ const createContainer = function (options?: RedoxOptions) {
 
 			// useEffect is async, there's maybe some async update state before store subscribe
 			// check state and actions once, need update if it changed
-			const newValue = getStateActions(model, modelManager, selector)
+			const newValue = getStateActions(model, modelManager, selectorFn.current)
 			if (
-				// selector maybe return new object each time, compare value with shadowEqual
-				!shadowEqual(stateRef.current, newValue[0]) ||
+				stateRef.current !== newValue[0] ||
 				value.current[1] !== newValue[1]
 			) {
 				stateRef.current = newValue[0]
