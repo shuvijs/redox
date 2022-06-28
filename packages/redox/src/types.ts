@@ -106,7 +106,7 @@ type StateOfStoreCollection<MC extends ModelCollection> = {
 } &
 	{
 		[K in keyof MC]: {
-			$state: () => MC[K]['state']
+			$state: MC[K]['state']
 		}
 	}
 
@@ -241,7 +241,7 @@ export interface Model<
 	actions?: RA &
 		ThisType<
 			{
-				$state: () => S
+				$state: S
 				$set: (s: S) => void
 				$modify: (modifier: (s: S) => void) => void
 			} & RedoxViews<V> & {
@@ -251,7 +251,7 @@ export interface Model<
 	views?: V &
 		ThisType<
 			S & {
-				$state: () => S
+				$state: S
 			} & RedoxViews<V> & {
 					$dep: StateOfStoreCollection<MC> & ViewOfStoreCollection<MC>
 				}
@@ -267,7 +267,7 @@ export type Depends = AnyModel[]
 /** ************************** store-start *************************** */
 
 export type Store<IModel extends AnyModel> = {
-	$state: () => IModel['state']
+	$state: IModel['state']
 	$set: (state: State) => void
 	$modify: (modifier: (state: IModel['state']) => void) => void
 } & RedoxViews<IModel['views']> &

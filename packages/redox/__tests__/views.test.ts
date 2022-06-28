@@ -16,9 +16,9 @@ describe('defineModel/views', () => {
 			state: initState,
 			views: {
 				view() {
-					const state = this.$state()
+					const state = this.$state
 					state.a = 1
-					return this.$state()
+					return this.$state
 				},
 			},
 		})
@@ -184,7 +184,7 @@ describe('defineModel/views', () => {
 			views: {
 				getFoo() {
 					calltime++
-					return this.$state().foo
+					return this.$state.foo
 				},
 			},
 		})
@@ -322,7 +322,7 @@ describe('defineModel/views', () => {
 			},
 			views: {
 				view() {
-					return this.$state()
+					return this.$state
 				},
 			},
 		})
@@ -360,19 +360,19 @@ describe('defineModel/views', () => {
 			views: {
 				getState() {
 					numberOfCalls++
-					return this.$state()
+					return this.$state
 				},
 				getLevel1() {
 					numberOfCalls++
-					return this.$state().level1
+					return this.$state.level1
 				},
 				getLevel2() {
 					numberOfCalls++
-					return this.$state().level1.level2
+					return this.$state.level1.level2
 				},
 				getLevel3() {
 					numberOfCalls++
-					return this.$state().level1.level2.level3
+					return this.$state.level1.level2.level3
 				},
 			},
 		})
@@ -542,7 +542,7 @@ describe('defineModel/views', () => {
 				views: {
 					getState() {
 						numberOfCalls++
-						return this.$state()
+						return this.$state
 					},
 				},
 			})
@@ -575,7 +575,7 @@ describe('defineModel/views', () => {
 				views: {
 					getState() {
 						numberOfCalls++
-						return this.$state()
+						return this.$state
 					},
 				},
 			})
@@ -611,7 +611,7 @@ describe('defineModel/views', () => {
 				views: {
 					getArr(index: number) {
 						numberOfCalls++
-						return this.$state()[index]
+						return this.$state[index]
 					},
 				},
 			})
@@ -654,11 +654,11 @@ describe('defineModel/views', () => {
 				views: {
 					getArr(index: number) {
 						numberOfCalls++
-						return this.$state()[index]
+						return this.$state[index]
 					},
 					getState() {
 						numberOfCalls++
-						return this.$state()
+						return this.$state
 					},
 				},
 			})

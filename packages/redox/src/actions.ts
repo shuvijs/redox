@@ -11,14 +11,25 @@ export const createActions = <IModel extends AnyModel>(
 		// @ts-ignore
 		redoxStore.$actions[actionsName as string] = function (...args: any[]) {
 			const action = actions[actionsName]
-			const store = redoxStore._cache._getRedox(redoxStore.model)
-			return action.call(
-				{
-					...store.storeApi,
-					$dep: store.storeDepends,
+			const storeApi = redoxStore._cache.get(redoxStore.model)
+			const dependsStoreApi = {} as any
+			const depends = redoxStore.model._depends
+			if (depends) {
+				depends.forEach((depend) => {
+					const dependApi = redoxStore._cache.get(depend)
+					dependsStoreApi[depend.name] = dependApi
+				})
+			}
+			const thisPoint = {
+				...storeApi,
+				$dep: dependsStoreApi,
+			}
+			Object.defineProperty(thisPoint, '$state', {
+				get() {
+					return redoxStore.$state()
 				},
-				...args
-			)
+			})
+			return action.call(thisPoint, ...args)
 		}
 	})
 }

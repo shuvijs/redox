@@ -325,21 +325,30 @@ export const createViews = <IModel extends AnyModel>(
 						depends.forEach((depend) => {
 							const tempDependStateAndView = {}
 							const dependRedoxStore = redoxStore._cache._getRedox(depend)
-							dependsStateAndView[depend.name] = Object.assign(
+							const dependStore = Object.assign(
 								tempDependStateAndView,
-								{
-									$state: dependRedoxStore.getState,
-								},
 								dependRedoxStore.getState(),
 								dependRedoxStore.$views
 							)
+							Object.defineProperty(dependStore, '$state', {
+								enumerable: true,
+								get() {
+									return dependRedoxStore.getState()
+								},
+							})
+							dependsStateAndView[depend.name] = dependStore
 						})
 					}
 					const thisPoint = {
 						...selfStateAndView,
 						$dep: dependsStateAndView,
-						$state: redoxStore.getState,
 					}
+					Object.defineProperty(thisPoint, '$state', {
+						enumerable: true,
+						get() {
+							return redoxStore.getState()
+						},
+					})
 					return cacheFun(thisPoint, args)
 				}
 			}
