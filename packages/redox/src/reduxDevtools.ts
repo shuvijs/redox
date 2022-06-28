@@ -14,14 +14,14 @@ const reduxDevTools: IPlugin = function () {
 			) {
 				const originReducer = Store.$reducer
 				const devTools = (window as any).__REDUX_DEVTOOLS_EXTENSION__!.connect({
-					name: Store.model.name || `model_${id++}`,
+					name: Store.name || `model_${id++}`,
 				})
 
-				const initialState = Store.$state()
+				const initialState = Store.getState()
 				devTools.init(initialState)
 
 				let isLatestState = true
-				let latestState: any = Store.$state()
+				let latestState: any = Store.getState()
 				const fn = (message: any) => {
 					switch (message.type) {
 						case 'ACTION':
@@ -43,11 +43,11 @@ const reduxDevTools: IPlugin = function () {
 						case 'DISPATCH':
 							switch (message.payload.type) {
 								case 'RESET':
-									return devTools.init(Store.$state())
+									return devTools.init(Store.getState())
 
 								case 'COMMIT':
 									isLatestState = true
-									return devTools.init(Store.$state())
+									return devTools.init(Store.getState())
 
 								case 'ROLLBACK':
 									isLatestState = true
@@ -58,7 +58,7 @@ const reduxDevTools: IPlugin = function () {
 											payload: parsedState,
 										}
 										Store.dispatch(action)
-										return devTools.init(Store.$state())
+										return devTools.init(Store.getState())
 									} catch (e) {
 										return validate(() => [
 											[true, 'Could not parse the received json'],
@@ -76,7 +76,7 @@ const reduxDevTools: IPlugin = function () {
 											isLatestState = true
 										} else if (isLatestState) {
 											isLatestState = false
-											latestState = Store.$state()
+											latestState = Store.getState()
 										}
 										const action = {
 											type: SET_FROM_DEVTOOLS,

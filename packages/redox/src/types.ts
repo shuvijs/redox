@@ -250,14 +250,9 @@ export interface Model<
 		>
 	views?: V &
 		ThisType<
-			(S extends ObjectState
-				? S & {
-						$state: () => S
-				  }
-				: {
-						$state: () => S
-				  }) &
-				RedoxViews<V> & {
+			S & {
+				$state: () => S
+			} & RedoxViews<V> & {
 					$dep: StateOfStoreCollection<MC> & ViewOfStoreCollection<MC>
 				}
 		>

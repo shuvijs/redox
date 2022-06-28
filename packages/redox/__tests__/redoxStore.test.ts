@@ -91,13 +91,13 @@ describe('redox', () => {
 
 		const store = manager.get(count)
 		store.dependAdd()
-		expect(manager.getSnapshot()).toEqual({
+		expect(manager.getState()).toEqual({
 			count: { value: 0 },
 			depend: { depend: 1 },
 		})
 	})
 
-	it('getSnapshot should return the newest state', () => {
+	it('getState should return the newest state', () => {
 		manager = redox()
 		const count0 = defineModel({
 			name: 'count0',
@@ -120,12 +120,12 @@ describe('redox', () => {
 
 		const store0 = manager.get(count0)
 		const store1 = manager.get(count1)
-		expect(manager.getSnapshot()).toEqual({
+		expect(manager.getState()).toEqual({
 			count0: { value: 0 },
 			count1: { value: 0 },
 		})
 		store0.increment(1)
-		expect(manager.getSnapshot()).toEqual({
+		expect(manager.getState()).toEqual({
 			count0: { value: 1 },
 			count1: { value: 0 },
 		})
