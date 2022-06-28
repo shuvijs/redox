@@ -36,7 +36,7 @@ describe('defineModel/actions', () => {
 		expect(typeof store.add).toBe('function')
 
 		store.add()
-		expect(store.$state()).toEqual({ value: 1 })
+		expect(store.$state).toEqual({ value: 1 })
 	})
 
 	it('should accept params', () => {
@@ -60,10 +60,10 @@ describe('defineModel/actions', () => {
 		const store = manager.get(model)
 
 		store.set(1)
-		expect(store.$state().values).toEqual([1])
+		expect(store.$state.values).toEqual([1])
 
 		store.set(1, 2)
-		expect(store.$state().values).toEqual([1, 2])
+		expect(store.$state.values).toEqual([1, 2])
 	})
 
 	it('should return value', () => {
@@ -103,12 +103,12 @@ describe('defineModel/actions', () => {
 		const store = manager.get(example)
 
 		const action = store.asyncAddOne()
-		expect(store.$state().value).toBe(0)
+		expect(store.$state.value).toBe(0)
 		await action
-		expect(store.$state().value).toBe(1)
+		expect(store.$state.value).toBe(1)
 	})
 
-	describe('this.$state()', () => {
+	describe('this.$state', () => {
 		it('should work', () => {
 			const model = defineModel({
 				name: 'model',
@@ -118,7 +118,7 @@ describe('defineModel/actions', () => {
 				},
 				actions: {
 					add(n: number) {
-						this.set(this.$state().value + n)
+						this.set(this.$state.value + n)
 					},
 				},
 			})
@@ -127,7 +127,7 @@ describe('defineModel/actions', () => {
 
 			store.add(9)
 
-			expect(store.$state().value).toBe(10)
+			expect(store.$state.value).toBe(10)
 		})
 
 		it('should always return the newest state', async () => {
@@ -136,14 +136,16 @@ describe('defineModel/actions', () => {
 				name: 'count',
 				state: { value: 0 },
 				reducers: {
-					add: (s, p: number) => ({ value: s.value + p }),
+					add: (s, p: number) => {
+						return { value: s.value + p }
+					},
 				},
 				actions: {
 					makeCall(_: number): void {
 						this.add(_)
-						state.push(this.$state().value)
+						state.push(this.$state.value)
 						this.add(_)
-						state.push(this.$state().value)
+						state.push(this.$state.value)
 					},
 				},
 			})
@@ -164,7 +166,7 @@ describe('defineModel/actions', () => {
 
 			const store = manager.get(count)
 
-			const state = store.$state()
+			const state = store.$state
 
 			expect(() => (state.value = 1)).toThrow()
 		})
@@ -186,10 +188,10 @@ describe('defineModel/actions', () => {
 			const store = manager.get(count)
 
 			store.set({ a: 2 })
-			expect(store.$state()).toEqual({ a: 2 })
+			expect(store.$state).toEqual({ a: 2 })
 
 			store.set({ b: 2 })
-			expect(store.$state()).toEqual({ b: 2 })
+			expect(store.$state).toEqual({ b: 2 })
 		})
 
 		it('should not accept Symbol and BigInt', () => {
@@ -205,7 +207,7 @@ describe('defineModel/actions', () => {
 			})
 
 			const store = manager.get(anyModal)
-			expect(store.$state()).toEqual({ value: 0 })
+			expect(store.$state).toEqual({ value: 0 })
 
 			expect(() => store.$set(Symbol('foo') as any)).toThrow()
 			expect(() => store.$set(BigInt(1111) as any)).toThrow()
@@ -232,7 +234,7 @@ describe('defineModel/actions', () => {
 				state.value += newValue
 			}
 			store.makeCall(modifier)
-			expect(newValue).toEqual(store.$state().value)
+			expect(newValue).toEqual(store.$state.value)
 		})
 
 		it('should change the Array state', () => {
@@ -248,14 +250,14 @@ describe('defineModel/actions', () => {
 			})
 
 			const store = manager.get(count)
-			const originalArr = store.$state()
+			const originalArr = store.$state
 
 			const newValue: number = 2
 			const modifier = (state: any) => {
 				state.push(newValue)
 			}
 			store.makeCall(modifier)
-			expect([...originalArr, newValue]).toEqual(store.$state())
+			expect([...originalArr, newValue]).toEqual(store.$state)
 		})
 
 		it('should ignore return value', () => {
@@ -277,7 +279,7 @@ describe('defineModel/actions', () => {
 
 			const store = manager.get(count)
 			store.update(1)
-			expect(store.$state().value).toEqual(1)
+			expect(store.$state.value).toEqual(1)
 		})
 
 		it('should do nothing if state is number, string or boolean', () => {
@@ -293,7 +295,7 @@ describe('defineModel/actions', () => {
 			})
 
 			const store = manager.get(count)
-			const originalNumber = store.$state()
+			const originalNumber = store.$state
 
 			const addedValue: number = 2
 			const modifier = (state: any) => {
@@ -301,25 +303,25 @@ describe('defineModel/actions', () => {
 				return state + addedValue
 			}
 			store.makeCall(modifier)
-			expect(originalNumber).toEqual(store.$state())
+			expect(originalNumber).toEqual(store.$state)
 
 			store.$set('test')
-			const originalString = store.$state()
+			const originalString = store.$state
 
 			const stringModifier = (state: any) => {
 				return state + 'modify'
 			}
 			store.makeCall(stringModifier)
-			expect(originalString).toEqual(store.$state())
+			expect(originalString).toEqual(store.$state)
 
 			store.$set(false)
-			const originalBoolean = store.$state()
+			const originalBoolean = store.$state
 
 			const booleanModifier = (state: any) => {
 				return !state
 			}
 			store.makeCall(booleanModifier)
-			expect(originalBoolean).toEqual(store.$state())
+			expect(originalBoolean).toEqual(store.$state)
 		})
 	})
 
@@ -344,6 +346,6 @@ describe('defineModel/actions', () => {
 		const store = manager.get(example)
 
 		store.addOne()
-		expect(store.$state().value).toBe(1)
+		expect(store.$state.value).toBe(1)
 	})
 })

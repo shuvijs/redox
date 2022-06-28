@@ -178,7 +178,6 @@ export class RedoxStore<IModel extends AnyModel> {
 	public name: Readonly<string>
 	public model: Readonly<IModel>
 	public storeApi: Store<IModel>
-	public storeDepends: Record<string, Store<AnyModel>>
 	public $state: () => IModel['state']
 	public $actions = {} as DispatchOfModel<IModel>
 	public $views = {} as RedoxViews<IModel['views']>
@@ -192,7 +191,6 @@ export class RedoxStore<IModel extends AnyModel> {
 		this._cache = cache
 		this.model = model
 		this.name = this.model.name || ''
-		this.storeDepends = {}
 		enhanceReducer(model)
 		const reducer = createModelReducer(model)
 		this.$reducer = reducer
@@ -232,9 +230,7 @@ export class RedoxStore<IModel extends AnyModel> {
 						)} "name" is required and can\'t be empty !`,
 					],
 				])
-				const dependStore = this._cache.get(depend)
 				this._cache.subscribe(depend, this._triggerListener)
-				this.storeDepends[depend.name] = dependStore
 			})
 		}
 	}
@@ -352,10 +348,19 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 	redoxStore: RedoxStore<M>
 ): Store<M> {
 	const store = {} as Store<M>
-	store.$state = redoxStore.$state
 	store.$set = redoxStore.$set
 	store.$modify = redoxStore.$modify
 	Object.assign(store, redoxStore.$actions, redoxStore.$views)
+	Object.defineProperty(store, '$state', {
+		enumerable: true,
+		get() {
+			return redoxStore.$state()
+		},
+		set() {
+			console.warn(`not allow set property '$state'`)
+			return false
+		},
+	})
 	return store
 }
 

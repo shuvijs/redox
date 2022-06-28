@@ -27,7 +27,7 @@ describe('redox', () => {
 		})
 
 		const store = manager.get(model)
-		expect(typeof store.$state).toBe('function')
+		expect(typeof store.$state).toBe('object')
 		expect(typeof store.$modify).toBe('function')
 		expect(typeof store.$set).toBe('function')
 		expect(typeof store.reducerOne).toBe('function')
@@ -56,8 +56,8 @@ describe('redox', () => {
 		})
 		const storeOne = manager.get(modelOne)
 		const storeTwo = manager.get(modelTwo)
-		expect(storeOne.$state().value).toBe('one')
-		expect(storeTwo.$state().value).toBe('two')
+		expect(storeOne.$state.value).toBe('one')
+		expect(storeTwo.$state.value).toBe('two')
 	})
 
 	it('should init dependencies', () => {
@@ -145,12 +145,12 @@ describe('redox', () => {
 
 		const store = manager.get(model)
 		store.increment(1)
-		expect(store.$state().value).toBe(1)
+		expect(store.$state.value).toBe(1)
 
 		manager.destroy()
 		const newStore = manager.get(model)
 		expect(newStore).not.toBe(store)
-		expect(newStore.$state().value).toBe(0)
+		expect(newStore.$state.value).toBe(0)
 	})
 
 	test('subscribes and unsubscribes should work', () => {
@@ -188,12 +188,12 @@ describe('redox', () => {
 		expect(firstCount).toBe(1)
 		firstStore.addOne()
 		expect(firstCount).toBe(2)
-		expect(firstStore.$state()).toStrictEqual({ value: 2 })
-		expect(secondStore.$state()).toStrictEqual({ value: 0 })
+		expect(firstStore.$state).toStrictEqual({ value: 2 })
+		expect(secondStore.$state).toStrictEqual({ value: 0 })
 
 		secondStore.addOne(5)
 		expect(secondCount).toBe(1)
-		expect(secondStore.$state()).toStrictEqual({ value: 5 })
+		expect(secondStore.$state).toStrictEqual({ value: 5 })
 
 		unSubscribeSecond()
 		secondStore.addOne(5)
