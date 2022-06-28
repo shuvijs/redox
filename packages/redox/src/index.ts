@@ -1,6 +1,6 @@
 import {
 	redox,
-	IModelManager,
+	InternalStoreManager,
 	RedoxStore,
 	IPlugin,
 	RedoxOptions,
@@ -12,7 +12,7 @@ export {
 	validate,
 	defineModel,
 	redox,
-	IModelManager,
+	InternalStoreManager,
 	RedoxStore,
 	IPlugin,
 	RedoxOptions,
