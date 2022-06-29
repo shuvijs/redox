@@ -2,13 +2,7 @@ import type { RedoxStore } from '../redoxStore'
 import { createSelector } from './createSelector'
 import { RedoxViews, AnyModel } from '../types'
 import validate, { isObject } from '../validate'
-
-const objectToString = Object.prototype.toString
-
-export function isComplexObject(obj: any): boolean {
-	return objectToString.call(obj) === '[object Object]' || Array.isArray(obj)
-}
-
+import { isComplexObject } from '../utils'
 /**
  * ICompare is tree structure, view is store view arguments and result
  *

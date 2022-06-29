@@ -41,7 +41,7 @@ export interface ReduxDispatch<A extends ReduxAction = AnyAction> {
 
 /** ************************** modal-start *************************** */
 
-type ObjectState = {
+export type ObjectState = {
 	[x: string]: any
 	[y: number]: never
 }
@@ -243,6 +243,7 @@ export interface Model<
 			{
 				$state: S
 				$set: (s: S) => void
+				$patch: (s: ObjectState) => void
 				$modify: (modifier: (s: S) => void) => void
 			} & RedoxViews<V> & {
 					$dep: MiniStoreOfStoreCollection<MC>
@@ -270,6 +271,7 @@ export type Store<IModel extends AnyModel> = {
 	$state: IModel['state']
 	$set: (state: State) => void
 	$modify: (modifier: (state: IModel['state']) => void) => void
+	$patch: (partState: ObjectState) => void
 } & RedoxViews<IModel['views']> &
 	DispatchOfModel<IModel>
 

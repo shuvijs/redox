@@ -14,12 +14,18 @@ import {
 	RedoxViews,
 	AnyModel,
 	AnyAction,
+	ObjectState,
 } from './types'
 import { createReducers } from './reducers'
 import { createActions } from './actions'
 import { createViews } from './views'
 import validate from './validate'
-import { emptyObject, readonlyDeepClone } from './utils'
+import {
+	emptyObject,
+	readonlyDeepClone,
+	isComplexObject,
+	patchObj,
+} from './utils'
 import reduxDevTools from './reduxDevtools'
 
 const randomString = () =>
@@ -29,11 +35,12 @@ const ActionTypes = {
 	INIT: `@@redox/INIT${/* #__PURE__ */ randomString()}`,
 	SET: '@@redox/SET',
 	MODIFY: '@@redox/MODIFY',
+	PATCH: '@@redox/PATCH',
 }
 
 type unSubscribe = () => void
 
-export type InternalStoreManager = {
+type InternalStoreManager = {
 	get<IModel extends AnyModel>(model: IModel): Store<IModel>
 	_getRedox<IModel extends AnyModel>(model: IModel): RedoxStore<IModel>
 	getState(): { [X: string]: State }
@@ -42,9 +49,11 @@ export type InternalStoreManager = {
 	destroy(): void
 }
 
+export type IStoreManager = Omit<InternalStoreManager, '_getRedox'>
+
 export type pluginHook<IModel extends AnyModel = AnyModel> = {
 	onInit?(
-		modelManager: InternalStoreManager,
+		storeManager: IStoreManager,
 		initialState: Record<string, State>
 	): void
 	onModel?(model: IModel): void
@@ -57,7 +66,7 @@ const proxyMethods = [
 	'getState',
 	'dispatch',
 	'subscribe',
-	'$reducer',
+	'onReducer',
 ] as const
 
 type IProxyMethods = typeof proxyMethods[number]
@@ -75,7 +84,7 @@ export type RedoxOptions = {
 	plugins?: [IPlugin, any?][]
 }
 
-export function redox(
+export function internalRedox(
 	{
 		initialState = emptyObject,
 		plugins = [],
@@ -97,9 +106,9 @@ export function redox(
 	}
 
 	const hooks = plugins.map(([plugin, option]) => plugin(option))
-	const modelManager = {
+	const storeManager = {
 		get<IModel extends AnyModel>(model: IModel) {
-			const redoxStore = modelManager._getRedox(model)
+			const redoxStore = storeManager._getRedox(model)
 			return redoxStore.storeApi
 		},
 		_getRedox<IModel extends AnyModel>(model: IModel) {
@@ -111,7 +120,7 @@ export function redox(
 			return initModel(model)
 		},
 		subscribe(model: AnyModel, fn: () => any) {
-			const redoxStore = modelManager._getRedox(model)
+			const redoxStore = storeManager._getRedox(model)
 			return redoxStore.subscribe(fn)
 		},
 		getState() {
@@ -141,12 +150,12 @@ export function redox(
 		const depends = model._depends
 		if (depends) {
 			depends.forEach((depend) => {
-				modelManager._getRedox(depend) // trigger initial
+				storeManager._getRedox(depend) // trigger initial
 			})
 		}
 		const store = new RedoxStore(
 			model,
-			modelManager,
+			storeManager,
 			getInitialState(model.name)
 		)
 		const storeProxy = new Proxy(store, {
@@ -169,8 +178,9 @@ export function redox(
 		cacheMap.set(storeName, store)
 		return store
 	}
-	hooks.map((hook) => hook.onInit?.(modelManager, initState))
-	return modelManager
+	const { _getRedox, ...rest } = storeManager
+	hooks.map((hook) => hook.onInit?.({ ...rest }, initState))
+	return storeManager
 }
 
 export class RedoxStore<IModel extends AnyModel> {
@@ -181,8 +191,8 @@ export class RedoxStore<IModel extends AnyModel> {
 	public $state: () => IModel['state']
 	public $actions = {} as DispatchOfModel<IModel>
 	public $views = {} as RedoxViews<IModel['views']>
-	public $reducer: ReduxReducer<IModel['state']> | null
 
+	private reducer: ReduxReducer<IModel['state']> | null
 	private currentState: IModel['state']
 	private listeners: Set<() => void> = new Set()
 	private isDispatching: boolean
@@ -191,9 +201,7 @@ export class RedoxStore<IModel extends AnyModel> {
 		this._cache = cache
 		this.model = model
 		this.name = this.model.name || ''
-		enhanceReducer(model)
-		const reducer = createModelReducer(model)
-		this.$reducer = reducer
+		this.reducer = createModelReducer(model)
 		this.currentState = initState || model.state
 		this.isDispatching = false
 
@@ -254,10 +262,47 @@ export class RedoxStore<IModel extends AnyModel> {
 		})
 	}
 
+	$patch = (partState: ObjectState) => {
+		return this.dispatch({
+			type: ActionTypes.PATCH,
+			payload: function patch(state: State) {
+				if (process.env.NODE_ENV === 'development') {
+					validate(() => [
+						[
+							!isComplexObject(partState),
+							`$patch argument should be a object, but receive a ${Object.prototype.toString.call(
+								partState
+							)}`,
+						],
+						[
+							Array.isArray(state),
+							`when call $patch, previous state should not be a array, but receive a ${typeof state}`,
+						],
+					])
+				}
+				if (!state) {
+					return partState
+				}
+				patchObj(state as ObjectState, partState)
+				return
+			},
+		})
+	}
+
 	$modify = (modifier: (state: State) => void) => {
 		return this.dispatch({
 			type: ActionTypes.MODIFY,
-			payload: modifier,
+			payload: function modify(state: State) {
+				if (process.env.NODE_ENV === 'development') {
+					validate(() => [
+						[
+							typeof modifier !== 'function',
+							'Expected the param to be a Function',
+						],
+					])
+				}
+				modifier(state)
+			},
 		})
 	}
 
@@ -291,6 +336,11 @@ export class RedoxStore<IModel extends AnyModel> {
 		}
 	}
 
+	onReducer: (fn: (reducer: ReduxReducer) => ReduxReducer | undefined) => void =
+		(fn) => {
+			this.reducer = fn(this.reducer!) || this.reducer
+		}
+
 	dispatch: ReduxDispatch = (action) => {
 		if (process.env.NODE_ENV === 'development') {
 			validate(() => [
@@ -306,7 +356,7 @@ export class RedoxStore<IModel extends AnyModel> {
 
 		try {
 			this.isDispatching = true
-			nextState = this.$reducer!(this.currentState, action)
+			nextState = this.reducer!(this.currentState, action)
 		} finally {
 			this.isDispatching = false
 		}
@@ -329,7 +379,7 @@ export class RedoxStore<IModel extends AnyModel> {
 	destroy = () => {
 		// @ts-ignore
 		this.currentState = null
-		this.$reducer = null
+		this.reducer = null
 		this.listeners.clear()
 		this.model = emptyObject
 		this._cache = emptyObject
@@ -349,6 +399,7 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 ): Store<M> {
 	const store = {} as Store<M>
 	store.$set = redoxStore.$set
+	store.$patch = redoxStore.$patch
 	store.$modify = redoxStore.$modify
 	Object.assign(store, redoxStore.$actions, redoxStore.$views)
 	Object.defineProperty(store, '$state', {
@@ -367,33 +418,9 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 function enhanceModel<IModel extends AnyModel>(
 	redoxStore: RedoxStore<IModel>
 ): void {
-	createReducers(redoxStore)
+	if (redoxStore.model.reducers) createReducers(redoxStore)
 	if (redoxStore.model.actions) createActions(redoxStore)
 	if (redoxStore.model.views) createViews(redoxStore)
-}
-
-function enhanceReducer<
-	N extends string,
-	S extends State,
-	MC extends ModelCollection,
-	R extends Reducers<S>,
-	RA extends RedoxActions,
-	V extends Views
->(model: Model<N, S, MC, R, RA, V>) {
-	model.reducers = {
-		...(model.reducers ? model.reducers : {}),
-		[ActionTypes.MODIFY]: function (state: S, payload: (s: S) => any) {
-			if (process.env.NODE_ENV === 'development') {
-				validate(() => [
-					[
-						typeof payload !== 'function',
-						'Expected the payload to be a Function',
-					],
-				])
-			}
-			payload(state)
-		},
-	} as R
 }
 
 setAutoFreeze(false)
@@ -412,11 +439,22 @@ export function createModelReducer<
 			return action.payload
 		}
 
-		const reducer = model.reducers![action.type]
+		let reducer = model.reducers?.[action.type]
+
+		if (
+			action.type === ActionTypes.MODIFY ||
+			action.type === ActionTypes.PATCH
+		) {
+			reducer = action.payload
+		}
+
 		if (typeof reducer === 'function') {
 			// immer does not support 'undefined' state
 			if (state === undefined) return reducer(state, action.payload) as S
-			return produce(state, (draft: any) => reducer(draft, action.payload) as S)
+			return produce(
+				state,
+				(draft: any) => reducer!(draft, action.payload) as S
+			)
 		}
 
 		return state
