@@ -214,6 +214,95 @@ describe('defineModel/actions', () => {
 		})
 	})
 
+	describe('this.$patch()', () => {
+		it('primitive value should throw error', () => {
+			const count = defineModel({
+				name: 'count',
+				state: 1,
+				actions: {
+					patch(s: any): void {
+						this.$patch(s)
+					},
+				},
+			})
+
+			const store = manager.get(count)
+
+			expect(() => {
+				store.patch(1)
+			}).toThrow()
+		})
+
+		it('should patch the state', () => {
+			type IState = {
+				a: number
+				b: number
+			}
+			const count = defineModel({
+				name: 'count',
+				state: { a: 1 } as IState,
+				actions: {
+					patch(s: Partial<IState>): void {
+						this.$patch(s)
+					},
+				},
+			})
+
+			const store = manager.get(count)
+
+			store.patch({ a: 2 })
+			expect(store.$state).toEqual({ a: 2 })
+
+			store.patch({ b: 2 })
+			expect(store.$state).toEqual({ a: 2, b: 2 })
+		})
+
+		it('should patch deep state', () => {
+			const count = defineModel({
+				name: 'count',
+				state: {
+					a: {
+						b: 'b',
+						c: 'c',
+						d: {
+							f: 'f',
+						},
+					},
+				},
+				actions: {
+					patch(s: any): void {
+						this.$patch(s)
+					},
+				},
+			})
+
+			const store = manager.get(count)
+
+			store.patch({
+				a: {
+					m: 'n',
+					c: 'c1',
+					d: {
+						f: 'f1',
+						o: 'o',
+					},
+				},
+			})
+
+			expect(store.$state).toEqual({
+				a: {
+					b: 'b',
+					c: 'c1',
+					d: {
+						f: 'f1',
+						o: 'o',
+					},
+					m: 'n',
+				},
+			})
+		})
+	})
+
 	describe('this.$modify()', () => {
 		it('should change the Object state', () => {
 			const count = defineModel({

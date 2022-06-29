@@ -1,6 +1,12 @@
-import { DeepReadonly } from './types'
+import { DeepReadonly, ObjectState } from './types'
 
 export const emptyObject = Object.create(null)
+
+const objectToString = Object.prototype.toString
+
+export function isComplexObject(obj: any): boolean {
+	return objectToString.call(obj) === '[object Object]' || Array.isArray(obj)
+}
 
 /**
  * deeply copy object or arrays with nested attributes
@@ -37,4 +43,14 @@ export const readonlyDeepClone = <T extends any>(obj: T): DeepReadonly<T> => {
 	const res = deepClone(obj)
 	deepFreeze(res)
 	return res
+}
+
+export function patchObj(obj: ObjectState, partObj: ObjectState) {
+	Object.keys(partObj as Record<string, any>).forEach(function (key) {
+		if (obj.hasOwnProperty(key) && isComplexObject(partObj[key])) {
+			patchObj(obj[key], partObj[key])
+		} else {
+			;(obj as Record<string, any>)[key] = partObj[key]
+		}
+	})
 }

@@ -1,5 +1,6 @@
 import { IPlugin } from './redoxStore'
 import validate from './validate'
+import { ReduxReducer } from './types'
 
 const SET_FROM_DEVTOOLS = '@@redox/SET_FROM_DEVTOOLS'
 
@@ -12,7 +13,6 @@ const reduxDevTools: IPlugin = function () {
 				typeof window !== 'undefined' &&
 				(window as any).__REDUX_DEVTOOLS_EXTENSION__
 			) {
-				const originReducer = Store.$reducer
 				const devTools = (window as any).__REDUX_DEVTOOLS_EXTENSION__!.connect({
 					name: Store.name || `model_${id++}`,
 				})
@@ -95,22 +95,24 @@ const reduxDevTools: IPlugin = function () {
 				const unsubscribe = devTools.subscribe(fn)
 				unsubscribeSet.add(unsubscribe)
 
-				const $reducer: typeof Store.$reducer = function (state, action) {
-					if (action.type === SET_FROM_DEVTOOLS) {
-						return action.payload
-					}
-					if (!isLatestState) {
-						const newState = originReducer!(latestState, action)
-						latestState = newState
+				Store.onReducer(function devToolsReducer(
+					originReducer: ReduxReducer
+				): ReduxReducer {
+					return function (state, action) {
+						if (action.type === SET_FROM_DEVTOOLS) {
+							return action.payload
+						}
+						if (!isLatestState) {
+							const newState = originReducer(latestState, action)
+							latestState = newState
+							devTools.send(action, newState)
+							return state
+						}
+						const newState = originReducer(state, action)
 						devTools.send(action, newState)
-						return state
+						return newState
 					}
-					const newState = originReducer!(state, action)
-					devTools.send(action, newState)
-					return newState
-				}
-
-				Store.$reducer = $reducer
+				})
 			}
 		},
 		onDestroy() {

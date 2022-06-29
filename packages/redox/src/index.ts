@@ -1,6 +1,6 @@
 import {
-	redox,
-	InternalStoreManager,
+	internalRedox,
+	IStoreManager,
 	RedoxStore,
 	IPlugin,
 	RedoxOptions,
@@ -8,11 +8,18 @@ import {
 import validate from './validate'
 import { defineModel } from './defineModel'
 
+function redox(options?: RedoxOptions): IStoreManager {
+	const { _getRedox, ...rest } = internalRedox(options)
+	return {
+		...rest,
+	}
+}
+
 export {
 	validate,
 	defineModel,
+	IStoreManager,
 	redox,
-	InternalStoreManager,
 	RedoxStore,
 	IPlugin,
 	RedoxOptions,
