@@ -1,8 +1,8 @@
-import { defineModel, redox, expectType, IModelManager, Store, State } from './'
+import { defineModel, redox, expectType, IStoreManager, Store, State } from './'
 
 const manager = redox()
 
-expectType<IModelManager>(manager)
+expectType<IStoreManager>(manager)
 
 const model = defineModel({
 	name: 'model',
@@ -11,6 +11,5 @@ const model = defineModel({
 
 expectType<Store<typeof model>>(manager.get(model))
 expectType<void>(manager.destroy())
-expectType<{ [modelName: string]: State }>(manager.getSnapshot())
+expectType<{ [modelName: string]: State }>(manager.getState())
 expectType<() => void>(manager.subscribe(model, () => {}))
-expectType<State>(manager._getInitialState(model.name!))

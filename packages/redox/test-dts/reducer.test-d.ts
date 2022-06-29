@@ -23,7 +23,7 @@ const model = defineModel({
 
 const store = manager.get(model)
 
-expectType<{ text: string; number: number }>(store.$state())
+expectType<{ text: string; number: number }>(store.$state)
 
 const dispatched = store.testReducer()
 expectType<Action>(dispatched)

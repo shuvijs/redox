@@ -40,13 +40,11 @@ const model = defineModel(
 		},
 		views: {
 			setText() {
-				expectType<{ depModel: { $state: () => depState } & depState }>(
-					this.$dep
-				)
-				expectType<depState>(this.$dep.depModel.$state())
+				expectType<{ depModel: { $state: depState } & depState }>(this.$dep)
+				expectType<depState>(this.$dep.depModel.$state)
 				expectType<number>(this.$dep.depModel.double())
 				expectType<number>(this.$dep.depModel.count)
-				expectType<storeState>(this.$state())
+				expectType<storeState>(this.$state)
 				expectType<string>(this.text)
 				expectType<void>(this.setText())
 			},
@@ -59,6 +57,6 @@ const store = manager.get(model)
 const depStore = manager.get(depModel)
 
 expectType<void>(store.setText())
-expectType<storeState>(store.$state())
+expectType<storeState>(store.$state)
 expectType<number>(depStore.double())
-expectType<depState>(depStore.$state())
+expectType<depState>(depStore.$state)
