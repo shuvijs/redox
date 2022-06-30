@@ -225,26 +225,15 @@ export class RedoxStore<IModel extends AnyModel> {
 
 		enhanceModel(this)
 
-		this.storeApi = getStoreApi(this)
-
 		const depends = this.model._depends
 		// collection beDepends, a depends b, when b update, call a need trigger listener
 		if (depends) {
 			depends.forEach((depend, index) => {
-				validate(() => [
-					[
-						!!this.name && !depend.name,
-						`depends model ${JSON.stringify(
-							depend
-						)} "name" is required and can\'t be empty !`,
-					],
-				])
-				if (!depend.name) {
-					depend.name = `${index}`
-				}
 				this._cache.subscribe(depend, this._triggerListener)
 			})
 		}
+
+		this.storeApi = getStoreApi(this)
 	}
 
 	getState = () => {
