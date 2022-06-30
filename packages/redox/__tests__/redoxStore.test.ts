@@ -97,6 +97,42 @@ describe('redox', () => {
 		})
 	})
 
+	it('should access dependencies by index', () => {
+		manager = redox()
+		const depend = defineModel({
+			state: { depend: 0 },
+			reducers: {
+				increment(state, payload: number) {
+					state.depend = state.depend + payload
+				},
+			},
+		})
+		const count = defineModel(
+			{
+				name: 'count',
+				state: { value: 0 },
+				reducers: {
+					increment(state, payload: number) {
+						state.value = state.value + payload
+					},
+				},
+				actions: {
+					dependAdd() {
+						this.$dep[0].increment(1)
+					},
+				},
+			},
+			[depend]
+		)
+
+		const store = manager.get(count)
+		store.dependAdd()
+		expect(manager.getState()).toEqual({
+			count: { value: 0 },
+			0: { depend: 1 },
+		})
+	})
+
 	it('getState should return the newest state', () => {
 		manager = redox()
 		const count0 = defineModel({

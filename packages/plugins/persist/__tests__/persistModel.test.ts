@@ -24,19 +24,19 @@ describe('persistModel worked:', () => {
 	test('$state worked', async () => {
 		const modelManager = redox({ plugins: [[redoxPersist, config]] })
 		const persistStore = modelManager.get(persistModel)
-		expect(persistStore.$state()).toStrictEqual({
+		expect(persistStore.$state).toStrictEqual({
 			rehydrated: false,
 			version: -1,
 		})
 		const aStore = modelManager.get(a)
 		aStore.add()
 		await delay(100)
-		expect(persistStore.$state()).toStrictEqual({
+		expect(persistStore.$state).toStrictEqual({
 			rehydrated: true,
 			version: -1,
 		})
 		persistStore.$modify((state) => (state.version = 1))
-		expect(persistStore.$state()).toStrictEqual({
+		expect(persistStore.$state).toStrictEqual({
 			rehydrated: true,
 			version: 1,
 		})
@@ -45,7 +45,7 @@ describe('persistModel worked:', () => {
 	test('togglePause worked', async () => {
 		const modelManager = redox({ plugins: [[redoxPersist, config]] })
 		const persistStore = modelManager.get(persistModel)
-		expect(persistStore.$state()).toStrictEqual({
+		expect(persistStore.$state).toStrictEqual({
 			rehydrated: false,
 			version: -1,
 		})
@@ -78,7 +78,7 @@ describe('persistModel worked:', () => {
 	test('flush worked', async () => {
 		const modelManager = redox({ plugins: [[redoxPersist, config]] })
 		const persistStore = modelManager.get(persistModel)
-		expect(persistStore.$state()).toStrictEqual({
+		expect(persistStore.$state).toStrictEqual({
 			rehydrated: false,
 			version: -1,
 		})
@@ -97,7 +97,7 @@ describe('persistModel worked:', () => {
 	test('purge worked', async () => {
 		const modelManager = redox({ plugins: [[redoxPersist, config]] })
 		const persistStore = modelManager.get(persistModel)
-		expect(persistStore.$state()).toStrictEqual({
+		expect(persistStore.$state).toStrictEqual({
 			rehydrated: false,
 			version: -1,
 		})
