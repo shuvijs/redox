@@ -27,13 +27,13 @@ const createContainer = function (options?: RedoxOptions) {
 	function Provider(
 		props: PropsWithChildren<{ storeManager?: IStoreManager }>
 	) {
-		const { children, storeManager: propsstoreManager } = props
+		const { children, storeManager: propsStoreManager } = props
 
 		const memoContext = useMemo(
 			function () {
 				let storeManager: IStoreManager
-				if (propsstoreManager) {
-					storeManager = propsstoreManager
+				if (propsStoreManager) {
+					storeManager = propsStoreManager
 				} else {
 					storeManager = redox(options)
 				}
@@ -44,7 +44,7 @@ const createContainer = function (options?: RedoxOptions) {
 					batchManager,
 				}
 			},
-			[propsstoreManager]
+			[propsStoreManager]
 		)
 
 		const [contextValue, setContextValue] = useState(memoContext) // for hmr keep contextValue
@@ -53,7 +53,7 @@ const createContainer = function (options?: RedoxOptions) {
 			function () {
 				setContextValue(memoContext)
 			},
-			[propsstoreManager]
+			[propsStoreManager]
 		)
 
 		return <Context.Provider value={contextValue}>{children}</Context.Provider>
@@ -71,6 +71,10 @@ const createContainer = function (options?: RedoxOptions) {
 			validate(() => [
 				[!Boolean(model), `useModel param model is necessary`],
 				[!model.name, 'model "name" is required and can\'t be empty !'],
+				[
+					model._depends?.some((model) => !model.name),
+					'depends model, "name" is required and can\'t be empty !',
+				],
 				[typeof model.name !== 'string', 'model "name" must be string !'],
 				[
 					!Boolean(context),
@@ -99,6 +103,10 @@ const createContainer = function (options?: RedoxOptions) {
 			validate(() => [
 				[!Boolean(model), `useModel param model is necessary`],
 				[!model.name, 'model "name" is required and can\'t be empty !'],
+				[
+					model._depends?.some((model) => !model.name),
+					'depends model, "name" is required and can\'t be empty !',
+				],
 				[typeof model.name !== 'string', 'model "name" must be string !'],
 				[
 					!Boolean(context),
