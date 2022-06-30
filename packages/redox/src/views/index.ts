@@ -170,39 +170,39 @@ const getStateCollection = () => {
 
 				// OwnProperty function should be a $state or view
 				if (typeof result === 'function' && target.hasOwnProperty(p)) {
-					if (p === '$state') {
-						const $state = result
-						result = function () {
-							let state = $state()
-							compareTree.set($state, {
-								children: state,
-							})
+					// if (p === '$state') {
+					// 	const $state = result
+					// 	result = function () {
+					// 		let state = $state()
+					// 		compareTree.set($state, {
+					// 			children: state,
+					// 		})
 
-							if (isComplexObject(state)) {
-								state = stateCreateProxyObj(state, getStateCollection)
-							}
+					// 		if (isComplexObject(state)) {
+					// 			state = stateCreateProxyObj(state, getStateCollection)
+					// 		}
 
-							return state
+					// 		return state
+					// 	}
+					// } else {
+					const view = result
+					const previousPos = compareStatePos
+					result = function (...args: any[]) {
+						// call view fn
+						let res = view(...args)
+						// if child views fn call, go on collects current scope used keys
+						isCollectionKeys = true
+						compareStatePos = previousPos
+						const compareView = compareStatePos.view
+						const viewNode = compareView.get(view)
+						if (!viewNode) {
+							compareView.set(view, new Map([[args, res]]))
+						} else {
+							viewNode.set(args, res)
 						}
-					} else {
-						const view = result
-						const previousPos = compareStatePos
-						result = function (...args: any[]) {
-							// call view fn
-							let res = view(...args)
-							// if child views fn call, go on collects current scope used keys
-							isCollectionKeys = true
-							compareStatePos = previousPos
-							const compareView = compareStatePos.view
-							const viewNode = compareView.get(view)
-							if (!viewNode) {
-								compareView.set(view, new Map([[args, res]]))
-							} else {
-								viewNode.set(args, res)
-							}
-							return res
-						}
+						return res
 					}
+					// }
 				}
 			}
 			return result
