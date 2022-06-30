@@ -8,39 +8,43 @@ import React, {
 	useRef,
 } from 'react'
 import { validate, redox } from '@shuvi/redox'
-import type { IModelManager, AnyModel, RedoxOptions } from '@shuvi/redox'
+import type {
+	IStoreManager,
+	AnyModel,
+	RedoxOptions,
+	ISelector,
+} from '@shuvi/redox'
 import { createUseModel } from './createUseModel'
 import { getStateActions } from './getStateActions'
 import { createBatchManager } from './batchManager'
-import { cacheSelector } from './cacheSelector'
-import { IUseModel, IUseStaticModel, ISelector } from './types'
+import { IUseModel, IUseStaticModel } from './types'
 
 const createContainer = function (options?: RedoxOptions) {
 	const Context = createContext<{
-		modelManager: IModelManager
+		storeManager: IStoreManager
 		batchManager: ReturnType<typeof createBatchManager>
 	}>(null as any)
 	function Provider(
-		props: PropsWithChildren<{ modelManager?: IModelManager }>
+		props: PropsWithChildren<{ storeManager?: IStoreManager }>
 	) {
-		const { children, modelManager: propsModelManager } = props
+		const { children, storeManager: propsStoreManager } = props
 
 		const memoContext = useMemo(
 			function () {
-				let modelManager: IModelManager
-				if (propsModelManager) {
-					modelManager = propsModelManager
+				let storeManager: IStoreManager
+				if (propsStoreManager) {
+					storeManager = propsStoreManager
 				} else {
-					modelManager = redox(options)
+					storeManager = redox(options)
 				}
 				const batchManager = createBatchManager()
 
 				return {
-					modelManager,
+					storeManager,
 					batchManager,
 				}
 			},
-			[propsModelManager]
+			[propsStoreManager]
 		)
 
 		const [contextValue, setContextValue] = useState(memoContext) // for hmr keep contextValue
@@ -49,7 +53,7 @@ const createContainer = function (options?: RedoxOptions) {
 			function () {
 				setContextValue(memoContext)
 			},
-			[propsModelManager]
+			[propsStoreManager]
 		)
 
 		return <Context.Provider value={contextValue}>{children}</Context.Provider>
@@ -67,6 +71,10 @@ const createContainer = function (options?: RedoxOptions) {
 			validate(() => [
 				[!Boolean(model), `useModel param model is necessary`],
 				[!model.name, 'model "name" is required and can\'t be empty !'],
+				[
+					model._depends?.some((model) => !model.name),
+					'depends model, "name" is required and can\'t be empty !',
+				],
 				[typeof model.name !== 'string', 'model "name" must be string !'],
 				[
 					!Boolean(context),
@@ -75,11 +83,11 @@ const createContainer = function (options?: RedoxOptions) {
 			])
 		}
 
-		const { modelManager, batchManager } = context
+		const { storeManager, batchManager } = context
 
 		return useMemo(
-			() => createUseModel(modelManager, batchManager),
-			[modelManager, batchManager]
+			() => createUseModel(storeManager, batchManager),
+			[storeManager, batchManager]
 		)(model, selector)
 	}
 
@@ -95,6 +103,10 @@ const createContainer = function (options?: RedoxOptions) {
 			validate(() => [
 				[!Boolean(model), `useModel param model is necessary`],
 				[!model.name, 'model "name" is required and can\'t be empty !'],
+				[
+					model._depends?.some((model) => !model.name),
+					'depends model, "name" is required and can\'t be empty !',
+				],
 				[typeof model.name !== 'string', 'model "name" must be string !'],
 				[
 					!Boolean(context),
@@ -103,20 +115,20 @@ const createContainer = function (options?: RedoxOptions) {
 			])
 		}
 
-		const { modelManager, batchManager } = context
-		const selectorFn = useRef<undefined | ReturnType<typeof cacheSelector>>(
-			undefined
-		)
+		const { storeManager, batchManager } = context
+		const selectorFn = useRef<
+			undefined | ((() => ReturnType<Selector>) & { clearCache: () => void })
+		>(undefined)
 
 		const cacheFn = useMemo(
 			function () {
 				if (!selector) {
 					return undefined
 				}
-				selectorFn.current = cacheSelector(selector)
+				selectorFn.current = storeManager.get(model).$createSelector(selector)
 				return selectorFn.current
 			},
-			[modelManager, batchManager, selector]
+			[storeManager, batchManager, selector]
 		)
 
 		useEffect(
@@ -129,8 +141,8 @@ const createContainer = function (options?: RedoxOptions) {
 		)
 
 		const initialValue = useMemo(() => {
-			return getStateActions(model, modelManager, selectorFn.current)
-		}, [modelManager, batchManager])
+			return getStateActions(model, storeManager, selectorFn.current)
+		}, [storeManager, batchManager])
 
 		const stateRef = useRef<any>(initialValue[0])
 
@@ -140,7 +152,7 @@ const createContainer = function (options?: RedoxOptions) {
 			const fn = () => {
 				const newValue = getStateActions(
 					model,
-					modelManager,
+					storeManager,
 					selectorFn.current
 				)
 				if (stateRef.current !== newValue[0]) {
@@ -148,11 +160,11 @@ const createContainer = function (options?: RedoxOptions) {
 				}
 			}
 
-			const unSubscribe = batchManager.addSubscribe(model, modelManager, fn)
+			const unSubscribe = batchManager.addSubscribe(model, storeManager, fn)
 
 			// useEffect is async, there's maybe some async update state before store subscribe
 			// check state and actions once, need update if it changed
-			const newValue = getStateActions(model, modelManager, selectorFn.current)
+			const newValue = getStateActions(model, storeManager, selectorFn.current)
 			if (
 				stateRef.current !== newValue[0] ||
 				value.current[1] !== newValue[1]
@@ -164,7 +176,7 @@ const createContainer = function (options?: RedoxOptions) {
 			return () => {
 				unSubscribe()
 			}
-		}, [modelManager, batchManager])
+		}, [storeManager, batchManager])
 
 		return value.current
 	}

@@ -24,10 +24,10 @@ describe('defineModel/reducers', () => {
 		const store = manager.get(count)
 
 		store.add()
-		expect(store.$state()).toEqual({ value: 1 })
+		expect(store.$state).toEqual({ value: 1 })
 
 		store.sub()
-		expect(store.$state()).toEqual({ value: 0 })
+		expect(store.$state).toEqual({ value: 0 })
 	})
 
 	it('should return an action', () => {
@@ -45,7 +45,7 @@ describe('defineModel/reducers', () => {
 
 		const dispatched = store.add()
 
-		expect(store.$state()).toEqual({ value: 1 })
+		expect(store.$state).toEqual({ value: 1 })
 		expect(dispatched).toEqual({ type: 'add' })
 	})
 
@@ -65,7 +65,7 @@ describe('defineModel/reducers', () => {
 
 		store.plusOne()
 
-		expect(store.$state()).toEqual({ value: 1 })
+		expect(store.$state).toEqual({ value: 1 })
 	})
 
 	it('should recieve the payload', () => {
@@ -84,17 +84,17 @@ describe('defineModel/reducers', () => {
 		const store = manager.get(count)
 
 		store.set(false)
-		expect(store.$state()).toEqual({ value: false })
+		expect(store.$state).toEqual({ value: false })
 
 		store.set(null)
-		expect(store.$state()).toEqual({ value: null })
+		expect(store.$state).toEqual({ value: null })
 
 		store.set(0)
-		expect(store.$state()).toEqual({ value: 0 })
+		expect(store.$state).toEqual({ value: 0 })
 
 		let obj = { foo: 'bar' }
 		store.set(obj)
-		expect(store.$state().value).toEqual(obj)
+		expect(store.$state.value).toEqual(obj)
 	})
 
 	describe('immer', () => {
@@ -113,7 +113,7 @@ describe('defineModel/reducers', () => {
 
 			store.add()
 
-			expect(store.$state()).toEqual({ value: 1 })
+			expect(store.$state).toEqual({ value: 1 })
 		})
 
 		it('should with a nullable basic literal', () => {
@@ -131,7 +131,7 @@ describe('defineModel/reducers', () => {
 
 			store.set(1)
 
-			expect(store.$state()).toEqual({ value: 1 })
+			expect(store.$state).toEqual({ value: 1 })
 		})
 
 		it('should work with a object', () => {
@@ -161,7 +161,7 @@ describe('defineModel/reducers', () => {
 			const store = manager.get(todoModel)
 
 			store.done()
-			const newState = store.$state()
+			const newState = store.$state
 
 			expect(todo.length).toBe(2)
 			expect(newState.value).toHaveLength(3)
@@ -186,7 +186,7 @@ describe('defineModel/reducers', () => {
 
 			expect(() => store.set(1)).toThrow()
 
-			expect(store.$state()).toEqual({ value: null })
+			expect(store.$state).toEqual({ value: null })
 		})
 	})
 })

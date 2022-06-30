@@ -2,8 +2,8 @@ import * as React from 'react'
 import { redox } from '@shuvi/redox'
 import { LocalProviderA, LocalProviderB, A, B } from './useSharedModels'
 
-const modelManager0 = redox()
-const modelManager1 = redox()
+const storeManager0 = redox()
+const storeManager1 = redox()
 
 function Shared() {
 	let [data, setState] = React.useState(false)
@@ -14,10 +14,10 @@ function Shared() {
 					setState(!data)
 				}}
 			>
-				toggleModelManager {data}
+				togglestoreManager {data}
 			</button>
-			<LocalProviderA modelManager={data ? modelManager0 : modelManager1}>
-				<LocalProviderB modelManager={data ? modelManager0 : modelManager1}>
+			<LocalProviderA storeManager={data ? storeManager0 : storeManager1}>
+				<LocalProviderB storeManager={data ? storeManager0 : storeManager1}>
 					<A></A>
 					<B></B>
 				</LocalProviderB>

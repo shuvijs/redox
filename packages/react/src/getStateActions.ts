@@ -1,5 +1,4 @@
-import type { IModelManager, RedoxStore, AnyModel } from '@shuvi/redox'
-import { ISelector, ISelectorParams } from './types'
+import type { IStoreManager, Store, AnyModel, ISelector } from '@shuvi/redox'
 
 function tuplify<T extends any[]>(...elements: T) {
 	return elements
@@ -8,29 +7,24 @@ function tuplify<T extends any[]>(...elements: T) {
 function getStateOrViews<
 	IModel extends AnyModel,
 	Selector extends ISelector<IModel>
->(redoxStore: RedoxStore<IModel>, selector?: Selector) {
-	const modelState = redoxStore.$state()
+>(store: Store<IModel>, selector?: () => ReturnType<Selector>) {
+	const modelState = store.$state
 	if (!selector) {
 		return modelState
 	}
-	const ModelViews = redoxStore.$views
-	const tempObj = Object.assign(
-		{},
-		{
-			$state: redoxStore.getState,
-		},
-		redoxStore.getState(),
-		ModelViews
-	) as ISelectorParams<IModel>
-	return selector(tempObj)
+	return selector()
 }
 
 function getStateActions<
 	IModel extends AnyModel,
 	Selector extends ISelector<IModel>
->(model: IModel, modelManager: IModelManager, selector?: Selector) {
-	const redoxStore = modelManager._getRedox(model)
-	return tuplify(getStateOrViews(redoxStore, selector), redoxStore.$actions)
+>(
+	model: IModel,
+	storeManager: IStoreManager,
+	selector?: () => ReturnType<Selector>
+) {
+	const store = storeManager.get(model)
+	return tuplify(getStateOrViews(store, selector), store.$actions)
 }
 
 export { getStateActions }

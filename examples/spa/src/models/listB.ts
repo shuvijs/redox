@@ -34,7 +34,7 @@ export const listB = defineModel(
 		},
 		actions: {
 			async addContentAsync(payload: string) {
-				const tempId = this.$state().arr.length
+				const tempId = this.$state.arr.length
 				this.addList({ item: `${payload}-id:${tempId}` })
 			},
 			choose(id: number) {

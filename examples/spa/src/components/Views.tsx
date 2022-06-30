@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { defineModel } from '@shuvi/redox'
-import { useRootModel, ISelectorParams } from '@shuvi/redox-react'
+import { defineModel, ISelectorParams } from '@shuvi/redox'
+import { useRootModel } from '@shuvi/redox-react'
 
 const otherDep = defineModel({
 	name: 'otherDep',

@@ -1,5 +1,4 @@
-import { defineModel } from '@shuvi/redox'
-import { ISelectorParams } from '../../src'
+import { defineModel, ISelectorParams } from '@shuvi/redox'
 
 export const sleep = (time: number) =>
 	new Promise((resolve) => {

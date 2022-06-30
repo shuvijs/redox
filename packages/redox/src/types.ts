@@ -41,7 +41,7 @@ export interface ReduxDispatch<A extends ReduxAction = AnyAction> {
 
 /** ************************** modal-start *************************** */
 
-type ObjectState = {
+export type ObjectState = {
 	[x: string]: any
 	[y: number]: never
 }
@@ -106,7 +106,7 @@ type StateOfStoreCollection<MC extends ModelCollection> = {
 } &
 	{
 		[K in keyof MC]: {
-			$state: () => MC[K]['state']
+			$state: MC[K]['state']
 		}
 	}
 
@@ -190,13 +190,16 @@ type GetModelDeps<T> = T extends Model<any, any, infer MC, any, any, any>
 export type MakeDeps<
 	T extends any[],
 	L extends number = T['length'],
-	Dep extends {} = {}
+	Dep extends {} = {},
+	N extends 1[] = []
 > = L extends 0
 	? Dep
 	: L extends 1
 	? Dep &
 			{
-				[K in GetModelName<T[0]>]: ToDep<T[0]>
+				[K in GetModelName<T[0]> extends `${infer isString}`
+					? `${isString}`
+					: `${N['length']}`]: ToDep<T[0]>
 			} &
 			GetModelDeps<T[0]>
 	: T extends [infer First, ...infer Rest]
@@ -205,9 +208,12 @@ export type MakeDeps<
 			M.Sub<L, 1>,
 			Dep &
 				{
-					[K in GetModelName<First>]: ToDep<First>
+					[K in GetModelName<First> extends `${infer isString}`
+						? `${isString}`
+						: `${N['length']}`]: ToDep<First>
 				} &
-				GetModelDeps<First>
+				GetModelDeps<First>,
+			[...N, 1]
 	  >
 	: never
 
@@ -241,8 +247,9 @@ export interface Model<
 	actions?: RA &
 		ThisType<
 			{
-				$state: () => S
+				$state: S
 				$set: (s: S) => void
+				$patch: (s: ObjectState) => void
 				$modify: (modifier: (s: S) => void) => void
 			} & RedoxViews<V> & {
 					$dep: MiniStoreOfStoreCollection<MC>
@@ -250,14 +257,9 @@ export interface Model<
 		>
 	views?: V &
 		ThisType<
-			(S extends ObjectState
-				? S & {
-						$state: () => S
-				  }
-				: {
-						$state: () => S
-				  }) &
-				RedoxViews<V> & {
+			S & {
+				$state: S
+			} & RedoxViews<V> & {
 					$dep: StateOfStoreCollection<MC> & ViewOfStoreCollection<MC>
 				}
 		>
@@ -271,10 +273,25 @@ export type Depends = AnyModel[]
 
 /** ************************** store-start *************************** */
 
+export type ISelectorParams<IModel extends AnyModel> = {
+	$state: IModel['state']
+} & IModel['state'] &
+	RedoxViews<IModel['views']> &
+	noExist
+
+export type ISelector<IModel extends AnyModel, TReturn = any> = (
+	stateAndViews: ISelectorParams<IModel>
+) => TReturn
+
 export type Store<IModel extends AnyModel> = {
-	$state: () => IModel['state']
+	$state: IModel['state']
 	$set: (state: State) => void
 	$modify: (modifier: (state: IModel['state']) => void) => void
+	$patch: (partState: ObjectState) => void
+	$actions: DispatchOfModel<IModel>
+	$createSelector: <TReturn>(
+		selector: ISelector<IModel, TReturn>
+	) => (() => TReturn) & { clearCache: () => void }
 } & RedoxViews<IModel['views']> &
 	DispatchOfModel<IModel>
 

@@ -1,12 +1,10 @@
 import * as React from 'react'
-import { defineModel } from '@shuvi/redox'
+import { defineModel, Action } from '@shuvi/redox'
 import { createContainer, useRootStaticModel } from '../src'
 
 import { IUseModel, IUseStaticModel } from '../src/types'
 
 import { expectType } from './'
-
-import { Action } from '../../redox/dist'
 
 function Test() {
 	const {

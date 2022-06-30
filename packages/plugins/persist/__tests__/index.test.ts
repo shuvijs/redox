@@ -88,7 +88,7 @@ describe('persist plugin worked:', () => {
 		})
 		const aStore = modelManager.get(a)
 		await delay(100)
-		expect(aStore.$state()).toStrictEqual({ a: 1 })
+		expect(aStore.$state).toStrictEqual({ a: 1 })
 	})
 
 	test('version worked', async () => {

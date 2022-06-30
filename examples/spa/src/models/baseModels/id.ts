@@ -1,5 +1,4 @@
 import { defineModel } from '@shuvi/redox'
-import { delay } from '../utils'
 
 export const id = defineModel({
 	name: 'id',

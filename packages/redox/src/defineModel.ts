@@ -32,5 +32,12 @@ export const defineModel = <
 	}
 	const finalModel = modelOptions as Model<N, S, MC, R, E, V>
 	finalModel._depends = depends
+	if (finalModel._depends) {
+		finalModel._depends.forEach((depend, index) => {
+			if (!depend.name) {
+				depend.name = `${index}`
+			}
+		})
+	}
 	return finalModel
 }

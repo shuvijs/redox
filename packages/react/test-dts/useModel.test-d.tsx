@@ -1,7 +1,5 @@
-import { defineModel } from '@shuvi/redox'
-import { expectType, ISelectorParams, useModel, useRootModel } from './'
-
-import { Action } from '../../redox/dist'
+import { defineModel, ISelectorParams, Action } from '@shuvi/redox'
+import { expectType, useModel, useRootModel } from './'
 
 type customType = 'custom' | 'custom0'
 
@@ -56,7 +54,7 @@ const countSelector = function (stateAndViews: countSelectorParameters) {
 }
 
 const count$State = function (stateAndViews: countSelectorParameters) {
-	return stateAndViews.$state()
+	return stateAndViews.$state
 }
 
 function Test() {

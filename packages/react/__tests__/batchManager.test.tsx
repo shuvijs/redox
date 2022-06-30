@@ -11,12 +11,12 @@ import { createBatchManager } from '../src/batchManager'
 import { countModel } from './models'
 
 let container: HTMLDivElement
-let modelManager: ReturnType<typeof redox>
+let storeManager: ReturnType<typeof redox>
 let batchManager: ReturnType<typeof createBatchManager>
 
 beforeEach(() => {
 	jest.useFakeTimers()
-	modelManager = redox()
+	storeManager = redox()
 	batchManager = createBatchManager()
 	container = document.createElement('div')
 	document.body.appendChild(container)
@@ -33,7 +33,7 @@ describe('batchedUpdates', () => {
 			const [index, setIndex] = useState(0)
 
 			useEffect(() => {
-				batchManager.addSubscribe(countModel, modelManager, function () {
+				batchManager.addSubscribe(countModel, storeManager, function () {
 					setIndex(1)
 				})
 			})
@@ -50,7 +50,7 @@ describe('batchedUpdates', () => {
 
 		expect(container.querySelector('#value')?.innerHTML).toEqual('0')
 		act(() => {
-			modelManager.get(countModel).add()
+			storeManager.get(countModel).add()
 		})
 		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
 	})
@@ -63,7 +63,7 @@ describe('batchedUpdates', () => {
 			useEffect(() => {
 				unsubscribe = batchManager.addSubscribe(
 					countModel,
-					modelManager,
+					storeManager,
 					function () {
 						setIndex(1)
 					}
@@ -83,7 +83,7 @@ describe('batchedUpdates', () => {
 		expect(container.querySelector('#value')?.innerHTML).toEqual('0')
 		act(() => {
 			unsubscribe()
-			modelManager.get(countModel).add()
+			storeManager.get(countModel).add()
 		})
 		expect(container.querySelector('#value')?.innerHTML).toEqual('0')
 	})
@@ -96,10 +96,10 @@ describe('batchedUpdates', () => {
 			const [index1, setIndex1] = useState(0)
 
 			useEffect(() => {
-				batchManager.addSubscribe(countModel, modelManager, function () {
+				batchManager.addSubscribe(countModel, storeManager, function () {
 					setIndex(1)
 				})
-				batchManager.addSubscribe(countModel, modelManager, function () {
+				batchManager.addSubscribe(countModel, storeManager, function () {
 					setIndex1(1)
 				})
 			})
@@ -119,7 +119,7 @@ describe('batchedUpdates', () => {
 		expect(container.querySelector('#value')?.innerHTML).toEqual('0')
 		expect(container.querySelector('#value1')?.innerHTML).toEqual('0')
 		act(() => {
-			modelManager.get(countModel).add()
+			storeManager.get(countModel).add()
 		})
 		expect(renderCount).toBe(2)
 		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
