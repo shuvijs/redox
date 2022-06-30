@@ -236,8 +236,8 @@ describe('createContainer', () => {
 		expect(container.querySelector('#stateA2')?.innerHTML).toEqual('1')
 	})
 
-	test('different containers share same modelManager should has same state', () => {
-		const modelManager = redox()
+	test('different containers share same storeManager should has same state', () => {
+		const storeManager = redox()
 		const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
 			createContainer()
 		const { Provider: LocalProviderB, useSharedModel: useSharedModelB } =
@@ -285,8 +285,8 @@ describe('createContainer', () => {
 
 		act(() => {
 			ReactDOM.createRoot(container).render(
-				<LocalProviderA modelManager={modelManager}>
-					<LocalProviderB modelManager={modelManager}>
+				<LocalProviderA storeManager={storeManager}>
+					<LocalProviderB storeManager={storeManager}>
 						<A></A>
 						<B></B>
 					</LocalProviderB>
@@ -309,7 +309,7 @@ describe('createContainer', () => {
 		expect(container.querySelector('#stateCB')?.innerHTML).toEqual('2')
 	})
 
-	test('modelManager can exist independently wether the component is unmount', () => {
+	test('storeManager can exist independently wether the component is unmount', () => {
 		const { Provider: LocalProvider, useSharedModel } = createContainer()
 
 		const SubApp = () => {
@@ -325,7 +325,7 @@ describe('createContainer', () => {
 			)
 		}
 
-		const modelManager = redox()
+		const storeManager = redox()
 
 		const App = () => {
 			const [toggle, setToggle] = React.useState(true)
@@ -335,7 +335,7 @@ describe('createContainer', () => {
 						add
 					</button>
 					{toggle ? (
-						<LocalProvider modelManager={modelManager}>
+						<LocalProvider storeManager={storeManager}>
 							<SubApp />
 						</LocalProvider>
 					) : null}
@@ -359,10 +359,10 @@ describe('createContainer', () => {
 				.querySelector('#toggle')
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
-		modelManager.get(countModel).add(1)
+		storeManager.get(countModel).add(1)
 	})
 
-	test('container state should sync with modelManager', () => {
+	test('container state should sync with storeManager', () => {
 		const { Provider: LocalProvider, useSharedModel } = createContainer()
 
 		const SubApp = () => {
@@ -378,8 +378,8 @@ describe('createContainer', () => {
 			)
 		}
 
-		const modelManager0 = redox()
-		const modelManager1 = redox()
+		const storeManager0 = redox()
+		const storeManager1 = redox()
 
 		const App = () => {
 			const [toggle, setToggle] = React.useState(true)
@@ -388,7 +388,7 @@ describe('createContainer', () => {
 					<button id="toggle" type="button" onClick={() => setToggle(!toggle)}>
 						toggle
 					</button>
-					<LocalProvider modelManager={toggle ? modelManager0 : modelManager1}>
+					<LocalProvider storeManager={toggle ? storeManager0 : storeManager1}>
 						<SubApp />
 					</LocalProvider>
 				</>
@@ -422,7 +422,7 @@ describe('createContainer', () => {
 })
 
 describe('createContainer/RedoxRoot', () => {
-	test('RedoxRoot should worked without props modelManager', () => {
+	test('RedoxRoot should worked without props storeManager', () => {
 		const App = () => {
 			const [state, actions] = useRootModel(countModel)
 			return (
@@ -452,7 +452,7 @@ describe('createContainer/RedoxRoot', () => {
 		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
 	})
 
-	test('RedoxRoot props modelManager could overwrite default modelManager', () => {
+	test('RedoxRoot props storeManager could overwrite default storeManager', () => {
 		const App = () => {
 			const [state] = useRootModel(countModel)
 			return (
@@ -462,7 +462,7 @@ describe('createContainer/RedoxRoot', () => {
 			)
 		}
 
-		const modelManager = redox({
+		const storeManager = redox({
 			initialState: {
 				countModel: {
 					value: 2,
@@ -472,7 +472,7 @@ describe('createContainer/RedoxRoot', () => {
 
 		act(() => {
 			ReactDOM.createRoot(container).render(
-				<RedoxRoot modelManager={modelManager}>
+				<RedoxRoot storeManager={storeManager}>
 					<App />
 				</RedoxRoot>
 			)

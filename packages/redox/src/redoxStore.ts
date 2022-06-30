@@ -15,10 +15,12 @@ import {
 	AnyModel,
 	AnyAction,
 	ObjectState,
+	ISelector,
 } from './types'
 import { createReducers } from './reducers'
 import { createActions } from './actions'
 import { createViews } from './views'
+import { cacheSelector } from './cacheSelector'
 import validate from './validate'
 import {
 	emptyObject,
@@ -306,6 +308,23 @@ export class RedoxStore<IModel extends AnyModel> {
 		})
 	}
 
+	$createView = <TReturn>(selector: ISelector<IModel, TReturn>) => {
+		const cacheSelectorFn = cacheSelector(selector)
+		const res = () => {
+			const stateAnViews = {}
+			Object.assign(stateAnViews, this.getState(), this.$views)
+			Object.defineProperty(stateAnViews, '$state', {
+				enumerable: true,
+				get: () => {
+					return this.getState()
+				},
+			})
+			return cacheSelectorFn(stateAnViews) as TReturn
+		}
+		res.clearCache = cacheSelectorFn.clearCache
+		return res
+	}
+
 	subscribe = (listener: () => void) => {
 		if (process.env.NODE_ENV === 'development') {
 			validate(() => [
@@ -401,6 +420,8 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 	store.$set = redoxStore.$set
 	store.$patch = redoxStore.$patch
 	store.$modify = redoxStore.$modify
+	store.$actions = redoxStore.$actions
+	store.$createView = redoxStore.$createView
 	Object.assign(store, redoxStore.$actions, redoxStore.$views)
 	Object.defineProperty(store, '$state', {
 		enumerable: true,

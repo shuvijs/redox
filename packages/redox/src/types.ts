@@ -267,11 +267,25 @@ export type Depends = AnyModel[]
 
 /** ************************** store-start *************************** */
 
+export type ISelectorParams<IModel extends AnyModel> = {
+	$state: IModel['state']
+} & IModel['state'] &
+	RedoxViews<IModel['views']> &
+	noExist
+
+export type ISelector<IModel extends AnyModel, TReturn = any> = (
+	stateAndViews: ISelectorParams<IModel>
+) => TReturn
+
 export type Store<IModel extends AnyModel> = {
 	$state: IModel['state']
 	$set: (state: State) => void
 	$modify: (modifier: (state: IModel['state']) => void) => void
 	$patch: (partState: ObjectState) => void
+	$actions: DispatchOfModel<IModel>
+	$createView: <TReturn>(
+		selector: ISelector<IModel, TReturn>
+	) => (() => TReturn) & { clearCache: () => void }
 } & RedoxViews<IModel['views']> &
 	DispatchOfModel<IModel>
 

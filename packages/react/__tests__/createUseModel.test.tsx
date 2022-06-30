@@ -6,28 +6,34 @@ import React, { useMemo } from 'react'
 import ReactDOM from 'react-dom/client'
 // @ts-ignore
 import { act } from 'react-dom/test-utils'
-import { defineModel, redox, AnyModel } from '@shuvi/redox'
+import {
+	defineModel,
+	redox,
+	AnyModel,
+	ISelector,
+	ISelectorParams,
+} from '@shuvi/redox'
 import { createBatchManager } from '../src/batchManager'
-import { IUseModel, ISelector, ISelectorParams } from '../src/types'
+import { IUseModel } from '../src/types'
 import { createUseModel } from '../src/createUseModel'
 import { countModel } from './models'
 
-let modelManager: ReturnType<typeof redox>
+let storeManager: ReturnType<typeof redox>
 let batchManager: ReturnType<typeof createBatchManager>
 let useTestModel: IUseModel
 let container: HTMLDivElement
 
 beforeEach(() => {
 	jest.useFakeTimers()
-	modelManager = redox()
+	storeManager = redox()
 	batchManager = createBatchManager()
 	useTestModel = <IModel extends AnyModel, Selector extends ISelector<IModel>>(
 		model: IModel,
 		selector?: Selector
 	) => {
 		return useMemo(
-			() => createUseModel(modelManager, batchManager),
-			[modelManager, batchManager]
+			() => createUseModel(storeManager, batchManager),
+			[storeManager, batchManager]
 		)(model, selector)
 	}
 	container = document.createElement('div')
@@ -152,7 +158,7 @@ describe('createUseModel', () => {
 					actions: {
 						async asyncAdd() {
 							await this.$dep.countModel.asyncAdd(1)
-							this.add(this.$dep.countModel.$state().value)
+							this.add(this.$dep.countModel.$state.value)
 						},
 					},
 					views: {
@@ -479,7 +485,7 @@ describe('createUseModel', () => {
 		expect(AppRenderCount).toBe(1)
 
 		act(() => {
-			const countStore = modelManager.get(countModel)
+			const countStore = storeManager.get(countModel)
 			countStore.add()
 		})
 

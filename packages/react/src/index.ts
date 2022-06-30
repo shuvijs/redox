@@ -12,5 +12,3 @@ export {
 	useRootModel,
 	useRootStaticModel,
 }
-
-export { ISelectorParams } from './types'
