@@ -21,7 +21,7 @@ export const createUseModel =
 				if (!selector) {
 					return undefined
 				}
-				selectorFn.current = storeManager.get(model).$createView(selector)
+				selectorFn.current = storeManager.get(model).$createSelector(selector)
 				return selectorFn.current
 			},
 			[storeManager, batchManager, selector]

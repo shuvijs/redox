@@ -117,7 +117,7 @@ const createContainer = function (options?: RedoxOptions) {
 				if (!selector) {
 					return undefined
 				}
-				selectorFn.current = storeManager.get(model).$createView(selector)
+				selectorFn.current = storeManager.get(model).$createSelector(selector)
 				return selectorFn.current
 			},
 			[storeManager, batchManager, selector]
