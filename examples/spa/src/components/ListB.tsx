@@ -1,5 +1,6 @@
 import * as React from 'react'
-import { useModel, ISelectorParams } from '@shuvi/redox-react'
+import { ISelectorParams } from '@shuvi/redox'
+import { useModel } from '@shuvi/redox-react'
 
 import { listB } from '../models/listB'
 export type selectorParameters = ISelectorParams<typeof listB>

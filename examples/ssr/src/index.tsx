@@ -3,14 +3,14 @@ import { hydrateRoot } from 'react-dom/client'
 import App from './App'
 import { redox } from '@shuvi/redox'
 
-let modelManager
+let storeManager
 
 if (window.clientEnv) {
-	modelManager = redox({
+	storeManager = redox({
 		initialState: window.clientEnv,
 	})
 } else {
-	modelManager = redox()
+	storeManager = redox()
 }
 
 const container = document.getElementById('root')
@@ -18,6 +18,6 @@ const container = document.getElementById('root')
 hydrateRoot(
 	container!,
 	<React.StrictMode>
-		<App modelManager={modelManager}></App>
+		<App storeManager={storeManager}></App>
 	</React.StrictMode>
 )

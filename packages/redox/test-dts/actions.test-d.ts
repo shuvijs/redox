@@ -13,8 +13,9 @@ const model = defineModel({
 	},
 	actions: {
 		accessibleThisValue() {
-			expectType<State>(this.$state())
+			expectType<State>(this.$state)
 			expectType<void>(this.$set({ count: 0 }))
+			expectType<void>(this.$patch({ count: 0 }))
 			expectType<void>(this.$modify((_) => {}))
 			expectType<number>(this.getValue())
 			expectType<Promise<void>>(this.asyncAdd(1))
@@ -26,7 +27,7 @@ const model = defineModel({
 		},
 		getValue(): number {
 			this.otherAction()
-			return this.$state().count
+			return this.$state.count
 		},
 		triggerReducer() {
 			this.add(1)
@@ -68,4 +69,4 @@ store.$set(BigInt(1))
 //@ts-expect-error
 store.$set(Symbol(1))
 
-expectType<State>(store.$state())
+expectType<State>(store.$state)

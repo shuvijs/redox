@@ -1,4 +1,3 @@
-// @ts-nocheck
 import * as React from 'react'
 import { LocalProviderA, LocalProviderB, A, B } from './useSharedModels'
 

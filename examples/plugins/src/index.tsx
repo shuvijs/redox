@@ -6,7 +6,7 @@ import redoxLog from '@shuvi/redox-log'
 import persist, { createWebStorage } from '@shuvi/redox-persist'
 import { RedoxRoot } from '@shuvi/redox-react'
 
-const modelManager = redox({
+const storeManager = redox({
 	initialState: {},
 	plugins: [
 		[redoxLog],
@@ -32,7 +32,7 @@ const modelManager = redox({
 })
 
 ReactDOM.render(
-	<RedoxRoot modelManager={modelManager}>
+	<RedoxRoot storeManager={storeManager}>
 		<App></App>
 	</RedoxRoot>,
 	document.getElementById('root')
