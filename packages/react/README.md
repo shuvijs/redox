@@ -56,6 +56,26 @@ function App() {
     )
 }
 ```
+``` ts
+const user = defineModel(
+	{
+		name: 'user',
+		state: {
+            // state of the store
+        },
+		reducers: {
+            // some reducers
+		},
+        actions: {
+            // some actions
+        },
+		views: {
+			// some views function
+		},
+	},
+	[] // some dependencies
+)
+```
 Subscribe to the redox store and get actions from hooks
 ```tsx title="src/App.tsx"
 import * as React from 'react';
@@ -186,21 +206,19 @@ const [state, actions] = useRootStaticModel(model: IModel, selector?: ISelector)
 
 ### createContainer()
 It returns a independent scope `Provider, useSharedModel, useStaticModel` for context and methods to consume models.
-```ts
+```ts title="shared"
 import { createContainer } from '@shuvi/redox-react';
-const { Provider, useSharedModel, useStaticModel } = createContainer();
+export const { Provider, useSharedModel, useStaticModel } = createContainer();
 ```
 #### Provider
 In the same `Provider` context, the state is shared across the store
 #### useSharedModel()
 ```tsx
-import { useSharedModel } from '@shuvi/redox-react';
 const [state, actions] = useSharedModel(model: IModel, selector?: ISelector);
 ```
 Share the context across components
 #### useStaticModel()
 ```tsx
-import { useStaticModel } from '@shuvi/redox-react';
 const [state, actions] = useStaticModel(model: IModel, selector?: ISelector);
 ```
 `useStaticModel` is similar to `useSharedModel`, the different is that, `useStaticModel` will not rerender on state changed.
