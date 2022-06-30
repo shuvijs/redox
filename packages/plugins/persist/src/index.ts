@@ -1,9 +1,11 @@
-import { IPlugin, redox, Store, AnyModel } from '@shuvi/redox'
+import { IPlugin, redox, Store, AnyModel, ReduxReducer } from '@shuvi/redox'
 import createPersist from './createPersist'
 import getStoredState from './getStoredState'
 import { createWebStorage } from './storage'
 import { persistModel } from './persistModel'
 import { IStorageState, PersistOptions } from './types'
+
+const ACTIONTYPE = '_PERSISTSET'
 
 type StoreProxy = Parameters<
 	ReturnType<typeof redoxPersist>['onStoreCreated'] & Function
@@ -14,8 +16,11 @@ type StoreProxy = Parameters<
 	: undefined
 
 function _rehydrated(storageState: IStorageState, Store: StoreProxy) {
-	if (storageState && Store.model.name && storageState[Store.model.name]) {
-		Store.$set(storageState[Store.model.name])
+	if (storageState && Store.name && storageState[Store.name]) {
+		Store.dispatch({
+			type: ACTIONTYPE,
+			payload: storageState[Store.name],
+		})
 	}
 }
 
@@ -41,7 +46,7 @@ const redoxPersist: IPlugin<AnyModel, PersistOptions> = function (options) {
 				togglePause() {
 					_isPause = !_isPause
 					if (!_isPause && _isInit) {
-						persist.update(_modelManager.getSnapshot())
+						persist.update(_modelManager.getState())
 					}
 				},
 			})
@@ -52,7 +57,7 @@ const redoxPersist: IPlugin<AnyModel, PersistOptions> = function (options) {
 			getStoredState(options)
 				.then((state) => {
 					return Promise.resolve(
-						options.migrate?.(state, persistStore.$state().version) || state
+						options.migrate?.(state, persistStore.$state.version) || state
 					)
 						.then((migrateState) => {
 							_storageState = migrateState
@@ -72,6 +77,16 @@ const redoxPersist: IPlugin<AnyModel, PersistOptions> = function (options) {
 				})
 		},
 		onStoreCreated(Store) {
+			Store.onReducer(function persistReducer(
+				originReducer: ReduxReducer
+			): ReduxReducer {
+				return function (state, action) {
+					if (action.type === ACTIONTYPE) {
+						return action.payload
+					}
+					return originReducer(state, action)
+				}
+			})
 			if (_isInit) {
 				_rehydrated(_storageState, Store)
 			} else {
@@ -79,7 +94,7 @@ const redoxPersist: IPlugin<AnyModel, PersistOptions> = function (options) {
 			}
 			const unSubscribe = Store.subscribe(function () {
 				if (!_isPause && _isInit) {
-					persist.update(_modelManager.getSnapshot())
+					persist.update(_modelManager.getState())
 				}
 			})
 			unSubscribes.add(unSubscribe)

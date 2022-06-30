@@ -7,7 +7,7 @@ const redoxLog: IPlugin = function () {
 			Store.dispatch = function (action) {
 				console.log('action: ', action)
 				const res = StoreDispatch(action)
-				console.log('$state :', Store.$state())
+				console.log('$state :', Store.getState())
 				return res
 			}
 		},
