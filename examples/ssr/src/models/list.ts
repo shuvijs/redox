@@ -35,8 +35,8 @@ export const list = defineModel(
 		actions: {
 			async addContentAsync(payload: string) {
 				const id = this.$dep.id
-				await id.incrementAsync(id.$state().id + 1)
-				const tempId = id.$state().id
+				await id.incrementAsync(id.$state.id + 1)
+				const tempId = id.$state.id
 				this.addList({ content: `${payload}-id:${tempId}` })
 			},
 		},

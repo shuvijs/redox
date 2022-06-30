@@ -37,17 +37,17 @@ router.use(
 		response: express.Response,
 		next: express.NextFunction
 	) => {
-		const modelManager = redox()
-		await modelManager.get(count).incrementAsync()
-		await modelManager.get(test).setString(Math.random().toString())
+		const storeManager = redox()
+		await storeManager.get(count).incrementAsync()
+		await storeManager.get(test).setString(Math.random().toString())
 		const template = readFileSync('build/index.html')
 			.toString()
 			.replace(/%BASE_HREF%/g, process.env.BASE_HREF || '')
-			.replace(/%CLIENT_ENV%/g, JSON.stringify(modelManager.getSnapshot()))
+			.replace(/%CLIENT_ENV%/g, JSON.stringify(storeManager.getState()))
 
 		const [head, tail] = template.split('%ROOT%')
 		let didError = false
-		const stream = renderToPipeableStream(<App modelManager={modelManager} />, {
+		const stream = renderToPipeableStream(<App storeManager={storeManager} />, {
 			onShellReady() {
 				// The content above all Suspense boundaries is ready.
 				// If something errored before we started streaming, we set the error code appropriately.
