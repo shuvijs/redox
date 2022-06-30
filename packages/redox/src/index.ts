@@ -1,7 +1,6 @@
 import {
 	internalRedox,
 	IStoreManager,
-	RedoxStore,
 	IPlugin,
 	RedoxOptions,
 } from './redoxStore'
@@ -15,14 +14,6 @@ function redox(options?: RedoxOptions): IStoreManager {
 	}
 }
 
-export {
-	validate,
-	defineModel,
-	IStoreManager,
-	redox,
-	RedoxStore,
-	IPlugin,
-	RedoxOptions,
-}
+export { validate, defineModel, IStoreManager, redox, IPlugin, RedoxOptions }
 
 export * from './types'

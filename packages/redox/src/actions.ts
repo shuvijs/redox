@@ -1,4 +1,4 @@
-import { AnyModel } from './types'
+import { AnyModel, Store } from './types'
 import type { RedoxStore } from './redoxStore'
 
 export const createActions = <IModel extends AnyModel>(
@@ -17,11 +17,25 @@ export const createActions = <IModel extends AnyModel>(
 			if (depends) {
 				depends.forEach((depend) => {
 					const dependApi = redoxStore._cache.get(depend)
-					dependsStoreApi[depend.name] = dependApi
+					const dependStore = redoxStore._cache._getRedox(depend)
+					const { $createView, $actions, ...dependApiRest } = dependApi
+					const res = {
+						...(dependApiRest as Omit<
+							Store<Readonly<IModel>>,
+							'$createView' | '$actions'
+						>),
+					}
+					Object.defineProperty(res, '$state', {
+						get() {
+							return dependStore.$state()
+						},
+					})
+					dependsStoreApi[depend.name] = res
 				})
 			}
+			const { $createView, $actions, ...storeApiRest } = storeApi
 			const thisPoint = {
-				...storeApi,
+				...storeApiRest,
 				$dep: dependsStoreApi,
 			}
 			Object.defineProperty(thisPoint, '$state', {

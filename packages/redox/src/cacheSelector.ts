@@ -5,10 +5,10 @@ import {
 	ICompare,
 	isProxy,
 	getTarget,
-	isComplexObject,
-} from '@shuvi/redox/views'
-import { createSelector } from '@shuvi/redox/createSelector'
-import { validate } from '@shuvi/redox'
+} from './views'
+import { isComplexObject } from './utils'
+import { createSelector } from './views/createSelector'
+import validate from './validate'
 
 const stateCreateProxyObj = createProxyObjFactory()
 

@@ -1,5 +1,5 @@
 import { unstable_batchedUpdates } from 'react-dom'
-import type { AnyModel, IModelManager } from '@shuvi/redox'
+import type { AnyModel, IStoreManager } from '@shuvi/redox'
 
 const createBatchManager = () => {
 	// Models are in using now
@@ -9,7 +9,7 @@ const createBatchManager = () => {
 	// add models to listen
 	const addSubscribe = function (
 		model: AnyModel,
-		modelManager: IModelManager,
+		modelManager: IStoreManager,
 		fn: () => void
 	) {
 		let modelsFnSet = modelBindRender.get(model)

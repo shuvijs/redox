@@ -4,23 +4,6 @@
   "description": "A Redux Framework",
   "homepage": "https://shuvijs.github.io/shuvijs.org",
   "sideEffects": false,
-  "exports": {
-    ".": {
-      "types": "./esm/index.d.ts",
-      "import": "./esm/index.js",
-      "require": "./lib/index.js"
-    },
-    "./views": {
-      "types": "./esm/views/index.d.ts",
-      "import": "./esm/views/index.js",
-      "require": "./lib/views/index.js"
-    },
-    "./createSelector": {
-      "types": "./esm/views/createSelector.d.ts",
-      "import": "./esm/views/createSelector.js",
-      "require": "./lib/views/createSelector.js"
-    }
-  },
   "main": "lib/index.js",
   "module": "esm/index.js",
   "browser": "esm/index.js",
