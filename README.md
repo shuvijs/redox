@@ -46,7 +46,7 @@ const count = defineModel({
     name: 'count',
     state: { value: 0 },
     reducers: {
-        add: (state, payload: number) => {
+        increment: (state, payload: number) => {
             return {
                 value: state.value + payload,
             }
@@ -54,7 +54,7 @@ const count = defineModel({
     },
     actions: {
       // some actions
-      async addAsync(payload: number, _state) {
+      async addAsync(payload: number) {
         // asynchonus action
         await delay(payload)
         // generated action for the reducer
