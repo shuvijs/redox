@@ -1,10 +1,4 @@
-import type {
-	IStoreManager,
-	Store,
-	AnyModel,
-	ISelector,
-	ISelectorParams,
-} from '@shuvi/redox'
+import type { IStoreManager, Store, AnyModel, ISelector } from '@shuvi/redox'
 
 function tuplify<T extends any[]>(...elements: T) {
 	return elements

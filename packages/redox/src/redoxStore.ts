@@ -19,8 +19,7 @@ import {
 } from './types'
 import { createReducers } from './reducers'
 import { createActions } from './actions'
-import { createViews } from './views'
-import { cacheSelector } from './cacheSelector'
+import { createViews, createSelector } from './views'
 import validate from './validate'
 import {
 	emptyObject,
@@ -308,8 +307,8 @@ export class RedoxStore<IModel extends AnyModel> {
 		})
 	}
 
-	$createView = <TReturn>(selector: ISelector<IModel, TReturn>) => {
-		const cacheSelectorFn = cacheSelector(selector)
+	$createSelector = <TReturn>(selector: ISelector<IModel, TReturn>) => {
+		const cacheSelectorFn = createSelector(selector)
 		const res = () => {
 			const stateAnViews = {}
 			Object.assign(stateAnViews, this.getState(), this.$views)
@@ -421,7 +420,7 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 	store.$patch = redoxStore.$patch
 	store.$modify = redoxStore.$modify
 	store.$actions = redoxStore.$actions
-	store.$createView = redoxStore.$createView
+	store.$createSelector = redoxStore.$createSelector
 	Object.assign(store, redoxStore.$actions, redoxStore.$views)
 	Object.defineProperty(store, '$state', {
 		enumerable: true,

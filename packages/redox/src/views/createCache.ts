@@ -8,7 +8,7 @@ type UnknownFunction = (...args: any[]) => unknown
 
 type MemoizeFunction = typeof defaultMemoize
 
-function createSelectorCreator(memoize: MemoizeFunction) {
+function createCacheCreator(memoize: MemoizeFunction) {
 	const createSelector = <F extends UnknownFunction>(
 		resultFunc: F,
 		memoizeOption: { equalityCheck: EqualityFn }
@@ -126,4 +126,4 @@ export function defaultMemoize<F extends UnknownFunction>(
 	return memoized as F & { clearCache: () => void }
 }
 
-export const createSelector = createSelectorCreator(defaultMemoize)
+export const createCache = createCacheCreator(defaultMemoize)

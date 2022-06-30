@@ -1,5 +1,5 @@
 import type { RedoxStore } from '../redoxStore'
-import { createSelector } from './createSelector'
+import { createCache } from './createCache'
 import { RedoxViews, AnyModel } from '../types'
 import validate, { isObject } from '../validate'
 import { isComplexObject } from '../utils'
@@ -15,7 +15,7 @@ import { isComplexObject } from '../utils'
  * 1. map key is view function
  * 2. map value is Map<arguments, result>
  */
-export interface ICompare {
+interface ICompare {
 	tree: Map<
 		Record<string, any>,
 		{
@@ -28,7 +28,7 @@ export interface ICompare {
 export const isProxy = Symbol('__isProxy')
 export const getTarget = Symbol('__target')
 
-export function createProxyObjFactory() {
+function createProxyObjFactory() {
 	const proxyObjMap = new WeakMap<Record<string, any>, typeof Proxy>()
 	return function createProxyObj(
 		target: Record<string | symbol, any>,
@@ -110,7 +110,7 @@ function compareObject(prevObj: any, nextObj: any, compare: ICompare) {
  * @param compare previous arguments, store as a tree, and collect what keys been used
  * @returns false => need recomputed, true => use cache value
  */
-export function compareArguments(next: any, compare: ICompare) {
+function compareArguments(next: any, compare: ICompare) {
 	const tree = compare.tree
 	const root = Array.from(tree.keys())[0] // the Map first is tree root
 	if (!root) {
@@ -129,7 +129,7 @@ let compareStatePos: ICompare
  * @param obj any obj, Proxy(origin object) or {xxx: Proxy(origin object)}
  * @returns origin object or {xxx: origin object}
  */
-export const getRawValueDeep = (obj: any) => {
+const getRawValueDeep = (obj: any) => {
 	if (!isComplexObject(obj)) {
 		return obj
 	}
@@ -216,7 +216,7 @@ const getStateCollection = () => {
 	}
 }
 
-function cacheFactory(
+function cacheView(
 	fn: (...args: any[]) => any
 	// _modelName: string, // just for debugging
 	// _viewsKey: any // just for debugging
@@ -226,16 +226,13 @@ function cacheFactory(
 		view: new Map(),
 	}
 
-	return createSelector(
+	let viewWithCache = createCache(
 		(thisPoint, otherArgs) => {
-			// reset compare
-			thisCompare.tree.clear()
-			for (const view of thisCompare.view.values()) {
-				view.clear()
-			}
-			thisCompare.view.clear()
-
 			compareStatePos = thisCompare
+
+			// reset compare
+			resetCompare()
+
 			const thisPointProxy = stateCreateProxyObj(thisPoint, getStateCollection)
 
 			let tempOtherArgs = otherArgs
@@ -279,6 +276,21 @@ function cacheFactory(
 			},
 		}
 	)
+	let originClearCache = viewWithCache.clearCache
+	viewWithCache.clearCache = function () {
+		compareStatePos = thisCompare
+		resetCompare()
+		originClearCache()
+	}
+	return viewWithCache
+}
+
+function resetCompare() {
+	compareStatePos.tree.clear()
+	for (const view of compareStatePos.view.values()) {
+		view.clear()
+	}
+	compareStatePos.view.clear()
 }
 
 export const createViews = <IModel extends AnyModel>(
@@ -298,7 +310,7 @@ export const createViews = <IModel extends AnyModel>(
 		const proxyObj = {} as RedoxViews<IModel['views']>
 		;(Object.keys(views) as Array<keyof IModel['views']>).forEach(
 			(viewsKey) => {
-				const cacheFun = cacheFactory(
+				const newView = cacheView(
 					views[viewsKey]
 					// model.name || '',
 					// viewsKey
@@ -343,10 +355,60 @@ export const createViews = <IModel extends AnyModel>(
 							return redoxStore.getState()
 						},
 					})
-					return cacheFun(thisPoint, args)
+					return newView(thisPoint, args)
 				}
 			}
 		)
 		redoxStore.$views = proxyObj
 	}
+}
+
+export function createSelector(fn: (...args: any[]) => any) {
+	const stateAndViewsCompare: ICompare = {
+		tree: new Map(),
+		view: new Map(),
+	}
+
+	let selectorWithCache = createCache(
+		(stateAndViews: any) => {
+			compareStatePos = stateAndViewsCompare
+
+			// reset compare
+			resetCompare()
+
+			const stateAndViewsProxy = stateCreateProxyObj(
+				stateAndViews,
+				getStateCollection
+			)
+
+			isCollectionKeys = true // just keep collection keys when fn call
+			let res = fn.call(null, stateAndViewsProxy)
+			isCollectionKeys = false
+			// console.log(
+			// 	'modelName=>',
+			// 	stateAndViewsCompare
+			// )
+
+			// case 1 return Proxy()
+			// return Proxy(origin Object) need return origin Object
+			// case 2 user define xxx key
+			// return {xxx: Proxy(origin Object)} need return {xxx: origin Object}
+			res = getRawValueDeep(res)
+			return res
+		},
+		{
+			// false => need recomputed, true => use cache value
+			equalityCheck: (_prev: any, next: any, _argsIndex: number) => {
+				// stateAndViewsCompare
+				return compareArguments(next, stateAndViewsCompare)
+			},
+		}
+	)
+	let originClearCache = selectorWithCache.clearCache
+	selectorWithCache.clearCache = function () {
+		compareStatePos = stateAndViewsCompare
+		resetCompare()
+		originClearCache()
+	}
+	return selectorWithCache
 }
