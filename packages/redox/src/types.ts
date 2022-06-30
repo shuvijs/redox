@@ -190,13 +190,16 @@ type GetModelDeps<T> = T extends Model<any, any, infer MC, any, any, any>
 export type MakeDeps<
 	T extends any[],
 	L extends number = T['length'],
-	Dep extends {} = {}
+	Dep extends {} = {},
+	N extends 1[] = []
 > = L extends 0
 	? Dep
 	: L extends 1
 	? Dep &
 			{
-				[K in GetModelName<T[0]>]: ToDep<T[0]>
+				[K in GetModelName<T[0]> extends `${infer isString}`
+					? `${isString}`
+					: `${N['length']}`]: ToDep<T[0]>
 			} &
 			GetModelDeps<T[0]>
 	: T extends [infer First, ...infer Rest]
@@ -205,9 +208,12 @@ export type MakeDeps<
 			M.Sub<L, 1>,
 			Dep &
 				{
-					[K in GetModelName<First>]: ToDep<First>
+					[K in GetModelName<First> extends `${infer isString}`
+						? `${isString}`
+						: `${N['length']}`]: ToDep<First>
 				} &
-				GetModelDeps<First>
+				GetModelDeps<First>,
+			[...N, 1]
 	  >
 	: never
 
