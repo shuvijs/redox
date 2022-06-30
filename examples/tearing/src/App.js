@@ -1,7 +1,7 @@
 import { defineModel } from '@shuvi/redox'
 import { useEffect, useState, startTransition } from 'react'
 import { useRootModel } from '@shuvi/redox-react'
-import { modelManager } from './modelManager'
+import { storeManager } from './storeManager'
 
 let externalState = { counter: 0 }
 let listeners = []
@@ -83,7 +83,7 @@ const counterModel = defineModel({
 	},
 })
 
-const counterStore = modelManager.get(counterModel)
+const counterStore = storeManager.get(counterModel)
 
 window.counterStore = counterStore
 

@@ -4,10 +4,10 @@ import Basic from './components/Basic'
 import Views from './components/Views'
 import List from './components/List'
 import Repeat from './components/Repeat'
-import type { IModelManager } from '@shuvi/redox'
+import type { IStoreManager } from '@shuvi/redox'
 import { RedoxRoot } from '@shuvi/redox-react'
 
-function App(props: { modelManager?: IModelManager }) {
+function App(props: { storeManager?: IStoreManager }) {
 	return (
 		<>
 			<RedoxRoot {...props}>
