@@ -1,12 +1,13 @@
 {
   "name": "@shuvi/redox-react",
-  "version": "0.0.1-pre.6",
+  "version": "0.0.1",
   "sideEffects": false,
   "description": "Rematch core with react hooks",
   "homepage": "https://rematchjs.org",
   "main": "lib/index.js",
   "module": "esm/index.js",
   "browser": "esm/index.js",
+  "unpkg": "dist/redoxreact.umd.production.min.js",
   "types": "esm/index.d.ts",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -19,21 +20,24 @@
     "build": "run-p clean && run-p build:*",
     "build:esm": "tsc -p tsconfig.build.json -m esnext --outDir esm",
     "build:cjs": "tsc -p tsconfig.build.json -m commonjs --outDir lib",
-    "clean": "rimraf lib esm"
+    "build:umd": "dts build --format umd --tsconfig ./tsconfig.build.json --name redoxReact",
+    "clean": "rimraf lib esm dist"
   },
   "files": [
     "esm",
-    "lib"
+    "lib",
+    "dist"
   ],
   "devDependencies": {
-    "@shuvi/redox": "0.0.1-pre.6",
+    "dts-cli": "^1.5.1",
+    "@shuvi/redox": "0.0.1",
     "@types/react": "^18.0.5",
     "@types/react-dom": "^18.0.5",
     "react": "18.1.0",
     "react-dom": "18.1.0"
   },
   "peerDependencies": {
-    "@shuvi/redox": "0.0.1-pre.6",
+    "@shuvi/redox": "0.0.1",
     "react": ">=16.8",
     "react-dom": ">=16.8"
   },
