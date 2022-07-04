@@ -43,7 +43,6 @@ export interface ReduxDispatch<A extends ReduxAction = AnyAction> {
 
 export type ObjectState = {
 	[x: string]: any
-	[y: number]: never
 }
 
 export type State =
