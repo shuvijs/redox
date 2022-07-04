@@ -1,6 +1,6 @@
 {
   "name": "@shuvi/redox-react",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "sideEffects": false,
   "description": "Rematch core with react hooks",
   "homepage": "https://rematchjs.org",
@@ -30,14 +30,14 @@
   ],
   "devDependencies": {
     "dts-cli": "^1.5.1",
-    "@shuvi/redox": "0.0.1",
+    "@shuvi/redox": "0.0.2",
     "@types/react": "^18.0.5",
     "@types/react-dom": "^18.0.5",
     "react": "18.1.0",
     "react-dom": "18.1.0"
   },
   "peerDependencies": {
-    "@shuvi/redox": "0.0.1",
+    "@shuvi/redox": "0.0.2",
     "react": ">=16.8",
     "react-dom": ">=16.8"
   },
