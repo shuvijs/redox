@@ -1,12 +1,13 @@
 {
   "name": "@shuvi/redox",
-  "version": "0.0.1-pre.6",
+  "version": "0.0.1",
   "description": "A Redux Framework",
   "homepage": "https://shuvijs.github.io/shuvijs.org",
   "sideEffects": false,
   "main": "lib/index.js",
   "module": "esm/index.js",
   "browser": "esm/index.js",
+  "unpkg": "dist/redox.umd.production.min.js",
   "types": "esm/index.d.ts",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -19,17 +20,22 @@
     "build": "run-p clean && run-p build:*",
     "build:esm": "tsc -p tsconfig.build.json -m esnext --outDir esm",
     "build:cjs": "tsc -p tsconfig.build.json -m commonjs --outDir lib",
-    "clean": "rimraf lib esm"
+    "build:umd": "dts build --format umd --tsconfig ./tsconfig.build.json --name redox",
+    "clean": "rimraf lib esm dist"
   },
   "files": [
     "esm",
-    "lib"
+    "lib",
+    "dist"
   ],
   "engines": {
     "node": ">=10"
   },
   "dependencies": {
     "immer": "9.0.6"
+  },
+  "devDependencies": {
+    "dts-cli": "^1.5.1"
   },
   "authors": [],
   "bugs": {
