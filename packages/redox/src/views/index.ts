@@ -337,10 +337,9 @@ export const createViews = <IModel extends AnyModel>(
 					const depends = model._depends
 					if (depends) {
 						depends.forEach((depend) => {
-							const tempDependStateAndView = {}
 							const dependRedoxStore = redoxStore._cache._getRedox(depend)
 							const dependStore = Object.assign(
-								tempDependStateAndView,
+								{},
 								dependRedoxStore.getState(),
 								dependRedoxStore.$views
 							)
