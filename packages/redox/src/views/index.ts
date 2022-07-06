@@ -136,7 +136,15 @@ const getRawValueDeep = (obj: any) => {
 	obj = obj[isProxy] ? obj[getTarget] : obj
 	const keys = Object.keys(obj)
 	keys.forEach((key) => {
-		return ((obj as Record<string, any>)[key] = getRawValueDeep(obj[key]))
+		if (key !== '$state') {
+			;(obj as Record<string, any>)[key] = getRawValueDeep(obj[key])
+		} else {
+			Object.defineProperty(obj, '$state', {
+				enumerable: true,
+				configurable: true,
+				value: getRawValueDeep(obj[key]),
+			})
+		}
 	})
 	return obj
 }
@@ -329,15 +337,15 @@ export const createViews = <IModel extends AnyModel>(
 					const depends = model._depends
 					if (depends) {
 						depends.forEach((depend) => {
-							const tempDependStateAndView = {}
 							const dependRedoxStore = redoxStore._cache._getRedox(depend)
 							const dependStore = Object.assign(
-								tempDependStateAndView,
+								{},
 								dependRedoxStore.getState(),
 								dependRedoxStore.$views
 							)
 							Object.defineProperty(dependStore, '$state', {
 								enumerable: true,
+								configurable: true,
 								get() {
 									return dependRedoxStore.getState()
 								},
@@ -351,6 +359,7 @@ export const createViews = <IModel extends AnyModel>(
 					}
 					Object.defineProperty(thisPoint, '$state', {
 						enumerable: true,
+						configurable: true,
 						get() {
 							return redoxStore.getState()
 						},

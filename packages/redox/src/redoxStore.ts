@@ -302,10 +302,11 @@ export class RedoxStore<IModel extends AnyModel> {
 	$createSelector = <TReturn>(selector: ISelector<IModel, TReturn>) => {
 		const cacheSelectorFn = createSelector(selector)
 		const res = () => {
-			const stateAnViews = {}
+			const stateAnViews = {} as Record<string, any>
 			Object.assign(stateAnViews, this.getState(), this.$views)
 			Object.defineProperty(stateAnViews, '$state', {
 				enumerable: true,
+				configurable: true,
 				get: () => {
 					return this.getState()
 				},
@@ -416,6 +417,7 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 	Object.assign(store, redoxStore.$actions, redoxStore.$views)
 	Object.defineProperty(store, '$state', {
 		enumerable: true,
+		configurable: false,
 		get() {
 			return redoxStore.$state()
 		},

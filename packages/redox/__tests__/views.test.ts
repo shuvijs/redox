@@ -771,6 +771,27 @@ describe('defineModel/views', () => {
 
 			expect(isProxyObj(newObj)).toBeFalsy()
 		})
+
+		it('result has property $state', () => {
+			const model = defineModel({
+				name: 'model',
+				state: {
+					a: {},
+				},
+				reducers: {},
+				views: {
+					state() {
+						return this
+					},
+				},
+			})
+
+			const store = manager.get(model)
+
+			const newObj = store.state()
+
+			expect(newObj.$state).toStrictEqual(model.state)
+		})
 	})
 })
 
@@ -1148,6 +1169,28 @@ describe('createSelector', () => {
 			const newObj = view()
 
 			expect(isProxyObj(newObj)).toBeFalsy()
+		})
+
+		it('result has property $state', () => {
+			const model = defineModel({
+				name: 'model',
+				state: {
+					a: {},
+				},
+				reducers: {},
+			})
+
+			const selector = function (stateAndViews: ISelectorParams<typeof model>) {
+				return stateAndViews
+			}
+
+			const store = manager.get(model)
+
+			const view = store.$createSelector(selector)
+
+			const newObj = view()
+
+			expect(newObj.$state).toStrictEqual(model.state)
 		})
 	})
 })

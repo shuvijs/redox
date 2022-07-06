@@ -143,19 +143,19 @@ importers:
 
   packages/plugins/log:
     specifiers:
-      '@shuvi/redox': 0.0.1
+      '@shuvi/redox': 0.0.2
     devDependencies:
       '@shuvi/redox': link:../../redox
 
   packages/plugins/persist:
     specifiers:
-      '@shuvi/redox': 0.0.1
+      '@shuvi/redox': 0.0.2
     devDependencies:
       '@shuvi/redox': link:../../redox
 
   packages/react:
     specifiers:
-      '@shuvi/redox': 0.0.1
+      '@shuvi/redox': 0.0.2
       '@types/react': ^18.0.5
       '@types/react-dom': ^18.0.5
       dts-cli: ^1.5.1
