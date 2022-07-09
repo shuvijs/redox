@@ -10,9 +10,10 @@ export const createUseModel =
 	) =>
 	<IModel extends AnyModel, Selector extends ISelector<IModel>>(
 		model: IModel,
-		selector?: Selector
+		selector?: Selector,
+		depends?: any[]
 	) => {
-		const selectorFn = useRef<
+		const selectorRef = useRef<
 			undefined | ((() => ReturnType<Selector>) & { clearCache: () => void })
 		>(undefined)
 
@@ -21,10 +22,16 @@ export const createUseModel =
 				if (!selector) {
 					return undefined
 				}
-				selectorFn.current = storeManager.get(model).$createSelector(selector)
-				return selectorFn.current
+				selectorRef.current = storeManager.get(model).$createSelector(selector)
+				return selectorRef.current
 			},
-			[storeManager, batchManager, selector]
+			/**
+			 * think about below case
+			 */
+			// useModel(model, selector) => useCallback(selector)
+			// useModel(model, selector, []) => useCallback(selector, [])
+			// useModel(model, selector, [a,b]) => useCallback(selector, [a,b])
+			[storeManager, batchManager, ...(depends ? depends : [selector])]
 		)
 
 		useEffect(
@@ -38,7 +45,7 @@ export const createUseModel =
 
 		const initialValue = useMemo(
 			function () {
-				return getStateActions(model, storeManager, selectorFn.current)
+				return getStateActions(model, storeManager, selectorRef.current)
 			},
 			[storeManager, batchManager]
 		)
@@ -49,26 +56,12 @@ export const createUseModel =
 
 		useEffect(
 			function () {
-				const fn = function () {
-					const newValue = getStateActions(
-						model,
-						storeManager,
-						selectorFn.current
-					)
-					if (lastValueRef.current[0] !== newValue[0]) {
-						setModelValue(newValue as any)
-						lastValueRef.current = newValue
-					}
-				}
-
-				const unSubscribe = batchManager.addSubscribe(model, storeManager, fn)
-
 				// useEffect is async, there's maybe some async update state before store subscribe
 				// check state and actions once, need update if it changed
 				const newValue = getStateActions(
 					model,
 					storeManager,
-					selectorFn.current
+					selectorRef.current
 				)
 				if (
 					// selector maybe return new object each time, compare value with shadowEqual
@@ -78,6 +71,26 @@ export const createUseModel =
 					setModelValue(newValue as any)
 					lastValueRef.current = newValue
 				}
+			},
+			// if depends changed, need updated once
+			[storeManager, batchManager, ...(depends || [])]
+		)
+
+		useEffect(
+			function () {
+				const fn = function () {
+					const newValue = getStateActions(
+						model,
+						storeManager,
+						selectorRef.current
+					)
+					if (lastValueRef.current[0] !== newValue[0]) {
+						setModelValue(newValue as any)
+						lastValueRef.current = newValue
+					}
+				}
+
+				const unSubscribe = batchManager.addSubscribe(model, storeManager, fn)
 
 				return () => {
 					unSubscribe()

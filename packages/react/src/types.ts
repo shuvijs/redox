@@ -7,7 +7,8 @@ export interface IUseModel {
 
 	<IModel extends AnyModel, Selector extends ISelector<IModel>>(
 		model: IModel,
-		selectors: Selector
+		selectors: Selector,
+		depends?: any[]
 	): [ReturnType<Selector>, IActions<IModel>]
 }
 
@@ -19,7 +20,8 @@ export interface IUseStaticModel {
 
 	<IModel extends AnyModel, Selector extends ISelector<IModel>>(
 		model: IModel,
-		selectors: Selector
+		selectors: Selector,
+		depends?: any[]
 	): [{ current: ReturnType<Selector> }, IActions<IModel>]
 }
 

@@ -64,7 +64,8 @@ const createContainer = function (options?: RedoxOptions) {
 		Selector extends ISelector<IModel>
 	>(
 		model: IModel,
-		selector?: Selector
+		selector?: Selector,
+		depends?: any[]
 	) => {
 		const context = useContext(Context)
 		if (process.env.NODE_ENV === 'development') {
@@ -88,7 +89,7 @@ const createContainer = function (options?: RedoxOptions) {
 		return useMemo(
 			() => createUseModel(storeManager, batchManager),
 			[storeManager, batchManager]
-		)(model, selector)
+		)(model, selector, depends)
 	}
 
 	const useStaticModel: IUseStaticModel = <
@@ -96,7 +97,8 @@ const createContainer = function (options?: RedoxOptions) {
 		Selector extends ISelector<IModel>
 	>(
 		model: IModel,
-		selector?: Selector
+		selector?: Selector,
+		depends?: any[]
 	) => {
 		const context = useContext(Context)
 		if (process.env.NODE_ENV === 'development') {
@@ -128,7 +130,7 @@ const createContainer = function (options?: RedoxOptions) {
 				selectorFn.current = storeManager.get(model).$createSelector(selector)
 				return selectorFn.current
 			},
-			[storeManager, batchManager, selector]
+			[storeManager, batchManager, ...(depends ? depends : [selector])]
 		)
 
 		useEffect(
@@ -149,6 +151,19 @@ const createContainer = function (options?: RedoxOptions) {
 		const value = useRef<[any, any]>([stateRef, initialValue[1]])
 
 		useEffect(() => {
+			// useEffect is async, there's maybe some async update state before store subscribe
+			// check state and actions once, need update if it changed
+			const newValue = getStateActions(model, storeManager, selectorFn.current)
+			if (
+				stateRef.current !== newValue[0] ||
+				value.current[1] !== newValue[1]
+			) {
+				stateRef.current = newValue[0]
+				value.current = [stateRef, newValue[1]]
+			}
+		}, [storeManager, batchManager, ...(depends || [])])
+
+		useEffect(() => {
 			const fn = () => {
 				const newValue = getStateActions(
 					model,
@@ -161,17 +176,6 @@ const createContainer = function (options?: RedoxOptions) {
 			}
 
 			const unSubscribe = batchManager.addSubscribe(model, storeManager, fn)
-
-			// useEffect is async, there's maybe some async update state before store subscribe
-			// check state and actions once, need update if it changed
-			const newValue = getStateActions(model, storeManager, selectorFn.current)
-			if (
-				stateRef.current !== newValue[0] ||
-				value.current[1] !== newValue[1]
-			) {
-				stateRef.current = newValue[0]
-				value.current = [stateRef, newValue[1]]
-			}
 
 			return () => {
 				unSubscribe()

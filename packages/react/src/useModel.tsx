@@ -10,7 +10,8 @@ const useModel: IUseModel = <
 	Selector extends ISelector<IModel>
 >(
 	model: IModel,
-	selector?: Selector
+	selector?: Selector,
+	depends?: any[]
 ) => {
 	if (process.env.NODE_ENV === 'development') {
 		validate(() => [[!Boolean(model), `useModel param model is necessary`]])
@@ -33,7 +34,7 @@ const useModel: IUseModel = <
 			)
 		},
 		[contextValue.current.storeManager, contextValue.current.batchManager]
-	)(model, selector)
+	)(model, selector, depends)
 }
 
 export { useModel }
