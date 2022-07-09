@@ -228,7 +228,7 @@ export class RedoxStore<IModel extends AnyModel> {
 		const depends = this.model._depends
 		// collection beDepends, a depends b, when b update, call a need trigger listener
 		if (depends) {
-			depends.forEach((depend, index) => {
+			depends.forEach((depend) => {
 				this._cache.subscribe(depend, this._triggerListener)
 			})
 		}
@@ -414,7 +414,7 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 	store.$modify = redoxStore.$modify
 	store.$actions = redoxStore.$actions
 	store.$createSelector = redoxStore.$createSelector
-	Object.assign(store, redoxStore.$actions, redoxStore.$views)
+	Object.assign(store, redoxStore.$actions)
 	Object.defineProperty(store, '$state', {
 		enumerable: true,
 		configurable: false,
@@ -422,9 +422,28 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 			return redoxStore.$state()
 		},
 		set() {
-			console.warn(`not allow set property '$state'`)
+			if (process.env.NODE_ENV === 'development') {
+				validate(() => [[true, `not allow set property '$state'`]])
+			}
 			return false
 		},
+	})
+	const views = redoxStore.$views
+	Object.keys(views).forEach((viewKey) => {
+		Object.defineProperty(store, viewKey, {
+			enumerable: true,
+			get() {
+				return views[viewKey].call()
+			},
+			set() {
+				if (process.env.NODE_ENV === 'development') {
+					validate(() => [
+						[true, `not allow change view property '${viewKey}'`],
+					])
+				}
+				return false
+			},
+		})
 	})
 	return store
 }

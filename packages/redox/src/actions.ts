@@ -26,9 +26,19 @@ export const createActions = <IModel extends AnyModel>(
 						>),
 					}
 					Object.defineProperty(res, '$state', {
+						enumerable: true,
 						get() {
 							return dependStore.$state()
 						},
+					})
+					const views = dependStore.$views
+					Object.keys(views).forEach((viewKey) => {
+						Object.defineProperty(res, viewKey, {
+							enumerable: true,
+							get() {
+								return views[viewKey].call()
+							},
+						})
 					})
 					dependsStoreApi[depend.name] = res
 				})
@@ -42,6 +52,15 @@ export const createActions = <IModel extends AnyModel>(
 				get() {
 					return redoxStore.$state()
 				},
+			})
+			const views = redoxStore.$views
+			Object.keys(views).forEach((viewKey) => {
+				Object.defineProperty(thisPoint, viewKey, {
+					enumerable: true,
+					get() {
+						return views[viewKey].call()
+					},
+				})
 			})
 			return action.call(thisPoint, ...args)
 		}

@@ -32,7 +32,7 @@ describe('redox', () => {
 		expect(typeof store.$set).toBe('function')
 		expect(typeof store.reducerOne).toBe('function')
 		expect(typeof store.actionOne).toBe('function')
-		expect(typeof store.viewOne).toBe('function')
+		expect(typeof store.viewOne).toBe('undefined')
 	})
 
 	it('should init store by initialStage', () => {
