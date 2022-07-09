@@ -1,4 +1,5 @@
-import { defineModel, ISelectorParams } from '@shuvi/redox'
+import { defineModel } from '@shuvi/redox'
+import { IModelSelector } from '../../src'
 
 export const sleep = (time: number) =>
 	new Promise((resolve) => {
@@ -30,4 +31,4 @@ export const countModel = defineModel({
 	},
 })
 
-export type countSelectorParameters = ISelectorParams<typeof countModel>
+export type countSelector = IModelSelector<typeof countModel>
