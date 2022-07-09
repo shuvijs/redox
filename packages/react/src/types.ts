@@ -23,6 +23,6 @@ export interface IUseStaticModel {
 	): [{ current: ReturnType<Selector> }, IActions<IModel>]
 }
 
-export type IModelSelector<model extends AnyModel> = (
+export type ModelSelector<model extends AnyModel> = (
 	stateAndView: ISelectorParams<model>
 ) => any
