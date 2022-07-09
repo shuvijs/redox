@@ -265,7 +265,7 @@ describe('createUseModel', () => {
 		})
 
 		describe('selector/depends', () => {
-			test('selector should computed when depends changed', async () => {
+			test('inside selector should computed when depends changed', async () => {
 				let selectorRunCount = 0
 				const SybApp = (props: { val: number; index: number }) => {
 					const [state, _actions] = useTestModel(
@@ -276,6 +276,60 @@ describe('createUseModel', () => {
 						},
 						[props.val]
 					)
+
+					return <div>{state}</div>
+				}
+				const App = () => {
+					const [val, setVal] = React.useState(0)
+					const [index, setIndex] = React.useState(0)
+
+					return (
+						<>
+							<button id="setVal" type="button" onClick={() => setVal(val + 1)}>
+								setVal
+							</button>
+							<button
+								id="setIndex"
+								type="button"
+								onClick={() => setIndex(index + 1)}
+							>
+								setIndex
+							</button>
+							<SybApp val={val} index={index}></SybApp>
+						</>
+					)
+				}
+				act(() => {
+					ReactDOM.createRoot(container).render(<App />)
+				})
+
+				expect(selectorRunCount).toBe(1)
+				act(() => {
+					container
+						.querySelector('#setIndex')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(selectorRunCount).toBe(1)
+				act(() => {
+					container
+						.querySelector('#setVal')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(selectorRunCount).toBe(2)
+			})
+
+			test('outside selector should computed when depends changed', async () => {
+				let selectorRunCount = 0
+				const seletor = function (
+					stateAndViews: ISelectorParams<typeof countModel>
+				) {
+					selectorRunCount++
+					return stateAndViews.value
+				}
+				const SybApp = (props: { val: number; index: number }) => {
+					const [state, _actions] = useTestModel(countModel, seletor, [
+						props.val,
+					])
 
 					return <div>{state}</div>
 				}
