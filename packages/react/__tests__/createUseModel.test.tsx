@@ -176,7 +176,7 @@ describe('createUseModel', () => {
 					function (stateAndViews) {
 						return {
 							v: stateAndViews.value,
-							t: stateAndViews.test(),
+							t: stateAndViews.test,
 						}
 					}
 				)

@@ -13,7 +13,7 @@ import { countModel, countSelectorParameters } from './models'
 const countSelector = function (stateAndViews: countSelectorParameters) {
 	return {
 		v: stateAndViews.value,
-		t: stateAndViews.test(2),
+		t: stateAndViews.test,
 	}
 }
 
@@ -169,13 +169,13 @@ describe('useModel', () => {
 		})
 
 		expect(container.querySelector('#v')?.innerHTML).toEqual('1')
-		expect(container.querySelector('#t')?.innerHTML).toEqual('3')
+		expect(container.querySelector('#t')?.innerHTML).toEqual('2')
 		act(() => {
 			container
 				.querySelector('#button')
 				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
 		})
 		expect(container.querySelector('#v')?.innerHTML).toEqual('3')
-		expect(container.querySelector('#t')?.innerHTML).toEqual('5')
+		expect(container.querySelector('#t')?.innerHTML).toEqual('4')
 	})
 })

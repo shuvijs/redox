@@ -24,8 +24,8 @@ export const countModel = defineModel({
 		},
 	},
 	views: {
-		test(args: number) {
-			return this.value + args
+		test() {
+			return this.value + 1
 		},
 	},
 })
