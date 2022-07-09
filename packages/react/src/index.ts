@@ -4,6 +4,7 @@ import createContainer, {
 	useRootStaticModel,
 } from './createContainer'
 import { useModel } from './useModel'
+import { IModelSelector } from './types'
 
 export {
 	createContainer,
@@ -11,4 +12,5 @@ export {
 	useModel,
 	useRootModel,
 	useRootStaticModel,
+	IModelSelector,
 }
