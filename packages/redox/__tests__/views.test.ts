@@ -1088,4 +1088,89 @@ describe('createSelector', () => {
 			expect(newObj.$state).toStrictEqual(model.state)
 		})
 	})
+
+	describe('should not return proxy data', () => {
+		function isProxyObj(obj: any) {
+			if (!obj || typeof obj !== 'object') {
+				return false
+			}
+			// is a proxy obj
+			if (obj[isProxy]) {
+				return true
+			}
+			const keys = Object.keys(obj)
+			// value maybe proxy
+			for (let i = 0; i < keys.length; i++) {
+				const key = keys[i]
+				if (isProxyObj(obj[key])) {
+					return true
+				}
+			}
+			return false
+		}
+
+		it('return part state direct', () => {
+			const deepObjModel = defineModel({
+				name: 'deepObj',
+				state: {
+					a: {
+						b: {
+							c: 'c',
+						},
+					},
+				},
+				reducers: {},
+			})
+
+			const selector = function (
+				stateAndViews: ISelectorParams<typeof deepObjModel>
+			) {
+				return stateAndViews.a.b
+			}
+
+			const store = manager.get(deepObjModel)
+			const view = store.$createSelector(selector)
+
+			const b = view()
+
+			expect(isProxyObj(b)).toBeFalsy()
+		})
+
+		it('aaa', () => {
+			const model = defineModel({
+				name: 'model',
+				state: {
+					a: {
+						b: {
+							c: 'c',
+						},
+					},
+					arr: ['a', 'b'],
+				},
+				reducers: {},
+				views: {
+					B() {
+						return this.a.b
+					},
+					Arr() {
+						return this.arr
+					},
+					BAndArr() {
+						return this.B.c + this.Arr[0]
+					},
+				},
+			})
+
+			const selector = function (stateAndViews: ISelectorParams<typeof model>) {
+				return stateAndViews
+			}
+
+			const store = manager.get(model)
+			const stateAndViews = store.$createSelector(selector)()
+
+			console.log(stateAndViews.$state)
+			console.log(stateAndViews.a)
+			console.log(stateAndViews.arr)
+		})
+	})
 })
