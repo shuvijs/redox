@@ -26,7 +26,7 @@ interface ICompare {
 }
 
 export const isProxy = Symbol('__isProxy')
-export const getTarget = Symbol('__target')
+const getTarget = Symbol('__target')
 
 function createProxyObjFactory() {
 	const proxyObjMap = new WeakMap<Record<string, any>, typeof Proxy>()
@@ -171,15 +171,23 @@ const getStateCollection = () => {
 				if (isComplexObject(result)) {
 					result = stateCreateProxyObj(result, getStateCollection)
 				}
-
-				// OwnProperty function should be a $state or view
-				if (typeof result === 'function' && target.hasOwnProperty(p)) {
-					const view = result
-					const previousPos = compareStatePos
-
-					// call view fn
-					let res = view()
-					// if child views fn call, go on collects current scope used keys
+			}
+			console.log('p: ', p, result)
+			// OwnProperty function should be a $state or view
+			if (typeof result === 'function' && target.hasOwnProperty(p)) {
+				const view = result
+				console.log('view: ', view)
+				// if view result cacheView, return cache
+				if (view._isRun) {
+					return view()
+				}
+				const previousPos = compareStatePos
+				const previousCollectionStatus = isCollectionKeys
+				// call view fn
+				let res = view()
+				console.log('res: ', res)
+				// if child views fn call, go on collects current scope used keys
+				if (previousCollectionStatus) {
 					isCollectionKeys = true
 					compareStatePos = previousPos
 					const compareView = compareStatePos.view
@@ -189,8 +197,14 @@ const getStateCollection = () => {
 					} else {
 						viewNode.set(res)
 					}
+				}
+				// cache view result
+				const newView = function () {
 					return res
 				}
+				newView._isRun = true
+				target[p] = newView
+				return res
 			}
 			return result
 		},
