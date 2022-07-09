@@ -101,3 +101,80 @@ export const createUseModel =
 
 		return modelValue
 	}
+
+export const createUseStaticModel =
+	(
+		storeManager: IStoreManager,
+		batchManager: ReturnType<typeof createBatchManager>
+	) =>
+	<IModel extends AnyModel, Selector extends ISelector<IModel>>(
+		model: IModel,
+		selector?: Selector,
+		depends?: any[]
+	) => {
+		const selectorRef = useRef<
+			undefined | ((() => ReturnType<Selector>) & { clearCache: () => void })
+		>(undefined)
+
+		const cacheFn = useMemo(
+			function () {
+				if (!selector) {
+					return undefined
+				}
+				selectorRef.current = storeManager.get(model).$createSelector(selector)
+				return selectorRef.current
+			},
+			[storeManager, batchManager, ...(depends ? depends : [selector])]
+		)
+
+		useEffect(
+			function () {
+				return function () {
+					cacheFn?.clearCache()
+				}
+			},
+			[cacheFn]
+		)
+
+		const initialValue = useMemo(() => {
+			return getStateActions(model, storeManager, selectorRef.current)
+		}, [storeManager, batchManager])
+
+		const stateRef = useRef<any>(initialValue[0])
+
+		const value = useRef<[any, any]>([stateRef, initialValue[1]])
+
+		useEffect(() => {
+			// useEffect is async, there's maybe some async update state before store subscribe
+			// check state and actions once, need update if it changed
+			const newValue = getStateActions(model, storeManager, selectorRef.current)
+			if (
+				stateRef.current !== newValue[0] ||
+				value.current[1] !== newValue[1]
+			) {
+				stateRef.current = newValue[0]
+				value.current = [stateRef, newValue[1]]
+			}
+		}, [storeManager, batchManager, ...(depends || [])])
+
+		useEffect(() => {
+			const fn = () => {
+				const newValue = getStateActions(
+					model,
+					storeManager,
+					selectorRef.current
+				)
+				if (stateRef.current !== newValue[0]) {
+					stateRef.current = newValue[0]
+				}
+			}
+
+			const unSubscribe = batchManager.addSubscribe(model, storeManager, fn)
+
+			return () => {
+				unSubscribe()
+			}
+		}, [storeManager, batchManager])
+
+		return value.current
+	}
