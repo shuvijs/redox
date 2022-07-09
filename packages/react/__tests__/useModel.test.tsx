@@ -8,9 +8,9 @@ import ReactDOM from 'react-dom/client'
 import { act } from 'react-dom/test-utils'
 import { defineModel } from '@shuvi/redox'
 import { useModel, useRootModel, RedoxRoot } from '../src'
-import { countModel, countSelector } from './models'
+import { countModel, countSelectorParameters } from './models'
 
-const countSelector: countSelector = function (stateAndViews) {
+const countSelector = function (stateAndViews: countSelectorParameters) {
 	return {
 		v: stateAndViews.value,
 		t: stateAndViews.test,

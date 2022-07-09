@@ -1,4 +1,4 @@
-import { AnyModel, ISelector, Store, ISelectorParams } from '@shuvi/redox'
+import { AnyModel, ISelector, Store } from '@shuvi/redox'
 
 type IActions<IModel extends AnyModel> = Store<IModel>['$actions']
 
@@ -24,7 +24,3 @@ export interface IUseStaticModel {
 		depends?: any[]
 	): [{ current: ReturnType<Selector> }, IActions<IModel>]
 }
-
-export type ModelSelector<model extends AnyModel> = (
-	stateAndView: ISelectorParams<model>
-) => any
