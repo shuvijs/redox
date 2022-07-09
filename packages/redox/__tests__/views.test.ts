@@ -23,7 +23,7 @@ describe('defineModel/views', () => {
 			},
 		})
 		const store = manager.get(model)
-		expect(() => store.view()).toThrow()
+		expect(() => store.view).toThrow()
 	})
 
 	it('should return same reference if no update', () => {
@@ -50,9 +50,9 @@ describe('defineModel/views', () => {
 		})
 		const store = manager.get(sample)
 
-		const value = store.viewA()
+		const value = store.viewA
 		store.changeB()
-		expect(store.viewA()).toBe(value)
+		expect(store.viewA).toBe(value)
 	})
 
 	it("should not be invoked when deps don't change", () => {
@@ -81,10 +81,10 @@ describe('defineModel/views', () => {
 		const store = manager.get(sample)
 
 		expect(calltime).toBe(0)
-		store.doubleB()
+		store.doubleB
 		expect(calltime).toBe(1)
 		store.changeA()
-		store.doubleB()
+		store.doubleB
 		expect(calltime).toBe(1)
 	})
 
@@ -120,10 +120,10 @@ describe('defineModel/views', () => {
 		const store = manager.get(sample)
 
 		expect(sampleComputeTimes).toBe(0)
-		store.sampleView()
+		store.sampleView
 		expect(sampleComputeTimes).toBe(1)
 		store.change()
-		store.sampleView()
+		store.sampleView
 		expect(sampleComputeTimes).toBe(1)
 	})
 
@@ -154,7 +154,7 @@ describe('defineModel/views', () => {
 					return value1.a
 				},
 				objView() {
-					return this.selfView()
+					return this.selfView
 				},
 			},
 		})
@@ -162,10 +162,10 @@ describe('defineModel/views', () => {
 
 		expect(selfViewComputeTimes).toBe(0)
 
-		store.objView()
+		store.objView
 		expect(selfViewComputeTimes).toBe(1)
 		store.change()
-		store.objView()
+		store.objView
 		expect(selfViewComputeTimes).toBe(1)
 	})
 
@@ -191,12 +191,12 @@ describe('defineModel/views', () => {
 
 		const store = manager.get(model)
 		expect(calltime).toBe(0)
-		store.getFoo()
-		store.getFoo()
+		store.getFoo
+		store.getFoo
 		expect(calltime).toBe(1)
 
 		store.changeValue()
-		store.getFoo()
+		store.getFoo
 		expect(calltime).toBe(2)
 	})
 
@@ -253,59 +253,20 @@ describe('defineModel/views', () => {
 
 		store.changeA(10)
 		expect(calltime).toBe(0)
-		expect(store.viewA()).toBe(10)
-		expect(store.viewA()).toBe(10)
+		expect(store.viewA).toBe(10)
+		expect(store.viewA).toBe(10)
 		expect(calltime).toBe(1)
 		let newB = {}
 		store.changeB(newB)
 		expect(calltime).toBe(1)
-		expect(store.viewB()).toBe(newB)
-		expect(store.viewB()).toBe(newB)
+		expect(store.viewB).toBe(newB)
+		expect(store.viewB).toBe(newB)
 		expect(calltime).toBe(2)
 		store.changeC('zoo')
 		expect(calltime).toBe(2)
-		expect(store.viewC()).toBe('zoo')
-		expect(store.viewC()).toBe('zoo')
+		expect(store.viewC).toBe('zoo')
+		expect(store.viewC).toBe('zoo')
 		expect(calltime).toBe(3)
-	})
-
-	it('should return last value (change view args)', () => {
-		const model = defineModel({
-			name: 'model',
-			state: {
-				a: 0,
-			},
-			reducers: {
-				changeA(state) {
-					return {
-						a: state.a + 1,
-					}
-				},
-			},
-			views: {
-				plusA(n: number) {
-					return this.a + n
-				},
-				wrapA(obj: any) {
-					return {
-						...obj,
-						value: this.a,
-					}
-				},
-			},
-		})
-		const store = manager.get(model)
-		expect(store.plusA(1)).toBe(1)
-		store.changeA()
-		expect(store.plusA(1)).toBe(2)
-
-		let obj = {}
-		let r = store.wrapA(obj)
-		expect(r.value).toBe(1)
-		// should return the same reference
-		expect(store.wrapA(obj)).toBe(r)
-		// should return new reference
-		expect(store.wrapA({})).not.toBe(r)
 	})
 
 	it('should return last value (replace state)', () => {
@@ -327,10 +288,10 @@ describe('defineModel/views', () => {
 			},
 		})
 		const store = manager.get(model)
-		expect(store.view()).toBe(initState)
+		expect(store.view).toBe(initState)
 		const newState = {}
 		store.replaceState(newState)
-		expect(store.view()).toBe(newState)
+		expect(store.view).toBe(newState)
 	})
 
 	it('should return last value (using this.$state() in view)', () => {
@@ -381,29 +342,29 @@ describe('defineModel/views', () => {
 
 		expect(numberOfCalls).toBe(0)
 
-		store.getState()
+		store.getState
 		expect(numberOfCalls).toBe(1)
 
-		store.getLevel1()
+		store.getLevel1
 		expect(numberOfCalls).toBe(2)
 
-		store.getLevel2()
+		store.getLevel2
 		expect(numberOfCalls).toBe(3)
 
-		store.getLevel3()
+		store.getLevel3
 		expect(numberOfCalls).toBe(4)
 
 		store.$modify((state) => {
 			state.other = 'modify other value'
 		})
 
-		store.getLevel1()
+		store.getLevel1
 		expect(numberOfCalls).toBe(4)
 
-		store.getLevel2()
+		store.getLevel2
 		expect(numberOfCalls).toBe(4)
 
-		store.getLevel3()
+		store.getLevel3
 		expect(numberOfCalls).toBe(4)
 	})
 
@@ -442,10 +403,10 @@ describe('defineModel/views', () => {
 			const store = manager.get(sample)
 
 			expect(calltime).toBe(0)
-			store.viewA()
+			store.viewA
 			expect(calltime).toBe(1)
 			manager.get(modelA).changeB()
-			store.viewA()
+			store.viewA
 			expect(calltime).toBe(1)
 		})
 
@@ -475,7 +436,7 @@ describe('defineModel/views', () => {
 					reducers: {},
 					views: {
 						viewA() {
-							return this.$dep.modelA.doubleA()
+							return this.$dep.modelA.doubleA
 						},
 					},
 				},
@@ -483,50 +444,10 @@ describe('defineModel/views', () => {
 			)
 			const store = manager.get(sample)
 			const storeA = manager.get(modelA)
-			expect(store.viewA()).toBe(0)
+			expect(store.viewA).toBe(0)
 			storeA.changeA()
-			expect(storeA.doubleA()).toBe(2)
-			expect(store.viewA()).toBe(2)
-		})
-
-		it('should return last state (change args)', () => {
-			const modelA = defineModel({
-				name: 'modelA',
-				state: {
-					a: 0,
-				},
-				reducers: {
-					changeA(state) {
-						return {
-							a: state.a + 1,
-						}
-					},
-				},
-				views: {
-					plusA(n: number) {
-						return this.a + n
-					},
-				},
-			})
-			const sample = defineModel(
-				{
-					name: 'sample',
-					state: {},
-					reducers: {},
-					views: {
-						viewA(n: number) {
-							return this.$dep.modelA.plusA(n)
-						},
-					},
-				},
-				[modelA]
-			)
-			const store = manager.get(sample)
-			const storeA = manager.get(modelA)
-			expect(store.viewA(1)).toBe(1)
-			storeA.changeA()
-			expect(storeA.plusA(1)).toBe(2)
-			expect(store.viewA(1)).toBe(2)
+			expect(storeA.doubleA).toBe(2)
+			expect(store.viewA).toBe(2)
 		})
 	})
 
@@ -552,12 +473,12 @@ describe('defineModel/views', () => {
 			let valueFromViews
 
 			expect(numberOfCalls).toBe(0)
-			valueFromViews = numberStore.getState()
+			valueFromViews = numberStore.getState
 			expect(numberOfCalls).toBe(1)
 			expect(valueFromViews).toBe(0)
 
 			numberStore.doNothing()
-			valueFromViews = numberStore.getState()
+			valueFromViews = numberStore.getState
 			expect(numberOfCalls).toBe(1)
 			expect(valueFromViews).toBe(0)
 		})
@@ -585,12 +506,12 @@ describe('defineModel/views', () => {
 			let valueFromViews
 
 			expect(numberOfCalls).toBe(0)
-			valueFromViews = numberStore.getState()
+			valueFromViews = numberStore.getState
 			expect(numberOfCalls).toBe(1)
 			expect(valueFromViews).toBe(0)
 
 			numberStore.increment()
-			valueFromViews = numberStore.getState()
+			valueFromViews = numberStore.getState
 			expect(numberOfCalls).toBe(2)
 			expect(valueFromViews).toBe(1)
 		})
@@ -609,9 +530,9 @@ describe('defineModel/views', () => {
 					},
 				},
 				views: {
-					getArr(index: number) {
+					getArr() {
 						numberOfCalls++
-						return this.$state[index]
+						return this.$state
 					},
 				},
 			})
@@ -621,18 +542,14 @@ describe('defineModel/views', () => {
 			let valueFromViews
 
 			expect(numberOfCalls).toBe(0)
-			valueFromViews = arrayStore.getArr(0)
+			valueFromViews = arrayStore.getArr
 			expect(numberOfCalls).toBe(1)
-			expect(valueFromViews).toEqual(0)
+			expect(valueFromViews).toEqual(arrayModel.state)
 
 			arrayStore.doNothing()
-			valueFromViews = arrayStore.getArr(0)
+			valueFromViews = arrayStore.getArr
 			expect(numberOfCalls).toBe(1)
-			expect(valueFromViews).toEqual(0)
-
-			valueFromViews = arrayStore.getArr(1)
-			expect(numberOfCalls).toBe(2)
-			expect(valueFromViews).toEqual(1)
+			expect(valueFromViews).toEqual(arrayModel.state)
 		})
 
 		it('should return last value', () => {
@@ -652,10 +569,6 @@ describe('defineModel/views', () => {
 					},
 				},
 				views: {
-					getArr(index: number) {
-						numberOfCalls++
-						return this.$state[index]
-					},
 					getState() {
 						numberOfCalls++
 						return this.$state
@@ -668,32 +581,14 @@ describe('defineModel/views', () => {
 			let valueFromViews
 
 			expect(numberOfCalls).toBe(0)
-			valueFromViews = arrayStore.getState()
+			valueFromViews = arrayStore.getState
 			expect(numberOfCalls).toBe(1)
 			expect(valueFromViews).toEqual([0])
 
 			arrayStore.append(1)
-			valueFromViews = arrayStore.getState()
+			valueFromViews = arrayStore.getState
 			expect(numberOfCalls).toBe(2)
 			expect(valueFromViews).toEqual([0, 1])
-
-			valueFromViews = arrayStore.getArr(0)
-			expect(numberOfCalls).toBe(3)
-			expect(valueFromViews).toEqual(0)
-
-			arrayStore.append(1)
-			valueFromViews = arrayStore.getArr(0)
-			expect(numberOfCalls).toBe(3)
-			expect(valueFromViews).toEqual(0)
-
-			arrayStore.remove(0)
-			valueFromViews = arrayStore.getArr(0)
-			expect(numberOfCalls).toBe(4)
-			expect(valueFromViews).toEqual(1)
-
-			valueFromViews = arrayStore.getArr(1)
-			expect(numberOfCalls).toBe(5)
-			expect(valueFromViews).toEqual(1)
 		})
 	})
 
@@ -737,7 +632,7 @@ describe('defineModel/views', () => {
 
 			const deepObjStore = manager.get(deepObjModel)
 
-			const b = deepObjStore.getB()
+			const b = deepObjStore.getB
 
 			expect(isProxyObj(b)).toBeFalsy()
 		})
@@ -767,7 +662,7 @@ describe('defineModel/views', () => {
 
 			const deepObjStore = manager.get(deepObjModel)
 
-			const newObj = deepObjStore.getNewObj()
+			const newObj = deepObjStore.getNewObj
 
 			expect(isProxyObj(newObj)).toBeFalsy()
 		})
@@ -846,7 +741,7 @@ describe('createSelector', () => {
 		})
 
 		const selector = function (stateAndViews: ISelectorParams<typeof sample>) {
-			return stateAndViews.viewA()
+			return stateAndViews.viewA
 		}
 
 		const store = manager.get(sample)
@@ -914,7 +809,7 @@ describe('createSelector', () => {
 
 		const selector = function (stateAndViews: ISelectorParams<typeof model>) {
 			calltime++
-			return stateAndViews.getFoo()
+			return stateAndViews.getFoo
 		}
 
 		const store = manager.get(model)

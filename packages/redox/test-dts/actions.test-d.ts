@@ -19,7 +19,7 @@ const model = defineModel({
 			expectType<void>(this.$modify((_) => {}))
 			expectType<number>(this.getValue())
 			expectType<Promise<void>>(this.asyncAdd(1))
-			expectType<void>(this.viewFunction())
+			expectType<void>(this.viewFunction)
 			expectType<Action>(this.add(1))
 		},
 		otherAction() {

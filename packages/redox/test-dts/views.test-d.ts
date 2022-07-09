@@ -21,7 +21,7 @@ const depModel = defineModel({
 		},
 		increment() {
 			expectType<number>(this.count)
-			expectType<number>(this.double())
+			expectType<number>(this.double)
 			expectType<{}>(this.$dep)
 		},
 	},
@@ -42,11 +42,11 @@ const model = defineModel(
 			setText() {
 				expectType<{ depModel: { $state: depState } & depState }>(this.$dep)
 				expectType<depState>(this.$dep.depModel.$state)
-				expectType<number>(this.$dep.depModel.double())
+				expectType<number>(this.$dep.depModel.double)
 				expectType<number>(this.$dep.depModel.count)
 				expectType<storeState>(this.$state)
 				expectType<string>(this.text)
-				expectType<void>(this.setText())
+				expectType<void>(this.setText)
 			},
 		},
 	},
@@ -56,7 +56,7 @@ const model = defineModel(
 const store = manager.get(model)
 const depStore = manager.get(depModel)
 
-expectType<void>(store.setText())
+expectType<void>(store.setText)
 expectType<storeState>(store.$state)
-expectType<number>(depStore.double())
+expectType<number>(depStore.double)
 expectType<depState>(depStore.$state)
