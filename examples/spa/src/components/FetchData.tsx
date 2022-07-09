@@ -10,14 +10,14 @@ export type fetchBSelectorParams = ISelectorParams<typeof fetchB>
 const fetchASelector = function (stateAndViews: fetchASelectorParams) {
 	return {
 		data: stateAndViews.data,
-		isLoading: stateAndViews.isLoading(),
+		isLoading: stateAndViews.isLoading,
 	}
 }
 
 const fetchBSelector = function (stateAndViews: fetchBSelectorParams) {
 	return {
 		data: stateAndViews.data,
-		isLoading: stateAndViews.isLoading(),
+		isLoading: stateAndViews.isLoading,
 	}
 }
 
