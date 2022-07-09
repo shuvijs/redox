@@ -29,12 +29,13 @@ beforeEach(() => {
 	batchManager = createBatchManager()
 	useTestModel = <IModel extends AnyModel, Selector extends ISelector<IModel>>(
 		model: IModel,
-		selector?: Selector
+		selector?: Selector,
+		depends?: any[]
 	) => {
 		return useMemo(
 			() => createUseModel(storeManager, batchManager),
 			[storeManager, batchManager]
-		)(model, selector)
+		)(model, selector, depends)
 	}
 	container = document.createElement('div')
 	document.body.appendChild(container)
@@ -263,6 +264,117 @@ describe('createUseModel', () => {
 			expect(selectorRunCount).toBe(2)
 		})
 
+		describe('selector/depends', () => {
+			test('selector should computed when depends changed', async () => {
+				let selectorRunCount = 0
+				const SybApp = (props: { val: number; index: number }) => {
+					const [state, _actions] = useTestModel(
+						countModel,
+						function (stateAndViews) {
+							selectorRunCount++
+							return stateAndViews.value + props.val
+						},
+						[props.val]
+					)
+
+					return <div>{state}</div>
+				}
+				const App = () => {
+					const [val, setVal] = React.useState(0)
+					const [index, setIndex] = React.useState(0)
+
+					return (
+						<>
+							<button id="setVal" type="button" onClick={() => setVal(val + 1)}>
+								setVal
+							</button>
+							<button
+								id="setIndex"
+								type="button"
+								onClick={() => setIndex(index + 1)}
+							>
+								setIndex
+							</button>
+							<SybApp val={val} index={index}></SybApp>
+						</>
+					)
+				}
+				act(() => {
+					ReactDOM.createRoot(container).render(<App />)
+				})
+
+				expect(selectorRunCount).toBe(1)
+				act(() => {
+					container
+						.querySelector('#setIndex')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(selectorRunCount).toBe(1)
+				act(() => {
+					container
+						.querySelector('#setVal')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(selectorRunCount).toBe(2)
+			})
+
+			test('selector should cache props value when depends []', async () => {
+				let propsValue = 0
+				const SybApp = (props: { val: number }) => {
+					const [state, actions] = useTestModel(
+						countModel,
+						function (stateAndViews) {
+							propsValue = props.val
+							return stateAndViews.value + props.val
+						},
+						[]
+					)
+
+					return (
+						<>
+							<div id="state">{state}</div>
+							<button id="button" type="button" onClick={() => actions.add()}>
+								add
+							</button>
+						</>
+					)
+				}
+				const App = () => {
+					const [val, setVal] = React.useState(0)
+
+					return (
+						<>
+							<button id="setVal" type="button" onClick={() => setVal(val + 1)}>
+								setVal
+							</button>
+							<SybApp val={val}></SybApp>
+						</>
+					)
+				}
+				act(() => {
+					ReactDOM.createRoot(container).render(<App />)
+				})
+
+				expect(propsValue).toBe(0)
+				expect(container.querySelector('#state')?.innerHTML).toEqual('1')
+				act(() => {
+					container
+						.querySelector('#setVal')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				// props changed, but depends [], could not get new props
+				expect(propsValue).toBe(0)
+				expect(container.querySelector('#state')?.innerHTML).toEqual('1')
+				act(() => {
+					container
+						.querySelector('#button')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(propsValue).toBe(0)
+				expect(container.querySelector('#state')?.innerHTML).toEqual('2')
+			})
+		})
+
 		test('selector outside', async () => {
 			let selectorRunCount = 0
 			const countSelector = function (
@@ -460,8 +572,6 @@ describe('createUseModel', () => {
 				})
 			}).toThrow()
 		})
-
-		describe('support selector', () => {})
 	})
 
 	test('cloud trigger component render outside of component', () => {
