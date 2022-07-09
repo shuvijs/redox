@@ -5,7 +5,6 @@ import React, {
 	useEffect,
 	useMemo,
 	useState,
-	useRef,
 } from 'react'
 import { validate, redox } from '@shuvi/redox'
 import type {
@@ -14,8 +13,7 @@ import type {
 	RedoxOptions,
 	ISelector,
 } from '@shuvi/redox'
-import { createUseModel } from './createUseModel'
-import { getStateActions } from './getStateActions'
+import { createUseModel, createUseStaticModel } from './createUseModel'
 import { createBatchManager } from './batchManager'
 import { IUseModel, IUseStaticModel } from './types'
 
@@ -118,71 +116,11 @@ const createContainer = function (options?: RedoxOptions) {
 		}
 
 		const { storeManager, batchManager } = context
-		const selectorFn = useRef<
-			undefined | ((() => ReturnType<Selector>) & { clearCache: () => void })
-		>(undefined)
 
-		const cacheFn = useMemo(
-			function () {
-				if (!selector) {
-					return undefined
-				}
-				selectorFn.current = storeManager.get(model).$createSelector(selector)
-				return selectorFn.current
-			},
-			[storeManager, batchManager, ...(depends ? depends : [selector])]
-		)
-
-		useEffect(
-			function () {
-				return function () {
-					cacheFn?.clearCache()
-				}
-			},
-			[cacheFn]
-		)
-
-		const initialValue = useMemo(() => {
-			return getStateActions(model, storeManager, selectorFn.current)
-		}, [storeManager, batchManager])
-
-		const stateRef = useRef<any>(initialValue[0])
-
-		const value = useRef<[any, any]>([stateRef, initialValue[1]])
-
-		useEffect(() => {
-			// useEffect is async, there's maybe some async update state before store subscribe
-			// check state and actions once, need update if it changed
-			const newValue = getStateActions(model, storeManager, selectorFn.current)
-			if (
-				stateRef.current !== newValue[0] ||
-				value.current[1] !== newValue[1]
-			) {
-				stateRef.current = newValue[0]
-				value.current = [stateRef, newValue[1]]
-			}
-		}, [storeManager, batchManager, ...(depends || [])])
-
-		useEffect(() => {
-			const fn = () => {
-				const newValue = getStateActions(
-					model,
-					storeManager,
-					selectorFn.current
-				)
-				if (stateRef.current !== newValue[0]) {
-					stateRef.current = newValue[0]
-				}
-			}
-
-			const unSubscribe = batchManager.addSubscribe(model, storeManager, fn)
-
-			return () => {
-				unSubscribe()
-			}
-		}, [storeManager, batchManager])
-
-		return value.current
+		return useMemo(
+			() => createUseStaticModel(storeManager, batchManager),
+			[storeManager, batchManager]
+		)(model, selector, depends)
 	}
 
 	return {
