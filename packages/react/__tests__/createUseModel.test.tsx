@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import React, { useMemo } from 'react'
+import React, { useMemo, useCallback } from 'react'
 import ReactDOM from 'react-dom/client'
 // @ts-ignore
 import { act } from 'react-dom/test-utils'
@@ -179,7 +179,8 @@ describe('createUseModel', () => {
 							v: stateAndViews.value,
 							t: stateAndViews.test,
 						}
-					}
+					},
+					[]
 				)
 
 				return (
@@ -216,56 +217,229 @@ describe('createUseModel', () => {
 	})
 
 	describe('support selector', () => {
-		test('inlined selector', async () => {
-			let selectorRunCount = 0
-			const App = () => {
-				const [_state, actions] = useTestModel(
-					countModel,
-					function (stateAndViews) {
+		describe('should not render when selector not changed', () => {
+			test('global selector', async () => {
+				let selectorRunCount = 0
+				const countSelector = function (
+					stateAndViews: ISelectorParams<typeof countModel>
+				) {
+					selectorRunCount++
+					return stateAndViews.value
+				}
+				const App = () => {
+					const [_state, actions] = useTestModel(countModel, countSelector)
+					const [_index, setIndex] = React.useState(0)
+
+					return (
+						<>
+							<button id="button" type="button" onClick={() => setIndex(1)}>
+								setIndex
+							</button>
+							<button id="action" type="button" onClick={() => actions.add()}>
+								action
+							</button>
+						</>
+					)
+				}
+				act(() => {
+					ReactDOM.createRoot(container).render(<App />)
+				})
+
+				expect(selectorRunCount).toBe(1)
+				act(() => {
+					container
+						.querySelector('#button')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(selectorRunCount).toBe(1)
+				act(() => {
+					container
+						.querySelector('#action')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(selectorRunCount).toBe(2)
+			})
+
+			test('useCallback', async () => {
+				let selectorRunCount = 0
+				const App = () => {
+					const countSelector = useCallback(function (
+						stateAndViews: ISelectorParams<typeof countModel>
+					) {
 						selectorRunCount++
 						return stateAndViews.value
-					}
-				)
-				const [_index, setIndex] = React.useState(0)
+					},
+					[])
+					const [_state, actions] = useTestModel(countModel, countSelector)
+					const [_index, setIndex] = React.useState(0)
 
-				return (
-					<>
-						<button id="button" type="button" onClick={() => setIndex(1)}>
-							setIndex
-						</button>
-						<button
-							id="action"
-							type="button"
-							onClick={() => {
-								actions.add()
-							}}
-						>
-							action
-						</button>
-					</>
-				)
-			}
-			act(() => {
-				ReactDOM.createRoot(container).render(<App />)
+					return (
+						<>
+							<button id="button" type="button" onClick={() => setIndex(1)}>
+								setIndex
+							</button>
+							<button id="action" type="button" onClick={() => actions.add()}>
+								action
+							</button>
+						</>
+					)
+				}
+				act(() => {
+					ReactDOM.createRoot(container).render(<App />)
+				})
+
+				expect(selectorRunCount).toBe(1)
+				act(() => {
+					container
+						.querySelector('#button')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(selectorRunCount).toBe(1)
+				act(() => {
+					container
+						.querySelector('#action')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(selectorRunCount).toBe(2)
 			})
 
-			expect(selectorRunCount).toBe(1)
-			act(() => {
-				container
-					.querySelector('#button')
-					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+			test('depends []', async () => {
+				let selectorRunCount = 0
+				const App = () => {
+					const [_state, actions] = useTestModel(
+						countModel,
+						function (stateAndViews: ISelectorParams<typeof countModel>) {
+							selectorRunCount++
+							return stateAndViews.value
+						},
+						[]
+					)
+					const [_index, setIndex] = React.useState(0)
+
+					return (
+						<>
+							<button id="button" type="button" onClick={() => setIndex(1)}>
+								setIndex
+							</button>
+							<button id="action" type="button" onClick={() => actions.add()}>
+								action
+							</button>
+						</>
+					)
+				}
+				act(() => {
+					ReactDOM.createRoot(container).render(<App />)
+				})
+
+				expect(selectorRunCount).toBe(1)
+				act(() => {
+					container
+						.querySelector('#button')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(selectorRunCount).toBe(1)
+				act(() => {
+					container
+						.querySelector('#action')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(selectorRunCount).toBe(2)
 			})
-			expect(selectorRunCount).toBe(1)
-			act(() => {
-				container
-					.querySelector('#action')
-					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+			test('depends not changed', async () => {
+				let selectorRunCount = 0
+				const selector = function (
+					stateAndViews: ISelectorParams<typeof countModel>
+				) {
+					selectorRunCount++
+					return stateAndViews.value
+				}
+				const SybApp = (props: { val: number; index: number }) => {
+					const [state, _actions] = useTestModel(countModel, selector, [
+						props.val,
+					])
+
+					return <div>{state}</div>
+				}
+				const App = () => {
+					const [val, setVal] = React.useState(0)
+					const [index, setIndex] = React.useState(0)
+
+					return (
+						<>
+							<button id="setVal" type="button" onClick={() => setVal(val + 1)}>
+								setVal
+							</button>
+							<button
+								id="setIndex"
+								type="button"
+								onClick={() => setIndex(index + 1)}
+							>
+								setIndex
+							</button>
+							<SybApp val={val} index={index}></SybApp>
+						</>
+					)
+				}
+				act(() => {
+					ReactDOM.createRoot(container).render(<App />)
+				})
+
+				expect(selectorRunCount).toBe(1)
+				act(() => {
+					container
+						.querySelector('#setIndex')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(selectorRunCount).toBe(1)
 			})
-			expect(selectorRunCount).toBe(2)
 		})
 
-		describe('selector/depends', () => {
-			test('inside selector should computed when depends changed', async () => {
+		describe('should rerender when selector changed', () => {
+			test('no depends', async () => {
+				let selectorRunCount = 0
+				const App = () => {
+					const [_state, actions] = useTestModel(
+						countModel,
+						function (stateAndViews: ISelectorParams<typeof countModel>) {
+							selectorRunCount++
+							return stateAndViews.value
+						}
+					)
+					const [_index, setIndex] = React.useState(0)
+
+					return (
+						<>
+							<button id="button" type="button" onClick={() => setIndex(1)}>
+								setIndex
+							</button>
+							<button id="action" type="button" onClick={() => actions.add()}>
+								action
+							</button>
+						</>
+					)
+				}
+				act(() => {
+					ReactDOM.createRoot(container).render(<App />)
+				})
+
+				expect(selectorRunCount).toBe(1)
+				act(() => {
+					container
+						.querySelector('#button')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				expect(selectorRunCount).toBe(2)
+				act(() => {
+					container
+						.querySelector('#action')
+						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+				})
+				// action trigger rerender, trigger selector update and render again
+				expect(selectorRunCount).toBe(4)
+			})
+
+			test('depends changed', async () => {
 				let selectorRunCount = 0
 				const SybApp = (props: { val: number; index: number }) => {
 					const [state, _actions] = useTestModel(
@@ -318,16 +492,16 @@ describe('createUseModel', () => {
 				expect(selectorRunCount).toBe(2)
 			})
 
-			test('outside selector should computed when depends changed', async () => {
+			test('global selector with depends', async () => {
 				let selectorRunCount = 0
-				const seletor = function (
+				const selector = function (
 					stateAndViews: ISelectorParams<typeof countModel>
 				) {
 					selectorRunCount++
 					return stateAndViews.value
 				}
 				const SybApp = (props: { val: number; index: number }) => {
-					const [state, _actions] = useTestModel(countModel, seletor, [
+					const [state, _actions] = useTestModel(countModel, selector, [
 						props.val,
 					])
 
@@ -371,149 +545,6 @@ describe('createUseModel', () => {
 				})
 				expect(selectorRunCount).toBe(2)
 			})
-
-			test('selector should cache props value when depends []', async () => {
-				let propsValue = 0
-				const SybApp = (props: { val: number }) => {
-					const [state, actions] = useTestModel(
-						countModel,
-						function (stateAndViews) {
-							propsValue = props.val
-							return stateAndViews.value + props.val
-						},
-						[]
-					)
-
-					return (
-						<>
-							<div id="state">{state}</div>
-							<button id="button" type="button" onClick={() => actions.add()}>
-								add
-							</button>
-						</>
-					)
-				}
-				const App = () => {
-					const [val, setVal] = React.useState(0)
-
-					return (
-						<>
-							<button id="setVal" type="button" onClick={() => setVal(val + 1)}>
-								setVal
-							</button>
-							<SybApp val={val}></SybApp>
-						</>
-					)
-				}
-				act(() => {
-					ReactDOM.createRoot(container).render(<App />)
-				})
-
-				expect(propsValue).toBe(0)
-				expect(container.querySelector('#state')?.innerHTML).toEqual('1')
-				act(() => {
-					container
-						.querySelector('#setVal')
-						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-				})
-				// props changed, but depends [], could not get new props
-				expect(propsValue).toBe(0)
-				expect(container.querySelector('#state')?.innerHTML).toEqual('1')
-				act(() => {
-					container
-						.querySelector('#button')
-						?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-				})
-				expect(propsValue).toBe(0)
-				expect(container.querySelector('#state')?.innerHTML).toEqual('2')
-			})
-		})
-
-		test('selector outside', async () => {
-			let selectorRunCount = 0
-			const countSelector = function (
-				stateAndViews: ISelectorParams<typeof countModel>
-			) {
-				selectorRunCount++
-				return stateAndViews.value
-			}
-			const App = () => {
-				const [_state, actions] = useTestModel(countModel, countSelector)
-				const [_index, setIndex] = React.useState(0)
-
-				return (
-					<>
-						<button id="button" type="button" onClick={() => setIndex(1)}>
-							setIndex
-						</button>
-						<button id="action" type="button" onClick={() => actions.add()}>
-							action
-						</button>
-					</>
-				)
-			}
-			act(() => {
-				ReactDOM.createRoot(container).render(<App />)
-			})
-
-			expect(selectorRunCount).toBe(1)
-			act(() => {
-				container
-					.querySelector('#button')
-					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-			})
-			expect(selectorRunCount).toBe(1)
-			act(() => {
-				container
-					.querySelector('#action')
-					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-			})
-			expect(selectorRunCount).toBe(2)
-		})
-
-		test('condition selector', async () => {
-			const countSelector0 = function () {
-				return 0
-			}
-			const countSelector1 = function () {
-				return 1
-			}
-			const App = () => {
-				const [index, setIndex] = React.useState(0)
-				const [state, actions] = useTestModel(
-					countModel,
-					index % 2 === 0 ? countSelector0 : countSelector1
-				)
-
-				return (
-					<>
-						<div id="value">{state}</div>
-						<button id="button" type="button" onClick={() => setIndex(1)}>
-							setIndex
-						</button>
-						<button id="action" type="button" onClick={() => actions.add()}>
-							action
-						</button>
-					</>
-				)
-			}
-			act(() => {
-				ReactDOM.createRoot(container).render(<App />)
-			})
-
-			expect(container.querySelector('#value')?.innerHTML).toEqual('0')
-			act(() => {
-				container
-					.querySelector('#button')
-					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-			})
-			expect(container.querySelector('#value')?.innerHTML).toEqual('0')
-			act(() => {
-				container
-					.querySelector('#action')
-					?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-			})
-			expect(container.querySelector('#value')?.innerHTML).toEqual('1')
 		})
 
 		test('should clear prev selector cache', async () => {
@@ -628,7 +659,7 @@ describe('createUseModel', () => {
 		})
 	})
 
-	test('cloud trigger component render outside of component', () => {
+	test('could trigger component render outside of component', () => {
 		let AppRenderCount = 0
 
 		function App() {

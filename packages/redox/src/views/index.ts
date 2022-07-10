@@ -158,7 +158,6 @@ const getStateCollection = () => {
 				const previousCollectionStatus = isCollectionKeys
 				// call view fn
 				let res = view()
-				console.log('res: ', res)
 				// if child views fn call, go on collects current scope used keys
 				if (previousCollectionStatus) {
 					isCollectionKeys = true

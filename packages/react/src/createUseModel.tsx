@@ -54,10 +54,13 @@ export const createUseModel =
 
 		const lastValueRef = useRef<any>(initialValue)
 
+		const isInit = useRef<boolean>(false)
+
 		useEffect(
 			function () {
 				// useEffect is async, there's maybe some async update state before store subscribe
 				// check state and actions once, need update if it changed
+				isInit.current = true
 				const newValue = getStateActions(
 					model,
 					storeManager,
@@ -71,9 +74,21 @@ export const createUseModel =
 					setModelValue(newValue as any)
 					lastValueRef.current = newValue
 				}
+				return function () {
+					isInit.current = false
+				}
 			},
-			// if depends changed, need updated once
-			[storeManager, batchManager, ...(depends || [])]
+			[storeManager, batchManager]
+		)
+
+		// selector change, need updated once
+		useEffect(
+			function () {
+				if (isInit.current) {
+					batchManager.triggerSubscribe(model)
+				}
+			},
+			[batchManager, selectorRef.current]
 		)
 
 		useEffect(
@@ -144,9 +159,12 @@ export const createUseStaticModel =
 
 		const value = useRef<[any, any]>([stateRef, initialValue[1]])
 
+		const isInit = useRef<boolean>(false)
+
 		useEffect(() => {
 			// useEffect is async, there's maybe some async update state before store subscribe
 			// check state and actions once, need update if it changed
+			isInit.current = true
 			const newValue = getStateActions(model, storeManager, selectorRef.current)
 			if (
 				stateRef.current !== newValue[0] ||
@@ -155,7 +173,20 @@ export const createUseStaticModel =
 				stateRef.current = newValue[0]
 				value.current = [stateRef, newValue[1]]
 			}
-		}, [storeManager, batchManager, ...(depends || [])])
+			return () => {
+				isInit.current = false
+			}
+		}, [storeManager, batchManager])
+
+		// selector change, need updated once
+		useEffect(
+			function () {
+				if (isInit.current) {
+					batchManager.triggerSubscribe(model)
+				}
+			},
+			[batchManager, selectorRef.current]
+		)
 
 		useEffect(() => {
 			const fn = () => {
