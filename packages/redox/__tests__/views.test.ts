@@ -1,5 +1,4 @@
 import { defineModel, redox, ISelectorParams } from '../src'
-import { isProxy } from '../src/views'
 
 let manager: ReturnType<typeof redox>
 beforeEach(() => {
@@ -24,6 +23,31 @@ describe('defineModel/views', () => {
 		})
 		const store = manager.get(model)
 		expect(() => store.view).toThrow()
+	})
+
+	it('$state and any view should be object', () => {
+		const model = defineModel({
+			name: 'modal',
+			state: {
+				a: {},
+			},
+			reducers: {},
+			views: {
+				This() {
+					return this
+				},
+				anyView() {
+					return this.a
+				},
+			},
+		})
+
+		const modelStore = manager.get(model)
+
+		const This = modelStore.This
+
+		expect(typeof This.$state).toBe('object')
+		expect(typeof This.anyView).toBe('object')
 	})
 
 	it('should return same reference if no update', () => {
@@ -259,8 +283,8 @@ describe('defineModel/views', () => {
 		let newB = {}
 		store.changeB(newB)
 		expect(calltime).toBe(1)
-		expect(store.viewB).toBe(newB)
-		expect(store.viewB).toBe(newB)
+		expect(store.viewB).toStrictEqual(newB)
+		expect(store.viewB).toStrictEqual(newB)
 		expect(calltime).toBe(2)
 		store.changeC('zoo')
 		expect(calltime).toBe(2)
@@ -288,10 +312,10 @@ describe('defineModel/views', () => {
 			},
 		})
 		const store = manager.get(model)
-		expect(store.view).toBe(initState)
+		expect(store.view).toStrictEqual(initState)
 		const newState = {}
 		store.replaceState(newState)
-		expect(store.view).toBe(newState)
+		expect(store.view).toStrictEqual(newState)
 	})
 
 	it('should return last value (using this.$state() in view)', () => {
@@ -591,103 +615,6 @@ describe('defineModel/views', () => {
 			expect(valueFromViews).toEqual([0, 1])
 		})
 	})
-
-	describe('should not return proxy data', () => {
-		function isProxyObj(obj: any) {
-			if (!obj || typeof obj !== 'object') {
-				return false
-			}
-			// is a proxy obj
-			if (obj[isProxy]) {
-				return true
-			}
-			const keys = Object.keys(obj)
-			// value maybe proxy
-			for (let i = 0; i < keys.length; i++) {
-				const key = keys[i]
-				if (isProxyObj(obj[key])) {
-					return true
-				}
-			}
-			return false
-		}
-
-		it('return part state direct', () => {
-			const deepObjModel = defineModel({
-				name: 'deepObj',
-				state: {
-					a: {
-						b: {
-							c: 'c',
-						},
-					},
-				},
-				reducers: {},
-				views: {
-					getB() {
-						return this.a.b
-					},
-				},
-			})
-
-			const deepObjStore = manager.get(deepObjModel)
-
-			const b = deepObjStore.getB
-
-			expect(isProxyObj(b)).toBeFalsy()
-		})
-
-		it('state is part of result', () => {
-			const deepObjModel = defineModel({
-				name: 'deepObj',
-				state: {
-					a: {
-						b: {
-							c: 'c',
-						},
-					},
-				},
-				reducers: {},
-				views: {
-					getNewObj() {
-						return {
-							newB: this.a.b,
-							newC: {
-								newC: this.a.b.c,
-							},
-						}
-					},
-				},
-			})
-
-			const deepObjStore = manager.get(deepObjModel)
-
-			const newObj = deepObjStore.getNewObj
-
-			expect(isProxyObj(newObj)).toBeFalsy()
-		})
-
-		it('result has property $state', () => {
-			const model = defineModel({
-				name: 'model',
-				state: {
-					a: {},
-				},
-				reducers: {},
-				views: {
-					state() {
-						return this
-					},
-				},
-			})
-
-			const store = manager.get(model)
-
-			const newObj = store.state()
-
-			expect(newObj.$state).toStrictEqual(model.state)
-		})
-	})
 })
 
 describe('createSelector', () => {
@@ -715,6 +642,33 @@ describe('createSelector', () => {
 		expect(() => {
 			view()
 		}).toThrow()
+	})
+
+	it('$state and any view should be object', () => {
+		const model = defineModel({
+			name: 'modal',
+			state: {
+				a: {},
+			},
+			reducers: {},
+			views: {
+				anyView() {
+					return this.a
+				},
+			},
+		})
+
+		const store = manager.get(model)
+
+		const selector = function (stateAndViews: ISelectorParams<typeof model>) {
+			return stateAndViews
+		}
+
+		const view = store.$createSelector(selector)
+		const stateAndViews = view()
+
+		expect(typeof stateAndViews.$state).toBe('object')
+		expect(typeof stateAndViews.anyView).toBe('object')
 	})
 
 	it('should return same reference if no update', () => {
@@ -974,203 +928,6 @@ describe('createSelector', () => {
 			valueFromViews = view()
 			expect(numberOfCalls).toBe(2)
 			expect(valueFromViews).toEqual([0, 1])
-		})
-	})
-
-	describe('should not return proxy data', () => {
-		function isProxyObj(obj: any) {
-			if (!obj || typeof obj !== 'object') {
-				return false
-			}
-			// is a proxy obj
-			if (obj[isProxy]) {
-				return true
-			}
-			const keys = Object.keys(obj)
-			// value maybe proxy
-			for (let i = 0; i < keys.length; i++) {
-				const key = keys[i]
-				if (isProxyObj(obj[key])) {
-					return true
-				}
-			}
-			return false
-		}
-
-		it('return part state direct', () => {
-			const deepObjModel = defineModel({
-				name: 'deepObj',
-				state: {
-					a: {
-						b: {
-							c: 'c',
-						},
-					},
-				},
-				reducers: {},
-			})
-
-			const selector = function (
-				stateAndViews: ISelectorParams<typeof deepObjModel>
-			) {
-				return stateAndViews.a.b
-			}
-
-			const store = manager.get(deepObjModel)
-			const view = store.$createSelector(selector)
-
-			const b = view()
-
-			expect(isProxyObj(b)).toBeFalsy()
-		})
-
-		it('state is part of result', () => {
-			const deepObjModel = defineModel({
-				name: 'deepObj',
-				state: {
-					a: {
-						b: {
-							c: 'c',
-						},
-					},
-				},
-				reducers: {},
-				views: {
-					getNewObj() {
-						return {
-							newB: this.a.b,
-							newC: {
-								newC: this.a.b.c,
-							},
-						}
-					},
-				},
-			})
-
-			const selector = function (
-				stateAndViews: ISelectorParams<typeof deepObjModel>
-			) {
-				return {
-					newB: stateAndViews.a.b,
-					newC: {
-						newC: stateAndViews.a.b.c,
-					},
-				}
-			}
-
-			const store = manager.get(deepObjModel)
-			const view = store.$createSelector(selector)
-
-			const newObj = view()
-
-			expect(isProxyObj(newObj)).toBeFalsy()
-		})
-
-		it('result has property $state', () => {
-			const model = defineModel({
-				name: 'model',
-				state: {
-					a: {},
-				},
-				reducers: {},
-			})
-
-			const selector = function (stateAndViews: ISelectorParams<typeof model>) {
-				return stateAndViews
-			}
-
-			const store = manager.get(model)
-
-			const view = store.$createSelector(selector)
-
-			const newObj = view()
-
-			expect(newObj.$state).toStrictEqual(model.state)
-		})
-	})
-
-	describe('should not return proxy data', () => {
-		function isProxyObj(obj: any) {
-			if (!obj || typeof obj !== 'object') {
-				return false
-			}
-			// is a proxy obj
-			if (obj[isProxy]) {
-				return true
-			}
-			const keys = Object.keys(obj)
-			// value maybe proxy
-			for (let i = 0; i < keys.length; i++) {
-				const key = keys[i]
-				if (isProxyObj(obj[key])) {
-					return true
-				}
-			}
-			return false
-		}
-
-		it('return part state direct', () => {
-			const deepObjModel = defineModel({
-				name: 'deepObj',
-				state: {
-					a: {
-						b: {
-							c: 'c',
-						},
-					},
-				},
-				reducers: {},
-			})
-
-			const selector = function (
-				stateAndViews: ISelectorParams<typeof deepObjModel>
-			) {
-				return stateAndViews.a.b
-			}
-
-			const store = manager.get(deepObjModel)
-			const view = store.$createSelector(selector)
-
-			const b = view()
-
-			expect(isProxyObj(b)).toBeFalsy()
-		})
-
-		it('aaa', () => {
-			const model = defineModel({
-				name: 'model',
-				state: {
-					a: {
-						b: {
-							c: 'c',
-						},
-					},
-					arr: ['a', 'b'],
-				},
-				reducers: {},
-				views: {
-					B() {
-						return this.a.b
-					},
-					Arr() {
-						return this.arr
-					},
-					BAndArr() {
-						return this.B.c + this.Arr[0]
-					},
-				},
-			})
-
-			const selector = function (stateAndViews: ISelectorParams<typeof model>) {
-				return stateAndViews
-			}
-
-			const store = manager.get(model)
-			const stateAndViews = store.$createSelector(selector)()
-
-			console.log(stateAndViews.$state)
-			console.log(stateAndViews.a)
-			console.log(stateAndViews.arr)
 		})
 	})
 })

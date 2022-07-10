@@ -25,8 +25,8 @@ interface ICompare {
 	view: Map<Function, any>
 }
 
-export const isProxy = Symbol('__isProxy')
-const getTarget = Symbol('__target')
+const isProxy = Symbol('__isProxy')
+// const getTarget = Symbol('__target')
 
 function createProxyObjFactory() {
 	const proxyObjMap = new WeakMap<Record<string, any>, typeof Proxy>()
@@ -120,38 +120,13 @@ const stateCreateProxyObj = createProxyObjFactory()
 
 let compareStatePos: ICompare
 
-/**
- * if object value is Proxy return origin value
- * @param obj any obj, Proxy(origin object) or {xxx: Proxy(origin object)}
- * @returns origin object or {xxx: origin object}
- */
-const getRawValueDeep = (obj: any) => {
-	if (!isComplexObject(obj)) {
-		return obj
-	}
-	obj = obj[isProxy] ? obj[getTarget] : obj
-	const keys = Object.keys(obj)
-	keys.forEach((key) => {
-		if (key !== '$state') {
-			;(obj as Record<string, any>)[key] = getRawValueDeep(obj[key])
-		} else {
-			Object.defineProperty(obj, '$state', {
-				enumerable: true,
-				configurable: true,
-				value: getRawValueDeep(obj[key]),
-			})
-		}
-	})
-	return obj
-}
-
 let isCollectionKeys = false
 
 const getStateCollection = () => {
 	return {
 		get(target: any, p: string | symbol): any {
 			if (p === isProxy) return true
-			if (p === getTarget) return target
+			// if (p === getTarget) return target
 			let result = target[p]
 
 			if (isCollectionKeys) {
@@ -172,11 +147,9 @@ const getStateCollection = () => {
 					result = stateCreateProxyObj(result, getStateCollection)
 				}
 			}
-			console.log('p: ', p, result)
 			// OwnProperty function should be a $state or view
 			if (typeof result === 'function' && target.hasOwnProperty(p)) {
 				const view = result
-				console.log('view: ', view)
 				// if view result cacheView, return cache
 				if (view._isRun) {
 					return view()
@@ -199,11 +172,11 @@ const getStateCollection = () => {
 					}
 				}
 				// cache view result
-				const newView = function () {
+				const cacheView = function () {
 					return res
 				}
-				newView._isRun = true
-				target[p] = newView
+				cacheView._isRun = true
+				target[p] = cacheView
 				return res
 			}
 			return result
@@ -246,11 +219,6 @@ function cacheView(
 			// 	thisCompare
 			// )
 
-			// case 1 return Proxy()
-			// return Proxy(origin Object) need return origin Object
-			// case 2 user define xxx key
-			// return {xxx: Proxy(origin Object)} need return {xxx: origin Object}
-			res = getRawValueDeep(res)
 			return res
 		},
 		{
@@ -368,11 +336,6 @@ export function createSelector(fn: (...args: any[]) => any) {
 			// 	stateAndViewsCompare
 			// )
 
-			// case 1 return Proxy()
-			// return Proxy(origin Object) need return origin Object
-			// case 2 user define xxx key
-			// return {xxx: Proxy(origin Object)} need return {xxx: origin Object}
-			res = getRawValueDeep(res)
 			return res
 		},
 		{
