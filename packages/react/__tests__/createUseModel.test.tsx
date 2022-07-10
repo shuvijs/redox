@@ -47,6 +47,35 @@ afterEach(() => {
 })
 
 describe('createUseModel', () => {
+	test('could access state an view', async () => {
+		const model = defineModel({
+			name: 'model',
+			state: { value: 1 },
+			views: {
+				test() {
+					return this.value * 2
+				},
+			},
+		})
+
+		const App = () => {
+			const [state, _actions] = useTestModel(model)
+
+			return (
+				<>
+					<div id="v">{state.value}</div>
+					<div id="t">{state.test}</div>
+				</>
+			)
+		}
+		act(() => {
+			ReactDOM.createRoot(container).render(<App />)
+		})
+
+		expect(container.querySelector('#v')?.innerHTML).toEqual('1')
+		expect(container.querySelector('#t')?.innerHTML).toEqual('2')
+	})
+
 	describe('should rerender when state changed', () => {
 		describe('should rerender when self state changed', () => {
 			test(' change state by redox reducer', async () => {
