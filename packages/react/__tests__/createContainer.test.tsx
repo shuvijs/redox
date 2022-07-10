@@ -627,8 +627,8 @@ describe('createContainer/useRootModel', () => {
 		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
 
 		expect(AppState).toBeTruthy()
-		expect(AppState === AppState1).toBeTruthy()
-		expect(AppState === SubAppState).toBeTruthy()
+		expect(AppState).toStrictEqual(AppState1)
+		expect(AppState).toStrictEqual(SubAppState)
 		act(() => {
 			container
 				.querySelector('#button')
@@ -636,8 +636,8 @@ describe('createContainer/useRootModel', () => {
 		})
 
 		expect(container.querySelector('#value')?.innerHTML).toEqual('2')
-		expect(AppState === AppState1).toBeTruthy()
-		expect(AppState === SubAppState).toBeTruthy()
+		expect(AppState).toStrictEqual(AppState1)
+		expect(AppState).toStrictEqual(SubAppState)
 	})
 
 	test('should keep actions same ref', async () => {
