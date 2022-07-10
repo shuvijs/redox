@@ -64,6 +64,7 @@ const createBatchManager = () => {
 
 	return {
 		addSubscribe,
+		triggerSubscribe,
 	}
 }
 

@@ -55,6 +55,33 @@ describe('batchedUpdates', () => {
 		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
 	})
 
+	test('triggerSubscribe worked', () => {
+		const App = () => {
+			const [index, setIndex] = useState(0)
+
+			useEffect(() => {
+				batchManager.addSubscribe(countModel, storeManager, function () {
+					setIndex(1)
+				})
+			})
+
+			return (
+				<>
+					<div id="value">{index}</div>
+				</>
+			)
+		}
+		act(() => {
+			ReactDOM.createRoot(container).render(<App />)
+		})
+
+		expect(container.querySelector('#value')?.innerHTML).toEqual('0')
+		act(() => {
+			batchManager.triggerSubscribe(countModel)
+		})
+		expect(container.querySelector('#value')?.innerHTML).toEqual('1')
+	})
+
 	test('unSubscribe worked', () => {
 		let unsubscribe: any
 		const App = () => {

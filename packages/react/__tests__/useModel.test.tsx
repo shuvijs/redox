@@ -30,7 +30,7 @@ afterEach(() => {
 })
 
 describe('useModel', () => {
-	test('model name cloud be not defined', async () => {
+	test('model name could be not defined', async () => {
 		const tempModel = defineModel({
 			state: {
 				value: 1,
