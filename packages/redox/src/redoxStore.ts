@@ -309,13 +309,7 @@ export class RedoxStore<IModel extends AnyModel> {
 		const res = () => {
 			const stateAndViews = {} as Record<string, any>
 			Object.assign(stateAndViews, this.getState(), this.$views)
-			Object.defineProperty(stateAndViews, '$state', {
-				enumerable: true,
-				configurable: true,
-				get: () => {
-					return this.getState()
-				},
-			})
+			stateAndViews['$state'] = this.getState()
 			return cacheSelectorFn(stateAndViews) as TReturn
 		}
 		res.clearCache = cacheSelectorFn.clearCache

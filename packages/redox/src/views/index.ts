@@ -281,13 +281,7 @@ export const createViews = <IModel extends AnyModel>(
 								dependRedoxStore.getState(),
 								dependRedoxStore.$views
 							)
-							Object.defineProperty(dependStore, '$state', {
-								enumerable: true,
-								configurable: true,
-								get() {
-									return dependRedoxStore.getState()
-								},
-							})
+							dependStore['$state'] = dependRedoxStore.getState()
 							dependsStateAndView[depend.name] = dependStore
 						})
 					}
@@ -295,13 +289,7 @@ export const createViews = <IModel extends AnyModel>(
 						...selfStateAndView,
 						$dep: dependsStateAndView,
 					}
-					Object.defineProperty(thisPoint, '$state', {
-						enumerable: true,
-						configurable: true,
-						get() {
-							return redoxStore.getState()
-						},
-					})
+					thisPoint['$state'] = redoxStore.getState()
 					return newView(thisPoint)
 				}
 			}
