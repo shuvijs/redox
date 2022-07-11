@@ -854,64 +854,6 @@ describe('createContainer/useRootStaticModel', () => {
 		})
 	})
 
-	test('state updated, but component should not rendered', () => {
-		let renderTime = 0
-		let currentCount = 0
-
-		const StaticApp = () => {
-			renderTime += 1
-
-			const [state, dispatch] = useRootStaticModel(countModel)
-
-			currentCount = state.current.value
-
-			return (
-				<>
-					<div id="state">{state.current.value}</div>
-					<button id="add" type="button" onClick={() => dispatch.add()}>
-						add
-					</button>
-					<button
-						id="updateCount"
-						type="button"
-						onClick={() => {
-							currentCount = state.current.value
-						}}
-					>
-						updateCount
-					</button>
-				</>
-			)
-		}
-
-		act(() => {
-			ReactDOM.createRoot(container).render(
-				<RedoxRoot>
-					<StaticApp />
-				</RedoxRoot>
-			)
-		})
-
-		expect(renderTime).toBe(1)
-		expect(currentCount).toBe(1)
-
-		act(() => {
-			container
-				.querySelector('#add')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-
-		expect(renderTime).toBe(1)
-		expect(currentCount).toBe(1)
-
-		act(() => {
-			container
-				.querySelector('#updateCount')
-				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-		})
-		expect(currentCount).toBe(2)
-	})
-
 	test('should state keep same ref in one component', () => {
 		let stateRef: any
 		let stateRef1: any
