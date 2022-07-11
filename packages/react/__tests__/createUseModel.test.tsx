@@ -14,13 +14,14 @@ import {
 	ISelectorParams,
 } from '@shuvi/redox'
 import { createBatchManager } from '../src/batchManager'
-import { IUseModel } from '../src/types'
-import { createUseModel } from '../src/createUseModel'
+import { IUseModel, IUseStaticModel } from '../src/types'
+import { createUseModel, createUseStaticModel } from '../src/createUseModel'
 import { countModel } from './models'
 
 let storeManager: ReturnType<typeof redox>
 let batchManager: ReturnType<typeof createBatchManager>
 let useTestModel: IUseModel
+let useTestStaticModel: IUseStaticModel
 let container: HTMLDivElement
 
 beforeEach(() => {
@@ -34,6 +35,19 @@ beforeEach(() => {
 	) => {
 		return useMemo(
 			() => createUseModel(storeManager, batchManager),
+			[storeManager, batchManager]
+		)(model, selector, depends)
+	}
+	useTestStaticModel = <
+		IModel extends AnyModel,
+		Selector extends ISelector<IModel>
+	>(
+		model: IModel,
+		selector?: Selector,
+		depends?: any[]
+	) => {
+		return useMemo(
+			() => createUseStaticModel(storeManager, batchManager),
 			[storeManager, batchManager]
 		)(model, selector, depends)
 	}
@@ -734,5 +748,90 @@ describe('createUseModel', () => {
 		})
 
 		expect(container.querySelector('#value')!.textContent).toEqual('2')
+	})
+})
+
+describe('createUseStaticModel', () => {
+	test('could access state an view', async () => {
+		const model = defineModel({
+			name: 'model',
+			state: { value: 1 },
+			views: {
+				test() {
+					return this.value * 2
+				},
+			},
+		})
+
+		const App = () => {
+			const [state, _actions] = useTestStaticModel(model)
+
+			return (
+				<>
+					<div id="v">{state.current.value}</div>
+					<div id="t">{state.current.test}</div>
+				</>
+			)
+		}
+		act(() => {
+			ReactDOM.createRoot(container).render(<App />)
+		})
+
+		expect(container.querySelector('#v')?.innerHTML).toEqual('1')
+		expect(container.querySelector('#t')?.innerHTML).toEqual('2')
+	})
+
+	test('state updated, but component should not rendered', () => {
+		let renderTime = 0
+		let currentCount = 0
+
+		const App = () => {
+			renderTime += 1
+
+			const [state, dispatch] = useTestStaticModel(countModel)
+
+			currentCount = state.current.value
+
+			return (
+				<>
+					<div id="state">{state.current.value}</div>
+					<button id="add" type="button" onClick={() => dispatch.add()}>
+						add
+					</button>
+					<button
+						id="updateCount"
+						type="button"
+						onClick={() => {
+							currentCount = state.current.value
+						}}
+					>
+						updateCount
+					</button>
+				</>
+			)
+		}
+
+		act(() => {
+			ReactDOM.createRoot(container).render(<App />)
+		})
+
+		expect(renderTime).toBe(1)
+		expect(currentCount).toBe(1)
+
+		act(() => {
+			container
+				.querySelector('#add')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+
+		expect(renderTime).toBe(1)
+		expect(currentCount).toBe(1)
+
+		act(() => {
+			container
+				.querySelector('#updateCount')
+				?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+		})
+		expect(currentCount).toBe(2)
 	})
 })
