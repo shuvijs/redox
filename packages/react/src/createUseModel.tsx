@@ -1,28 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
-import type {
-	IStoreManager,
-	AnyModel,
-	ISelector,
-	ISelectorParams,
-} from '@shuvi/redox'
+import type { IStoreManager, AnyModel, ISelector } from '@shuvi/redox'
 import { createBatchManager } from './batchManager'
 import { getStateActions } from './getStateActions'
-
-function defaultSelector<IModel extends AnyModel>(
-	stateAndViews: ISelectorParams<IModel>
-): ISelectorParams<IModel> {
-	const $stateKeys = Object.keys(stateAndViews.$state)
-	$stateKeys.push('$state')
-	const allKeys = Object.keys(stateAndViews)
-	allKeys.forEach((key) => {
-		if (!$stateKeys.includes(key)) {
-			// call view for trigger cache
-			stateAndViews[key]
-		}
-	})
-
-	return stateAndViews
-}
 
 export const createUseModel =
 	(
@@ -31,7 +10,7 @@ export const createUseModel =
 	) =>
 	<IModel extends AnyModel, Selector extends ISelector<IModel>>(
 		model: IModel,
-		selector: Selector = defaultSelector as Selector,
+		selector?: Selector,
 		depends?: any[]
 	) => {
 		const selectorRef = useRef<
@@ -40,9 +19,6 @@ export const createUseModel =
 
 		const cacheFn = useMemo(
 			function () {
-				if (!selector) {
-					return undefined
-				}
 				selectorRef.current = storeManager.get(model).$createSelector(selector)
 				return selectorRef.current
 			},
@@ -145,7 +121,7 @@ export const createUseStaticModel =
 	) =>
 	<IModel extends AnyModel, Selector extends ISelector<IModel>>(
 		model: IModel,
-		selector: Selector = defaultSelector as Selector,
+		selector?: Selector,
 		depends?: any[]
 	) => {
 		const selectorRef = useRef<
@@ -154,9 +130,6 @@ export const createUseStaticModel =
 
 		const cacheFn = useMemo(
 			function () {
-				if (!selector) {
-					return undefined
-				}
 				selectorRef.current = storeManager.get(model).$createSelector(selector)
 				return selectorRef.current
 			},

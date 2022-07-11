@@ -8,8 +8,8 @@ function getStateOrViews<
 	IModel extends AnyModel,
 	Selector extends ISelector<IModel>
 >(store: Store<IModel>, selector?: () => ReturnType<Selector>) {
-	const modelState = store.$state
 	if (!selector) {
+		const modelState = store.$state
 		return modelState
 	}
 	return selector()
