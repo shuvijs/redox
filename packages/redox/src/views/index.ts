@@ -151,7 +151,7 @@ const getStateCollection = () => {
 			if (typeof result === 'function' && target.hasOwnProperty(p)) {
 				const view = result
 				// if view result cacheView, return cache
-				if (view._isRun) {
+				if (view._isCached) {
 					return view()
 				}
 				const previousPos = compareStatePos
@@ -174,7 +174,8 @@ const getStateCollection = () => {
 				const cacheView = function () {
 					return res
 				}
-				cacheView._isRun = true
+				cacheView._isCached = true
+				// overwrite to function for not collected view's result any more
 				target[p] = cacheView
 				return res
 			}

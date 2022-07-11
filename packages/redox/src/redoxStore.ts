@@ -16,7 +16,6 @@ import {
 	AnyAction,
 	ObjectState,
 	ISelector,
-	ISelectorParams,
 } from './types'
 import { createReducers } from './reducers'
 import { createActions } from './actions'
@@ -192,6 +191,8 @@ export class RedoxStore<IModel extends AnyModel> {
 	public storeApi: Store<IModel>
 	public $state: () => IModel['state']
 	public $actions = {} as DispatchOfModel<IModel>
+	public $stateAndViews = {} as { $state: IModel['state'] } & IModel['state'] &
+		RedoxViews<IModel['views']>
 	public $views = {} as RedoxViews<IModel['views']>
 
 	private reducer: ReduxReducer<IModel['state']> | null
@@ -225,6 +226,9 @@ export class RedoxStore<IModel extends AnyModel> {
 		this.dispatch({ type: ActionTypes.INIT })
 
 		enhanceModel(this)
+
+		this.updateStateAndViews()
+		this.subscribe(this.updateStateAndViews)
 
 		const depends = this.model._depends
 		// collection beDepends, a depends b, when b update, call a need trigger listener
@@ -300,36 +304,50 @@ export class RedoxStore<IModel extends AnyModel> {
 		})
 	}
 
-	$createSelector = <TReturn>(selector?: ISelector<IModel, TReturn>) => {
-		let cacheSelectorFn: ReturnType<typeof createSelector>
-		if (selector) {
-			cacheSelectorFn = createSelector(selector)
-		} else {
-			const defaultSelector = (stateAndViews: ISelectorParams<IModel>) => {
-				stateAndViews.$state
-				if (this.$views) {
-					Object.keys(this.$views).forEach((viewKey) => {
-						stateAndViews[viewKey]
-					})
-				}
-				return stateAndViews
-			}
-			cacheSelectorFn = createSelector(defaultSelector)
-		}
+	$createSelector = <TReturn>(selector: ISelector<IModel, TReturn>) => {
+		const cacheSelectorFn = createSelector(selector)
 		const res = () => {
-			const stateAnViews = {} as Record<string, any>
-			Object.assign(stateAnViews, this.getState(), this.$views)
-			Object.defineProperty(stateAnViews, '$state', {
+			const stateAndViews = {} as Record<string, any>
+			Object.assign(stateAndViews, this.getState(), this.$views)
+			Object.defineProperty(stateAndViews, '$state', {
 				enumerable: true,
 				configurable: true,
 				get: () => {
 					return this.getState()
 				},
 			})
-			return cacheSelectorFn(stateAnViews) as TReturn
+			return cacheSelectorFn(stateAndViews) as TReturn
 		}
 		res.clearCache = cacheSelectorFn.clearCache
 		return res
+	}
+
+	updateStateAndViews = () => {
+		const stateAndViews = { $state: this.$state() } as Record<string, any>
+		Object.assign(stateAndViews, this.$state(), this.$views)
+		this.$stateAndViews = new Proxy(stateAndViews, {
+			get(target: any, p: string | symbol): any {
+				let result = target[p]
+
+				// OwnProperty function should be $state and view
+				if (typeof result === 'function' && target.hasOwnProperty(p)) {
+					const view = result
+					// call view fn
+					let res = view()
+					// cache view result
+					target[p] = res
+					return res
+				}
+
+				return result
+			},
+			set() {
+				if (process.env.NODE_ENV === 'development') {
+					validate(() => [[true, `not allow change any state !`]])
+				}
+				return false
+			},
+		})
 	}
 
 	subscribe = (listener: () => void) => {
@@ -441,6 +459,13 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 				validate(() => [[true, `not allow set property '$state'`]])
 			}
 			return false
+		},
+	})
+	Object.defineProperty(store, '$stateAndViews', {
+		enumerable: true,
+		configurable: false,
+		get() {
+			return redoxStore.$stateAndViews
 		},
 	})
 	const views = redoxStore.$views

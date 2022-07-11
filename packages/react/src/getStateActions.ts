@@ -9,8 +9,7 @@ function getStateOrViews<
 	Selector extends ISelector<IModel>
 >(store: Store<IModel>, selector?: () => ReturnType<Selector>) {
 	if (!selector) {
-		const modelState = store.$state
-		return modelState
+		return store.$stateAndViews
 	}
 	return selector()
 }

@@ -19,6 +19,9 @@ export const createUseModel =
 
 		const cacheFn = useMemo(
 			function () {
+				if (!selector) {
+					return undefined
+				}
 				selectorRef.current = storeManager.get(model).$createSelector(selector)
 				return selectorRef.current
 			},
@@ -78,16 +81,6 @@ export const createUseModel =
 			[storeManager, batchManager]
 		)
 
-		// selector change, need updated once
-		useEffect(
-			function () {
-				if (isInit.current) {
-					batchManager.triggerSubscribe(model)
-				}
-			},
-			[batchManager, selectorRef.current]
-		)
-
 		useEffect(
 			function () {
 				const fn = function () {
@@ -111,6 +104,16 @@ export const createUseModel =
 			[storeManager, batchManager]
 		)
 
+		// selector change, need updated once
+		useEffect(
+			function () {
+				if (isInit.current) {
+					batchManager.triggerSubscribe(model)
+				}
+			},
+			[batchManager, selectorRef.current]
+		)
+
 		return modelValue
 	}
 
@@ -130,6 +133,9 @@ export const createUseStaticModel =
 
 		const cacheFn = useMemo(
 			function () {
+				if (!selector) {
+					return undefined
+				}
 				selectorRef.current = storeManager.get(model).$createSelector(selector)
 				return selectorRef.current
 			},
@@ -172,16 +178,6 @@ export const createUseStaticModel =
 			}
 		}, [storeManager, batchManager])
 
-		// selector change, need updated once
-		useEffect(
-			function () {
-				if (isInit.current) {
-					batchManager.triggerSubscribe(model)
-				}
-			},
-			[batchManager, selectorRef.current]
-		)
-
 		useEffect(() => {
 			const fn = () => {
 				const newValue = getStateActions(
@@ -200,6 +196,16 @@ export const createUseStaticModel =
 				unSubscribe()
 			}
 		}, [storeManager, batchManager])
+
+		// selector change, need updated once
+		useEffect(
+			function () {
+				if (isInit.current) {
+					batchManager.triggerSubscribe(model)
+				}
+			},
+			[batchManager, selectorRef.current]
+		)
 
 		return value.current
 	}
