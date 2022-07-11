@@ -79,6 +79,46 @@ describe('defineModel/views', () => {
 		expect(store.viewA).toBe(value)
 	})
 
+	it('should always return same reference if no depends', () => {
+		const sample = defineModel({
+			name: 'sample',
+			state: {
+				a: { foo: 'bar' },
+				b: 1,
+			},
+			reducers: {
+				changeA(state) {
+					return {
+						...state,
+						a: { foo: 'foo' },
+					}
+				},
+				changeB(state) {
+					return {
+						...state,
+						b: state.b + 1,
+					}
+				},
+			},
+			views: {
+				test() {
+					return this
+				},
+			},
+		})
+		const store = manager.get(sample)
+
+		const value = store.test
+		store.changeB()
+		store.changeA()
+		expect(store.test).toBe(value)
+		// $state still init state
+		expect(store.test.$state).toStrictEqual({
+			a: { foo: 'bar' },
+			b: 1,
+		})
+	})
+
 	it("should not be invoked when deps don't change", () => {
 		let calltime = 0
 		const sample = defineModel({
@@ -704,6 +744,46 @@ describe('createSelector', () => {
 		store.changeB()
 
 		expect(view()).toBe(value)
+	})
+
+	it('should always return same reference if no depends', () => {
+		const sample = defineModel({
+			name: 'sample',
+			state: {
+				a: { foo: 'bar' },
+				b: 1,
+			},
+			reducers: {
+				changeA(state) {
+					return {
+						...state,
+						a: { foo: 'foo' },
+					}
+				},
+				changeB(state) {
+					return {
+						...state,
+						b: state.b + 1,
+					}
+				},
+			},
+		})
+
+		const selector = function (stateAndViews: ISelectorParams<typeof sample>) {
+			return stateAndViews
+		}
+
+		const store = manager.get(sample)
+		const view = store.$createSelector(selector)
+		const value = view()
+
+		store.changeB()
+		store.changeA()
+		expect(view()).toBe(value)
+		expect(view().$state).toStrictEqual({
+			a: { foo: 'bar' },
+			b: 1,
+		})
 	})
 
 	test("should not be invoked when deps don't change (this.$state())", () => {
