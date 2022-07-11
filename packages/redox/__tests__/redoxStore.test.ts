@@ -167,7 +167,7 @@ describe('redox', () => {
 		})
 	})
 
-	test('should destroy', () => {
+	it('should destroy', () => {
 		manager = redox()
 		const model = defineModel({
 			name: 'model',
@@ -189,7 +189,7 @@ describe('redox', () => {
 		expect(newStore.$state.value).toBe(0)
 	})
 
-	test('subscribes and unsubscribes should work', () => {
+	it('subscribes and unsubscribes should work', () => {
 		manager = redox()
 		let firstCount = 0
 		const first = defineModel({
@@ -281,6 +281,52 @@ describe('redox', () => {
 		store.addOne(1)
 		expect(dependCount).toBe(2)
 		expect(storeCount).toBe(3)
+	})
+
+	it('stateAndViews get new state and view when state update', () => {
+		manager = redox()
+		const model = defineModel({
+			name: 'model',
+			state: { value: 0 },
+			reducers: {
+				addOne: (state) => {
+					return { value: state.value + 1 }
+				},
+			},
+			views: {
+				test() {
+					return this.$state.value * 2
+				},
+			},
+		})
+
+		const store = manager.get(model)
+		expect(store.$stateAndViews.value).toBe(0)
+		expect(store.$stateAndViews.test).toBe(0)
+		expect(store.$stateAndViews.test).toBe(0)
+		store.addOne()
+		expect(store.$stateAndViews.value).toBe(1)
+		expect(store.$stateAndViews.test).toBe(2)
+	})
+
+	it("stateAndViews's view should be cache", () => {
+		manager = redox()
+		let testCount = 0
+		const model = defineModel({
+			name: 'model',
+			state: { value: 0 },
+			views: {
+				test() {
+					testCount++
+					return this.$state.value
+				},
+			},
+		})
+
+		const store = manager.get(model)
+		store.$stateAndViews.test
+		store.$stateAndViews.test
+		expect(testCount).toBe(1)
 	})
 
 	describe('plugin', () => {
