@@ -33,11 +33,11 @@ const count = defineModel({
 		},
 	},
 	views: {
-		viewNumber(args: number) {
-			return this.value + args
+		viewNumber() {
+			return this.value
 		},
-		viewString(args?: customType) {
-			return this.s + args || ''
+		viewString() {
+			return this.s
 		},
 	},
 })
@@ -46,9 +46,9 @@ type countSelectorParameters = ISelectorParams<typeof count>
 const countSelector = function (stateAndViews: countSelectorParameters) {
 	return {
 		v: stateAndViews.value,
-		n: stateAndViews.viewNumber(1),
-		s: stateAndViews.viewString(),
-		custom: stateAndViews.viewString('custom'),
+		n: stateAndViews.viewNumber,
+		s: stateAndViews.viewString,
+		custom: stateAndViews.viewString,
 	}
 }
 

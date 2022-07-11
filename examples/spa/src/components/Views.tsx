@@ -61,8 +61,8 @@ export type userSelectorParameters = ISelectorParams<typeof user>
 
 const selector = function (stateAndViews: userSelectorParameters) {
 	return {
-		v: stateAndViews.viewValue1(),
-		d: stateAndViews.viewDome(),
+		v: stateAndViews.viewValue1,
+		d: stateAndViews.viewDome,
 	}
 }
 

@@ -32,7 +32,7 @@ describe('redox', () => {
 		expect(typeof store.$set).toBe('function')
 		expect(typeof store.reducerOne).toBe('function')
 		expect(typeof store.actionOne).toBe('function')
-		expect(typeof store.viewOne).toBe('function')
+		expect(typeof store.viewOne).toBe('undefined')
 	})
 
 	it('should init store by initialStage', () => {
@@ -167,7 +167,7 @@ describe('redox', () => {
 		})
 	})
 
-	test('should destroy', () => {
+	it('should destroy', () => {
 		manager = redox()
 		const model = defineModel({
 			name: 'model',
@@ -189,7 +189,7 @@ describe('redox', () => {
 		expect(newStore.$state.value).toBe(0)
 	})
 
-	test('subscribes and unsubscribes should work', () => {
+	it('subscribes and unsubscribes should work', () => {
 		manager = redox()
 		let firstCount = 0
 		const first = defineModel({

@@ -8,7 +8,7 @@ export type selectorParameters = ISelectorParams<typeof listB>
 const selector = function (stateAndViews: selectorParameters) {
 	return {
 		arr: stateAndViews.arr,
-		current: stateAndViews.current(),
+		current: stateAndViews.current,
 	}
 }
 

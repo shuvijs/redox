@@ -350,7 +350,7 @@ describe('defineModel', () => {
 						all() {
 							return {
 								value: this.value,
-								depDouble: this.$dep.dep.double(),
+								depDouble: this.$dep.dep.double,
 							}
 						},
 					},
@@ -361,28 +361,28 @@ describe('defineModel', () => {
 			const store = manager.get(model)
 			const depStore = manager.get(dep)
 
-			let v = store.all()
+			let v = store.all
 			expect(v).toEqual({
 				value: 0,
 				depDouble: 2,
 			})
-			expect(store.all()).toBe(v)
+			expect(store.all).toBe(v)
 
 			depStore.add(1)
-			v = store.all()
+			v = store.all
 			expect(v).toEqual({
 				value: 0,
 				depDouble: 4,
 			})
-			expect(store.all()).toBe(v)
+			expect(store.all).toBe(v)
 
 			store.add(1)
-			v = store.all()
+			v = store.all
 			expect(v).toEqual({
 				value: 1,
 				depDouble: 4,
 			})
-			expect(store.all()).toBe(v)
+			expect(store.all).toBe(v)
 		})
 	})
 })

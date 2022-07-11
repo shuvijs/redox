@@ -10,7 +10,7 @@ const currentUserSelector = function (
 	stateAndViews: currentUserSelectorParams
 ) {
 	return {
-		userInfo: stateAndViews.userInfo(),
+		userInfo: stateAndViews.userInfo,
 	}
 }
 

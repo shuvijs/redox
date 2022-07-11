@@ -52,12 +52,12 @@ const modelHasDep = defineModel(
 				expectType<number>(this.$dep[0].$state.d0)
 				expectType<Action<void>>(this.$dep[0].reducerD0())
 				expectType<number>(this.$dep[0].actionD0())
-				expectType<number>(this.$dep[0].viewD0())
+				expectType<number>(this.$dep[0].viewD0)
 
 				expectType<string>(this.$dep[1].$state.d1)
 				expectType<Action<void>>(this.$dep[1].reducerD1())
 				expectType<string>(this.$dep[1].actionD1())
-				expectType<string>(this.$dep[1].viewD1())
+				expectType<string>(this.$dep[1].viewD1)
 			},
 		},
 	},
