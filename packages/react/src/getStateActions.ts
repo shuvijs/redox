@@ -10,14 +10,14 @@ function tuplify<T extends any[]>(...elements: T) {
 	return elements
 }
 
-function updateStateAndViews<IModel extends AnyModel>(store: Store<IModel>) {
-	const stateAndViews = { $state: store.$state } as ISelectorParams<IModel>
-	Object.assign(stateAndViews, store.$state, store.$views)
+function updateProxy<IModel extends AnyModel>(store: Store<IModel>) {
+	const tempProxy = { $state: store.$state } as ISelectorParams<IModel>
+	Object.assign(tempProxy, store.$state, store.$views)
 	;(
 		store as Store<IModel> & {
-			$stateAndViews: ISelectorParams<IModel>
+			__proxy: ISelectorParams<IModel>
 		}
-	).$stateAndViews = new Proxy(stateAndViews, {
+	).__proxy = new Proxy(tempProxy, {
 		get(target: any, p: string | symbol): any {
 			let result = target[p]
 
@@ -53,13 +53,13 @@ function getStateActions<
 	const store = storeManager.get(model)
 	let state: ISelectorParams<IModel> | ReturnType<Selector>
 	if (!selector) {
-		if (!store.$stateAndViews) {
-			updateStateAndViews(store)
+		if (!store.__proxy) {
+			updateProxy(store)
 			storeManager.subscribe(model, function () {
-				updateStateAndViews(store)
+				updateProxy(store)
 			})
 		}
-		state = store.$stateAndViews as ISelectorParams<IModel>
+		state = store.__proxy as ISelectorParams<IModel>
 	} else {
 		state = selector()
 	}
