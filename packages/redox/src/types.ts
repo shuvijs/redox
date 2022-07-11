@@ -288,9 +288,7 @@ export type Store<IModel extends AnyModel> = {
 	$modify: (modifier: (state: IModel['state']) => void) => void
 	$patch: (partState: ObjectState) => void
 	$actions: DispatchOfModel<IModel>
-	$stateAndViews: IModel['state'] & { $state: IModel['state'] } & RedoxViews<
-			IModel['views']
-		>
+	$views: RedoxViews<IModel['views']>
 	$createSelector: <TReturn>(
 		selector: ISelector<IModel, TReturn>
 	) => (() => TReturn) & { clearCache: () => void }
