@@ -288,6 +288,7 @@ export type Store<IModel extends AnyModel> = {
 	$modify: (modifier: (state: IModel['state']) => void) => void
 	$patch: (partState: ObjectState) => void
 	$actions: DispatchOfModel<IModel>
+	$views: RedoxViews<IModel['views']>
 	$createSelector: <TReturn>(
 		selector: ISelector<IModel, TReturn>
 	) => (() => TReturn) & { clearCache: () => void }
@@ -307,7 +308,7 @@ export type RedoxDispatcher<
 	: (payload: TPayload[0]) => ReturnOfDispatcher<IsAction, TReturn, TPayload[0]>
 
 export type RedoxViews<V> = {
-	[K in keyof V]: V[K] extends (...args: any) => any ? V[K] : never
+	[K in keyof V]: V[K] extends () => any ? ReturnType<V[K]> : never
 }
 
 /** ************************** store-end *************************** */

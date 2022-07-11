@@ -421,13 +421,13 @@ describe('defineModel/actions', () => {
 			actions: {
 				addOne() {
 					this.$set({
-						value: this.valuePlusN(1),
+						value: this.valuePlusN,
 					})
 				},
 			},
 			views: {
-				valuePlusN(n: number) {
-					return this.value + n
+				valuePlusN() {
+					return this.value + 1
 				},
 			},
 		})

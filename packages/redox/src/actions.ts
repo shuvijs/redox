@@ -18,22 +18,32 @@ export const createActions = <IModel extends AnyModel>(
 				depends.forEach((depend) => {
 					const dependApi = redoxStore._cache.get(depend)
 					const dependStore = redoxStore._cache._getRedox(depend)
-					const { $createView, $actions, ...dependApiRest } = dependApi
+					const { $createView, $actions, $views, ...dependApiRest } = dependApi
 					const res = {
 						...(dependApiRest as Omit<
 							Store<Readonly<IModel>>,
-							'$createView' | '$actions'
+							'$createView' | '$actions' | '$views'
 						>),
 					}
 					Object.defineProperty(res, '$state', {
+						enumerable: true,
 						get() {
 							return dependStore.$state()
 						},
 					})
+					const views = dependStore.$views
+					Object.keys(views).forEach((viewKey) => {
+						Object.defineProperty(res, viewKey, {
+							enumerable: true,
+							get() {
+								return views[viewKey].call()
+							},
+						})
+					})
 					dependsStoreApi[depend.name] = res
 				})
 			}
-			const { $createView, $actions, ...storeApiRest } = storeApi
+			const { $createView, $actions, $views, ...storeApiRest } = storeApi
 			const thisPoint = {
 				...storeApiRest,
 				$dep: dependsStoreApi,
@@ -42,6 +52,15 @@ export const createActions = <IModel extends AnyModel>(
 				get() {
 					return redoxStore.$state()
 				},
+			})
+			const views = redoxStore.$views
+			Object.keys(views).forEach((viewKey) => {
+				Object.defineProperty(thisPoint, viewKey, {
+					enumerable: true,
+					get() {
+						return views[viewKey].call()
+					},
+				})
 			})
 			return action.call(thisPoint, ...args)
 		}
