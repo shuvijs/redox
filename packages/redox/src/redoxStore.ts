@@ -440,6 +440,7 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 	store.$patch = redoxStore.$patch
 	store.$modify = redoxStore.$modify
 	store.$actions = redoxStore.$actions
+	store.$views = redoxStore.$views
 	store.$createSelector = redoxStore.$createSelector
 	Object.assign(store, redoxStore.$actions)
 	Object.defineProperty(store, '$state', {
