@@ -20,7 +20,7 @@ export const createUseModel =
 		const cacheFn = useMemo(
 			function () {
 				if (!selector) {
-					return undefined
+					return (selectorRef.current = undefined)
 				}
 				selectorRef.current = storeManager.get(model).$createSelector(selector)
 				return selectorRef.current
@@ -134,7 +134,7 @@ export const createUseStaticModel =
 		const cacheFn = useMemo(
 			function () {
 				if (!selector) {
-					return undefined
+					return (selectorRef.current = undefined)
 				}
 				selectorRef.current = storeManager.get(model).$createSelector(selector)
 				return selectorRef.current

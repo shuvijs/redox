@@ -227,9 +227,6 @@ export class RedoxStore<IModel extends AnyModel> {
 
 		enhanceModel(this)
 
-		this.updateStateAndViews()
-		this.subscribe(this.updateStateAndViews)
-
 		const depends = this.model._depends
 		// collection beDepends, a depends b, when b update, call a need trigger listener
 		if (depends) {
@@ -314,34 +311,6 @@ export class RedoxStore<IModel extends AnyModel> {
 		}
 		res.clearCache = cacheSelectorFn.clearCache
 		return res
-	}
-
-	updateStateAndViews = () => {
-		const stateAndViews = { $state: this.$state() } as Record<string, any>
-		Object.assign(stateAndViews, this.$state(), this.$views)
-		this.$stateAndViews = new Proxy(stateAndViews, {
-			get(target: any, p: string | symbol): any {
-				let result = target[p]
-
-				// OwnProperty function should be $state and view
-				if (typeof result === 'function' && target.hasOwnProperty(p)) {
-					const view = result
-					// call view fn
-					let res = view()
-					// cache view result
-					target[p] = res
-					return res
-				}
-
-				return result
-			},
-			set() {
-				if (process.env.NODE_ENV === 'development') {
-					validate(() => [[true, `not allow change any state !`]])
-				}
-				return false
-			},
-		})
 	}
 
 	subscribe = (listener: () => void) => {
@@ -454,13 +423,6 @@ function getStoreApi<M extends AnyModel = AnyModel>(
 				validate(() => [[true, `not allow set property '$state'`]])
 			}
 			return false
-		},
-	})
-	Object.defineProperty(store, '$stateAndViews', {
-		enumerable: true,
-		configurable: false,
-		get() {
-			return redoxStore.$stateAndViews
 		},
 	})
 	const views = redoxStore.$views
