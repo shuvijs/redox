@@ -16,6 +16,7 @@ import {
 	AnyAction,
 	ObjectState,
 	ISelector,
+	ISelectorParams,
 } from './types'
 import { createReducers } from './reducers'
 import { createActions } from './actions'
@@ -299,8 +300,22 @@ export class RedoxStore<IModel extends AnyModel> {
 		})
 	}
 
-	$createSelector = <TReturn>(selector: ISelector<IModel, TReturn>) => {
-		const cacheSelectorFn = createSelector(selector)
+	$createSelector = <TReturn>(selector?: ISelector<IModel, TReturn>) => {
+		let cacheSelectorFn: ReturnType<typeof createSelector>
+		if (selector) {
+			cacheSelectorFn = createSelector(selector)
+		} else {
+			const defaultSelector = (stateAndViews: ISelectorParams<IModel>) => {
+				stateAndViews.$state
+				if (this.$views) {
+					Object.keys(this.$views).forEach((viewKey) => {
+						stateAndViews[viewKey]
+					})
+				}
+				return stateAndViews
+			}
+			cacheSelectorFn = createSelector(defaultSelector)
+		}
 		const res = () => {
 			const stateAnViews = {} as Record<string, any>
 			Object.assign(stateAnViews, this.getState(), this.$views)
