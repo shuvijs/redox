@@ -283,52 +283,6 @@ describe('redox', () => {
 		expect(storeCount).toBe(3)
 	})
 
-	it('stateAndViews get new state and view when state update', () => {
-		manager = redox()
-		const model = defineModel({
-			name: 'model',
-			state: { value: 0 },
-			reducers: {
-				addOne: (state) => {
-					return { value: state.value + 1 }
-				},
-			},
-			views: {
-				test() {
-					return this.$state.value * 2
-				},
-			},
-		})
-
-		const store = manager.get(model)
-		expect(store.$stateAndViews.value).toBe(0)
-		expect(store.$stateAndViews.test).toBe(0)
-		expect(store.$stateAndViews.test).toBe(0)
-		store.addOne()
-		expect(store.$stateAndViews.value).toBe(1)
-		expect(store.$stateAndViews.test).toBe(2)
-	})
-
-	it("stateAndViews's view should be cache", () => {
-		manager = redox()
-		let testCount = 0
-		const model = defineModel({
-			name: 'model',
-			state: { value: 0 },
-			views: {
-				test() {
-					testCount++
-					return this.$state.value
-				},
-			},
-		})
-
-		const store = manager.get(model)
-		store.$stateAndViews.test
-		store.$stateAndViews.test
-		expect(testCount).toBe(1)
-	})
-
 	describe('plugin', () => {
 		it('should have the proper api', () => {
 			const onInit = jest.fn()

@@ -19,7 +19,7 @@ describe('getStateActions', () => {
 			expect(res.length).toBe(2)
 		})
 
-		test("fist should redox's state", async () => {
+		test("fist should redox's stateAndViews", async () => {
 			const res = getStateActions(countModel, storeManager)
 			const countStore = storeManager.get(countModel)
 			expect(res[0]).toBe(countStore.$stateAndViews)
