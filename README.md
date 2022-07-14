@@ -4,215 +4,221 @@
 
 Redox is a decentralized state management solution based on the concept of redux. Stores are created on demand, which prevents from initializing all of the stores at very first time.
 
-* **ES modules** and **tree-shaking** support.
-* A lightweight solution, redox/**2kB**, redox-react/**1kB**
-* [React Devtools](https://github.com/facebook/react/tree/master/packages/react-devtools) support
-* TypeScript support
-* SSR support
-* Components monitor the state of stores, rerender if the state change
-* Optimize render times across multiple contexts 
-* Keep state when [hmr](https://webpack.js.org/concepts/hot-module-replacement/)
+- TypeScript friendly
+- Easy and efficient.
+- Use in Local and Global
+- **ES modules** and **tree-shaking** support.
 
 <hr />
 
 ## Installation
+
 Install with npm:
+
 ```
 npm install @shuvi/redox
 ```
+
 Install with yarn
+
 ```
 yarn add @shuvi/redox
 ```
 
 ## Usage
 
-### Level up your state management with Redox
-Redox allows you to define multiple stores, and the stores are created on demand. It really increases the flexibility that you could seperate the logic across multiple stores.
-
-### SSR Support
-Redox allows you building the stores on the server side.
-
-### Plugins support out of the box
-For now, Redox support two plugins. We will suppport more useful plugins in the future.
-* [Logger](./packages/plugins/log/package.json): Prints out the related information for degguging.
-* [Persist](./packages/plugins/persist/package.json): Preserves the state of stores in the localStorage.
-
-## Examples
 ```ts
 import { defineModel } from '@shuvi/redox'
 
 const count = defineModel({
-    name: 'count',
-    state: { value: 0 },
-    reducers: {
-        increment: (state, payload: number) => {
-            return {
-                value: state.value + payload,
-            }
-        },
+  name: 'count',
+  state: { count: 0 },
+  reducers: {
+    increment: (state, payload: number) => {
+      return {
+        value: state.value + payload,
+      }
     },
-    actions: {
-      // some actions
-      async addAsync(payload: number) {
-        // asynchonus action
-        await delay(payload)
-        // generated action for the reducer
-        this.increment(1)
-      },
+  },
+})
+```
+
+## Examples
+
+```tsx
+import { defineModel } from '@shuvi/redox'
+
+const filters = defineModel({
+  name: 'filters',
+  state: {
+    status: 'todo',
+    search: '',
+  },
+  reducers: {
+    updateStatus: (state, status: 'todo' | 'doing' | 'done') => {
+      return {
+        ...state,
+        status,
+      }
     },
+    updateSearch: (state, search: string) => {
+      return {
+        ...state,
+        search,
+      }
+    },
+  },
 })
 
-const users = defineModel(
+const todo = defineModel(
   {
-    name: 'users',
+    name: 'todo',
     state: {
-      list: {}
+      todoList: [],
     },
     reducers: {
-      // update list by returned value
-      updateUserName: (state, userInfo) => {
+      // update list by returning new value
+      add: (state, todo) => {
         return {
           ...state,
-          [userInfo.id]: {
-            name: userInfo.name  
-          } 
-        };
-      },
-      // immutable remove the user with immer 
-      remove: (state, id) => {
-        if (id in state) {
-          delete state[id]
+          todoList: [...state.todoList, todo],
         }
       },
-      setList: (_, newList) => {
-        return newList
-      }
+      //  update by modifing state
+      remove: (state, id) => {
+        const index = state.todoList.findIndex((todo) => todo.id === id)
+        if (index >= 0) {
+          state.todoList.splice(index, 1)
+        }
+      },
     },
     actions: {
       // asynchronous function
-      async fetchUserList() {
-        const list = await fetchList();
-        this.setList(list);
-      },
-      // getter, won't cache
-      getUserName(id) {
-        return this.list[id]?.name || ""
+      async fetchTodos() {
+        const resp = await fetch('https://example.com/todos')
+        const data = await response.json()
+        // predefined helper of reducer
+        this.$set({
+          todoList: data,
+        })
       },
     },
     views: {
-      // return value from the cache,
-      // if the arguments have invoked before,
-      // or the 'list' has not changed
-      getUserName(id) {
-        return this.list[id]?.name || ""
+      // value are cached based on state and $deps
+      filteredTodos() {
+        const filters = this.$dep.filters
+        return this.todoList.filter(
+          (todo) =>
+            todo.status === filters.status &&
+            todo.content.includes(filters.content)
+        )
       },
-      // return value from the cache if $dep's state not changed,
-      getDepState() {
-        return this.$dep.count.value
-      }
-    }
+      finishedTodos() {
+        return this.todoList.filter((todo) => todo.status === 'done')
+      },
+    },
   },
-  [ count ] // defined depends
-);
+  [filters] // defined depends
+)
 ```
 
 ```tsx
-import * as React from 'react'
+import * as React, { useEffect } from 'react'
 import { useModel } from '@shuvi/redox-react'
 
 function App() {
-  const [state, actions] = useModel(users, selector);
+  const [state, actions] = useModel(users)
+
+  useEffect(() => {
+    actions.fetchTodos()
+  }, [])
+
   return (
     <div>
-      {
-        state.list.map(user => (
-          <p>{user.name}:{user.id}</p>
-        ))
-      }
-      <button onClick={() => actions.fetchUserList()}>update list</button>
+      {state.filteredTodos.map((todo) => (
+        <div>[{todo.status}]: {todo.content}</div>
+      ))}
     </div>
   )
 }
 ```
+
 ### defineModel(options, depends?)
 
 #### `options [object]`
-| Name         | Type  |   Description  |
-|--------------|--------------------------------------|------------------------------------------|
-| `name?`       | `string`                            | `optional` for **useModel**, `required` for **useRootModel**, **useSharedModel** and **useRootStaticModel**. Since `name` is treated as the key of `cache`, it should be `unique`.                                                                            |
-| `state`      | `object`, `string`, `number`, `boolean`, `array`, `undefined` or `null`                              | `required`. It could be any primitive type except `bigint` and `symbol`. |
-| `reducers?`      | `object`                          | `optional`. Define your reducers here, the corresponding actions will be `generated automatically`.  [immer](https://github.com/immerjs/immer) support out of the box.  |
-| `actions?`  | `object`| `optional`. Normally user defined actions have more complex logic than actions of reducers, like fetching data then dispatch actions. |
-| `views?`     | `object` | `optional`. Functions in views have `cache` mechanism. It holds the returned value of functions. Upadte the `cache` if the state of dependencies has changed. |
+
+| Name        | Type                                                                    | Description                                                                                                                                                                        |
+| ----------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name?`     | `string`                                                                | `optional` for **useModel**, `required` for **useRootModel**, **useSharedModel** and **useRootStaticModel**. Since `name` is treated as the key of `cache`, it should be `unique`. |
+| `state`     | `object`, `string`, `number`, `boolean`, `array`, `undefined` or `null` | `required`. It could be any primitive type except `bigint` and `symbol`.                                                                                                           |
+| `reducers?` | `object`                                                                | `optional`. Define your reducers here, the corresponding actions will be `generated automatically`. [immer](https://github.com/immerjs/immer) support out of the box.              |
+| `actions?`  | `object`                                                                | `optional`. Normally user defined actions have more complex logic than actions of reducers, like fetching data then dispatch actions.                                              |
+| `views?`    | `object`                                                                | `optional`. Functions in views have `cache` mechanism. It holds the returned value of functions. Upadte the `cache` if the state of dependencies has changed.                      |
+
 #### `depends? [array]`
+
 `optional`. It collects other models that the defined model depends on. Defined model would be aware of the `change of state` if it ever happened in any of model dependencies.
+
 ## Core Concepts
 
 ### `state`
+
 The state does not limited to the `object`, Redox also supports `number`, `string`, `boolean` and `array` as the state. The reason for doing this is because the best practice for Redox is to create the model for every component, using Redox everywhere for your state management.
 
 ### `actions`
-Accessible context of `this` in the actions:
 
-* `$state()` - return the state of a store, it's the only way to access the `primitive state`
-* `$set(newState: any)` - replace the state with `newState` 
-* `$modify(modifier: (state) => void)` - `modifier` is a callback function allows the manipulation of `array` and `object`, updating the immutable state, the returned value will be ignored
-* `$dep` - collection of dependencies
-* `plain object` - directly access the state if type of the state is `object`
-* `function from actions` - capable of invoking the function from actions
-* `function from views` - capable of invoking the function from views
-### `views`
-The caculated results from the function will be memorizing in the cache.
-Below is the accessible context of `this` in the views:
-* `$state()` - return the state of a store, it's the only way to access the primitive state
-* `$dep` - collection of dependencies 
-* `plain object` - directly access the state if type of the state is `object`
-* `function from views` - capable of invoking the function from views
+Actions is where to arrange operations against state. They can be asynchronous.
 
 ```ts
-let numberOfCalls = 0
-
-const arrayModel = defineModel({
-  name: 'arrayModel',
-  state: [0, 1],
-  reducers: {
-    doNothing: (state) => {
-      return state
-    },
+const count = defineModel({
+  name: 'user',
+  state: {
+    user: null,
   },
-  views: {
-    getArr(index: number) {
-      numberOfCalls++
-      return this.$state()[index]
+  actions: {
+    async getUserInfo() {
+      const response = await fetch(`https://example.com/user/detail`)
+      const data = await response.json()
+      this.$set({
+        user: data,
+      })
     },
   },
 })
+```
 
-const arrayStore = manager.get(arrayModel)
+### `views`
 
-let valueFromViews
+The return value of view function is cached based on the state.
 
-console.log(numberOfCalls) // 0
-// cache miss, memorize state[0] into the cache
-valueFromViews = arrayStore.getArr(0)
-// first time the function has been called
-console.log(numberOfCalls) // 1
-console.log(valueFromViews) // 0
-
-// the generated action has done nothing
-arrayStore.doNothing()
-// cache hit, return the value from the cache
-valueFromViews = arrayStore.getArr(0)
-// since the result got from the cache, the function hasn't been called
-console.log(numberOfCalls) // 1
-console.log(valueFromViews) // 0
-// cache miss, memorize state[1] into the cache
-valueFromViews = arrayStore.getArr(1)
-// since cache missed, get the value by invoking the function
-console.log(numberOfCalls) // 2
-console.log(valueFromViews) // 1
+```ts
+const todo = defineModel({
+  name: 'todo',
+  state: {
+    todos: [
+      {
+        status: 'todo',
+      },
+    ],
+  },
+  views: {
+    finished(index: number) {
+      return this.todos.filter((todo) => todo.status === 'done')
+    },
+    fisrtFinished() {
+      return this.finished[0]
+    },
+  },
+})
 ```
 
 ## React
-* [Hooks provided for React](./packages/react/README.md)
+
+- [Hooks provided for React](./packages/react/README.md)
+
+## Plugins
+
+For now, Redox support two plugins. We will suppport more useful plugins in the future.
+
+- [Logger](./packages/plugins/log/package.json): Prints out the related information for degguging.
+- [Persist](./packages/plugins/persist/package.json): Preserves the state of stores in the localStorage.
