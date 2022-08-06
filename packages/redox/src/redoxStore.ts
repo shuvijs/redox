@@ -67,7 +67,7 @@ const proxyMethods = [
   'getState',
   'dispatch',
   'subscribe',
-  'onReducer',
+  'reducer',
 ] as const
 
 type IProxyMethods = typeof proxyMethods[number]
@@ -83,6 +83,14 @@ type ICacheMap = Map<string, RedoxStore<any>>
 export type RedoxOptions = {
   initialState?: Record<string, State>
   plugins?: [IPlugin, any?][]
+}
+
+function enhanceModel<IModel extends AnyModel>(
+  redoxStore: RedoxStore<IModel>
+): void {
+  if (redoxStore.model.reducers) createReducers(redoxStore)
+  if (redoxStore.model.actions) createActions(redoxStore)
+  if (redoxStore.model.views) createViews(redoxStore)
 }
 
 export function internalRedox(
@@ -120,10 +128,6 @@ export function internalRedox(
       }
       return initModel(model)
     },
-    subscribe(model: AnyModel, fn: () => any) {
-      const redoxStore = storeManager._getRedox(model)
-      return redoxStore.subscribe(fn)
-    },
     getState() {
       const allState = {} as ReturnType<InternalStoreManager['getState']>
       for (const [key, store] of cacheMap.entries()) {
@@ -135,6 +139,10 @@ export function internalRedox(
       for (const store of cacheMap.values()) {
         store.dispatch(action)
       }
+    },
+    subscribe(model: AnyModel, fn: () => any) {
+      const redoxStore = storeManager._getRedox(model)
+      return redoxStore.subscribe(fn)
     },
     destroy() {
       hooks.map((hook) => hook.onDestroy?.())
@@ -174,7 +182,9 @@ export function internalRedox(
         return target[prop]
       },
     })
-    hooks.map((hook) => hook.onStoreCreated?.(storeProxy))
+    hooks.map((hook) => {
+      hook.onStoreCreated?.(storeProxy)
+    })
     const storeName = model.name
     cacheMap.set(storeName, store)
     return store
@@ -192,8 +202,8 @@ export class RedoxStore<IModel extends AnyModel> {
   public $state: () => IModel['state']
   public $actions = {} as DispatchOfModel<IModel>
   public $views = {} as RedoxViews<IModel['views']>
+  public reducer: ReduxReducer<IModel['state']> | null
 
-  private reducer: ReduxReducer<IModel['state']> | null
   private currentState: IModel['state']
   private listeners: Set<() => void> = new Set()
   private isDispatching: boolean
@@ -229,7 +239,7 @@ export class RedoxStore<IModel extends AnyModel> {
     // collection beDepends, a depends b, when b update, call a need trigger listener
     if (depends) {
       depends.forEach((depend) => {
-        this.cache.subscribe(depend, this._triggerListener)
+        this.cache.subscribe(depend, this.triggerListener)
       })
     }
 
@@ -341,11 +351,6 @@ export class RedoxStore<IModel extends AnyModel> {
     }
   }
 
-  onReducer: (fn: (reducer: ReduxReducer) => ReduxReducer | undefined) => void =
-    (fn) => {
-      this.reducer = fn(this.reducer!) || this.reducer
-    }
-
   dispatch: ReduxDispatch = (action) => {
     if (process.env.NODE_ENV === 'development') {
       validate(() => [
@@ -369,13 +374,13 @@ export class RedoxStore<IModel extends AnyModel> {
     if (nextState !== this.currentState) {
       this.currentState = nextState
       // trigger self listeners
-      this._triggerListener()
+      this.triggerListener()
     }
 
     return action
   }
 
-  _triggerListener = () => {
+  triggerListener = () => {
     for (const listener of this.listeners) {
       listener()
     }
@@ -441,14 +446,6 @@ function getStoreApi<M extends AnyModel = AnyModel>(
     })
   })
   return store
-}
-
-function enhanceModel<IModel extends AnyModel>(
-  redoxStore: RedoxStore<IModel>
-): void {
-  if (redoxStore.model.reducers) createReducers(redoxStore)
-  if (redoxStore.model.actions) createActions(redoxStore)
-  if (redoxStore.model.views) createViews(redoxStore)
 }
 
 setAutoFreeze(false)
