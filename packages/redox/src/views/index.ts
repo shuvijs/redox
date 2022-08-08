@@ -1,4 +1,4 @@
-import type { RedoxStore } from '../redoxStore'
+import type { RedoxStore, StoreAndApi } from '../redoxStore'
 import { createCache } from './createCache'
 import { RedoxViews, AnyModel } from '../types'
 import validate, { isObject } from '../validate'
@@ -244,10 +244,14 @@ function resetCompare() {
 }
 
 export const createViews = <IModel extends AnyModel>(
-  redoxStore: RedoxStore<IModel>
+  $views: RedoxViews<IModel['views']>,
+  redoxStore: RedoxStore<IModel>,
+  getRedox: (m: AnyModel) => StoreAndApi
 ): void => {
-  const model = redoxStore.model
-  const views = model.views
+  const views = redoxStore.model.views
+  if (!views) {
+    return
+  }
   if (views) {
     if (process.env.NODE_ENV === 'development') {
       validate(() => [
@@ -257,7 +261,6 @@ export const createViews = <IModel extends AnyModel>(
         ],
       ])
     }
-    const proxyObj = {} as RedoxViews<IModel['views']>
     ;(Object.keys(views) as Array<keyof IModel['views']>).forEach(
       (viewsKey) => {
         const newView = cacheView(
@@ -266,35 +269,32 @@ export const createViews = <IModel extends AnyModel>(
           // viewsKey
         )
         // @ts-ignore
-        proxyObj[viewsKey] = function () {
-          const state = redoxStore.getState()
-          const view = redoxStore.$views
-          const selfStateAndView = Object.assign({}, state, view)
+        $views[viewsKey] = function () {
           // generate dependsState by dependencies
           let dependsStateAndView = {} as Record<string, any>
-          const depends = model._depends
+          const depends = redoxStore.model._depends
           if (depends) {
             depends.forEach((depend) => {
-              const dependRedoxStore = redoxStore.cache._getRedox(depend)
-              const dependStore = Object.assign(
-                {},
-                dependRedoxStore.getState(),
-                dependRedoxStore.$views
-              )
-              dependStore['$state'] = dependRedoxStore.getState()
-              dependsStateAndView[depend.name] = dependStore
+              const { store, storeApi } = getRedox(depend)
+              const state = store.getState()
+              const { $views } = storeApi
+              const res = Object.assign({}, state, $views, {
+                $state: state,
+              })
+              dependsStateAndView[depend.name] = res
             })
           }
-          const thisPoint = {
-            ...selfStateAndView,
+          const { store, storeApi } = getRedox(redoxStore.model)
+          const state = store.getState()
+          const { $views } = storeApi
+          const thisPoint = Object.assign({}, state, $views, {
             $dep: dependsStateAndView,
-          }
-          thisPoint['$state'] = redoxStore.getState()
+            $state: state,
+          })
           return newView(thisPoint)
         }
       }
     )
-    redoxStore.$views = proxyObj
   }
 }
 
