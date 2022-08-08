@@ -17,7 +17,7 @@ import {
 import { createReducers } from './reducers'
 import { createActions } from './actions'
 import { createViews, createSelector } from './views'
-import reduxDevTools from './reduxDevtools'
+import devTools from './devtools'
 import { RedoxStore } from '../redoxStore'
 import getStoreApi from './getStoreApi'
 import validate from '../validate'
@@ -48,7 +48,7 @@ export function redox(
   }
 
   if (process.env.NODE_ENV === 'development') {
-    plugins.unshift([reduxDevTools])
+    plugins.unshift([devTools])
   }
 
   const hooks = plugins.map(([plugin, option]) => plugin(option))
