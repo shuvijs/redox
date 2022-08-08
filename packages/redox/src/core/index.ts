@@ -17,7 +17,6 @@ import {
 import { createReducers } from './reducers'
 import { createActions } from './actions'
 import { createViews, createSelector } from './views'
-import devTools from './devtools'
 import { RedoxStore } from '../redoxStore'
 import getStoreApi from './getStoreApi'
 import validate from '../validate'
@@ -45,10 +44,6 @@ export function redox(
       delete initState[name]
     }
     return result
-  }
-
-  if (process.env.NODE_ENV === 'development') {
-    plugins.unshift([devTools])
   }
 
   const hooks = plugins.map(([plugin, option]) => plugin(option))
