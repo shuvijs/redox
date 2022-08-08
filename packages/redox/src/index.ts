@@ -1,4 +1,5 @@
-import { redox, IStoreManager, IPlugin, RedoxOptions } from './redoxStore'
+import { redox, RedoxOptions } from './core'
+import { IStoreManager, IPlugin } from './core/types'
 import validate from './validate'
 import { defineModel } from './defineModel'
 

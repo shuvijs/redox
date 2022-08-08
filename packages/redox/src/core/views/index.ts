@@ -1,8 +1,9 @@
-import type { RedoxStore, StoreAndApi } from '../redoxStore'
+import type { RedoxStore } from '../../redoxStore'
+import { StoreAndApi } from '../types'
 import { createCache } from './createCache'
-import { RedoxViews, AnyModel } from '../types'
-import validate, { isObject } from '../validate'
-import { isComplexObject } from '../utils'
+import { RedoxViews, AnyModel } from '../../types'
+import validate, { isObject } from '../../validate'
+import { isComplexObject } from '../../utils'
 /**
  * ICompare is tree structure, view is store view arguments and result
  *
