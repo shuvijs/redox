@@ -1,5 +1,5 @@
-import validate from '../validate'
-import { isObject } from '../utils'
+import validate from '../../validate'
+import { isPlainObject } from '../../utils'
 
 /** A standard function returning true if two values are considered equal */
 type EqualityFn = (a: any, b: any, i: number) => boolean
@@ -17,7 +17,7 @@ function createCacheCreator(memoize: MemoizeFunction) {
     if (process.env.NODE_ENV === 'development') {
       validate(() => [
         [
-          !isObject(memoizeOption),
+          !isPlainObject(memoizeOption),
           `createSelector expects an object last inputs, but received: [${typeof memoizeOption}]`,
         ],
         [
