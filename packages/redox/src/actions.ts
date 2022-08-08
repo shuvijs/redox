@@ -1,66 +1,47 @@
-import { AnyModel, Store } from './types'
-import type { RedoxStore } from './redoxStore'
+import { AnyModel, Store, DispatchOfModel } from './types'
+import type { RedoxStore, StoreAndApi } from './redoxStore'
 
 export const createActions = <IModel extends AnyModel>(
-  redoxStore: RedoxStore<IModel>
+  $actions: DispatchOfModel<IModel>,
+  redoxStore: RedoxStore<IModel>,
+  getRedox: (m: AnyModel) => StoreAndApi
 ): void => {
-  const actions = redoxStore.model.actions!
+  const actions = redoxStore.model.actions
+  if (!actions) {
+    return
+  }
   // map actions names to dispatch actions
   const actionKeys = Object.keys(actions) as Array<keyof IModel['actions']>
   actionKeys.forEach((actionsName) => {
     // @ts-ignore
-    redoxStore.$actions[actionsName as string] = function (...args: any[]) {
+    $actions[actionsName as string] = function (...args: any[]) {
       const action = actions[actionsName]
-      const storeApi = redoxStore.cache.get(redoxStore.model)
       const dependsStoreApi = {} as any
       const depends = redoxStore.model._depends
       if (depends) {
         depends.forEach((depend) => {
-          const dependApi = redoxStore.cache.get(depend)
-          const dependStore = redoxStore.cache._getRedox(depend)
-          const { $createView, $actions, $views, ...dependApiRest } = dependApi
-          const res = {
-            ...(dependApiRest as Omit<
-              Store<Readonly<IModel>>,
-              '$createView' | '$actions' | '$views'
-            >),
-          }
+          const { storeApi } = getRedox(depend)
+          const { $createView, $actions, $views, $state, ...dependApiRest } =
+            storeApi
+          const res = dependApiRest
           Object.defineProperty(res, '$state', {
             enumerable: true,
             get() {
-              return dependStore.$state()
+              return storeApi.$state
             },
-          })
-          const views = dependStore.$views
-          Object.keys(views).forEach((viewKey) => {
-            Object.defineProperty(res, viewKey, {
-              enumerable: true,
-              get() {
-                return views[viewKey].call()
-              },
-            })
           })
           dependsStoreApi[depend.name] = res
         })
       }
-      const { $createView, $actions, $views, ...storeApiRest } = storeApi
-      const thisPoint = {
-        ...storeApiRest,
-        $dep: dependsStoreApi,
-      }
+      const storeAndStoreApi = getRedox(redoxStore.model)
+      const storeApi = storeAndStoreApi.storeApi
+      const { $createView, $actions, $views, $state, ...storeApiRest } =
+        storeApi
+      const thisPoint = Object.assign(storeApiRest, { $dep: dependsStoreApi })
       Object.defineProperty(thisPoint, '$state', {
         get() {
-          return redoxStore.$state()
+          return storeApi.$state
         },
-      })
-      const views = redoxStore.$views
-      Object.keys(views).forEach((viewKey) => {
-        Object.defineProperty(thisPoint, viewKey, {
-          enumerable: true,
-          get() {
-            return views[viewKey].call()
-          },
-        })
       })
       return action.call(thisPoint, ...args)
     }

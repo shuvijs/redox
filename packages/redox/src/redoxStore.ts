@@ -41,16 +41,13 @@ const ActionTypes = {
 
 type unSubscribe = () => void
 
-type InternalStoreManager = {
+export type IStoreManager = {
   get<IModel extends AnyModel>(model: IModel): Store<IModel>
-  _getRedox<IModel extends AnyModel>(model: IModel): RedoxStore<IModel>
-  getState(): { [X: string]: State }
+  getState(): Record<string, State>
   dispatch(action: AnyAction): void
   subscribe(model: AnyModel, fn: () => any): unSubscribe
   destroy(): void
 }
-
-export type IStoreManager = Omit<InternalStoreManager, '_getRedox'>
 
 export type pluginHook<IModel extends AnyModel = AnyModel> = {
   onInit?(
@@ -78,27 +75,23 @@ export type IPlugin<IModel extends AnyModel = AnyModel, Option = any> = (
   option: Option
 ) => pluginHook<IModel>
 
-type ICacheMap = Map<string, RedoxStore<any>>
+export type StoreAndApi = {
+  store: RedoxStore<AnyModel>
+  storeApi: ReturnType<typeof getStoreApi>
+}
+type ICacheMap = Map<string, StoreAndApi>
 
 export type RedoxOptions = {
-  initialState?: Record<string, State>
+  initialState?: Record<string, any>
   plugins?: [IPlugin, any?][]
 }
 
-function enhanceModel<IModel extends AnyModel>(
-  redoxStore: RedoxStore<IModel>
-): void {
-  if (redoxStore.model.reducers) createReducers(redoxStore)
-  if (redoxStore.model.actions) createActions(redoxStore)
-  if (redoxStore.model.views) createViews(redoxStore)
-}
-
-export function internalRedox(
+export function redox(
   {
     initialState = emptyObject,
     plugins = [],
   }: RedoxOptions = {} as RedoxOptions
-): InternalStoreManager {
+) {
   const cacheMap: ICacheMap = new Map()
   let initState = initialState
 
@@ -117,56 +110,59 @@ export function internalRedox(
   const hooks = plugins.map(([plugin, option]) => plugin(option))
   const storeManager = {
     get<IModel extends AnyModel>(model: IModel) {
-      const redoxStore = storeManager._getRedox(model)
-      return redoxStore.storeApi
-    },
-    _getRedox<IModel extends AnyModel>(model: IModel) {
-      const name = model.name
-      let cacheStore = cacheMap.get(name)
-      if (cacheStore) {
-        return cacheStore as RedoxStore<IModel>
-      }
-      return initModel(model)
+      let cacheStore = getRedox(model)
+      return cacheStore.storeApi
     },
     getState() {
-      const allState = {} as ReturnType<InternalStoreManager['getState']>
-      for (const [key, store] of cacheMap.entries()) {
-        allState[key] = store.$state()
+      const allState = {} as ReturnType<IStoreManager['getState']>
+      for (const [key, { store }] of cacheMap.entries()) {
+        allState[key] = store.getState()
       }
       return allState
     },
     dispatch(action: AnyAction) {
-      for (const store of cacheMap.values()) {
-        store.dispatch(action)
+      for (const cache of cacheMap.values()) {
+        cache.store.dispatch(action)
       }
     },
     subscribe(model: AnyModel, fn: () => any) {
-      const redoxStore = storeManager._getRedox(model)
-      return redoxStore.subscribe(fn)
+      const redoxStore = getRedox(model)
+      return redoxStore.store.subscribe(fn)
     },
     destroy() {
       hooks.map((hook) => hook.onDestroy?.())
-      for (const store of cacheMap.values()) {
-        store.destroy()
+      for (const cache of cacheMap.values()) {
+        cache.store.destroy()
       }
       cacheMap.clear()
       initState = emptyObject
     },
+  } as IStoreManager
+
+  function getRedox<M extends AnyModel>(model: M) {
+    const name = model.name
+    let cacheStore = cacheMap.get(name)
+    if (cacheStore) {
+      return cacheStore
+    }
+    return initModel(model)
   }
-  function initModel<M extends AnyModel>(model: M): RedoxStore<M> {
+
+  function initModel<M extends AnyModel>(model: M): StoreAndApi {
     hooks.map((hook) => hook.onModel?.(model))
+
+    const store = new RedoxStore(model, getInitialState(model.name))
 
     const depends = model._depends
     if (depends) {
       depends.forEach((depend) => {
-        storeManager._getRedox(depend) // trigger initial
+        // trigger depends initial
+        const dependStore = getRedox(depend)
+        // collection beDepends, a depends b, when b update, call a need trigger listener
+        dependStore.store.subscribe(store.triggerListener)
       })
     }
-    const store = new RedoxStore(
-      model,
-      storeManager,
-      getInitialState(model.name)
-    )
+
     const storeProxy = new Proxy(store, {
       get(target, prop: IProxyMethods) {
         if (process.env.NODE_ENV === 'development') {
@@ -185,21 +181,66 @@ export function internalRedox(
     hooks.map((hook) => {
       hook.onStoreCreated?.(storeProxy)
     })
+
+    let $state: RedoxStore<M>['getState']
+    // $state function
+    if (process.env.NODE_ENV === 'development') {
+      let lastState = store.getState()
+      let $stateCache = readonlyDeepClone(lastState)
+      $state = function () {
+        if (lastState === store.getState()) {
+          return $stateCache
+        }
+        lastState = store.getState()
+        $stateCache = readonlyDeepClone(lastState)
+        return $stateCache
+      } as RedoxStore<M>['getState']
+    } else {
+      $state = store.getState
+    }
+
+    const $views = {} as RedoxViews<M['views']>
+    createViews($views, store, getRedox)
+
+    const $createSelector = <TReturn>(selector: ISelector<M, TReturn>) => {
+      const cacheSelectorFn = createSelector(selector)
+      const res = () => {
+        const stateAndViews = {} as Record<string, any>
+        Object.assign(stateAndViews, store.getState(), $views)
+        stateAndViews['$state'] = store.getState()
+        return cacheSelectorFn(stateAndViews) as TReturn
+      }
+      res.clearCache = cacheSelectorFn.clearCache
+      return res
+    }
+
+    const $actions = {} as DispatchOfModel<M>
+    createReducers($actions, store)
+    createActions($actions, store, getRedox)
+
+    const storeApi: Store<M> = getStoreApi(
+      store,
+      $state,
+      $actions,
+      $views,
+      $createSelector
+    )
+
     const storeName = model.name
-    cacheMap.set(storeName, store)
-    return store
+    const storeAndApi = {
+      store,
+      storeApi,
+    }
+    cacheMap.set(storeName, storeAndApi)
+    return storeAndApi
   }
-  const { _getRedox, ...rest } = storeManager
-  hooks.map((hook) => hook.onInit?.({ ...rest }, initState))
+  hooks.map((hook) => hook.onInit?.(storeManager, initState))
   return storeManager
 }
 
 export class RedoxStore<IModel extends AnyModel> {
-  public cache: InternalStoreManager
   public name: Readonly<string>
   public model: Readonly<IModel>
-  public storeApi: Store<IModel>
-  public $state: () => IModel['state']
   public $actions = {} as DispatchOfModel<IModel>
   public $views = {} as RedoxViews<IModel['views']>
   public reducer: ReduxReducer<IModel['state']> | null
@@ -208,42 +249,13 @@ export class RedoxStore<IModel extends AnyModel> {
   private listeners: Set<() => void> = new Set()
   private isDispatching: boolean
 
-  constructor(model: IModel, cache: InternalStoreManager, initState: State) {
-    this.cache = cache
+  constructor(model: IModel, initState: State) {
     this.model = model
     this.name = this.model.name || ''
     this.reducer = createModelReducer(model)
     this.currentState = initState || model.state
     this.isDispatching = false
-
-    if (process.env.NODE_ENV === 'development') {
-      let lastState = this.getState()
-      let $stateCache = readonlyDeepClone(lastState)
-      this.$state = () => {
-        if (lastState === this.getState()) {
-          return $stateCache
-        }
-        lastState = this.getState()
-        $stateCache = readonlyDeepClone(lastState)
-        return $stateCache
-      }
-    } else {
-      this.$state = this.getState
-    }
-
     this.dispatch({ type: ActionTypes.INIT })
-
-    enhanceModel(this)
-
-    const depends = this.model._depends
-    // collection beDepends, a depends b, when b update, call a need trigger listener
-    if (depends) {
-      depends.forEach((depend) => {
-        this.cache.subscribe(depend, this.triggerListener)
-      })
-    }
-
-    this.storeApi = getStoreApi(this)
   }
 
   getState = () => {
@@ -307,18 +319,6 @@ export class RedoxStore<IModel extends AnyModel> {
         modifier(state)
       },
     })
-  }
-
-  $createSelector = <TReturn>(selector: ISelector<IModel, TReturn>) => {
-    const cacheSelectorFn = createSelector(selector)
-    const res = () => {
-      const stateAndViews = {} as Record<string, any>
-      Object.assign(stateAndViews, this.getState(), this.$views)
-      stateAndViews['$state'] = this.getState()
-      return cacheSelectorFn(stateAndViews) as TReturn
-    }
-    res.clearCache = cacheSelectorFn.clearCache
-    return res
   }
 
   subscribe = (listener: () => void) => {
@@ -392,7 +392,6 @@ export class RedoxStore<IModel extends AnyModel> {
     this.reducer = null
     this.listeners.clear()
     this.model = emptyObject
-    this.cache = emptyObject
     if (this.$views) {
       const viewsKeys = Object.keys(this.$views)
       for (const viewsKey of viewsKeys) {
@@ -405,21 +404,27 @@ export class RedoxStore<IModel extends AnyModel> {
 }
 
 function getStoreApi<M extends AnyModel = AnyModel>(
-  redoxStore: RedoxStore<M>
+  redoxStore: RedoxStore<M>,
+  $state: () => M['state'],
+  $actions: DispatchOfModel<M>,
+  $views: RedoxViews<M['views']>,
+  $createSelector: <TReturn>(
+    selector: ISelector<M, TReturn>
+  ) => (() => TReturn) & { clearCache: () => void }
 ): Store<M> {
   const store = {} as Store<M>
   store.$set = redoxStore.$set
   store.$patch = redoxStore.$patch
   store.$modify = redoxStore.$modify
-  store.$actions = redoxStore.$actions
-  store.$views = redoxStore.$views
-  store.$createSelector = redoxStore.$createSelector
-  Object.assign(store, redoxStore.$actions)
+  store.$actions = $actions
+  store.$views = $views
+  store.$createSelector = $createSelector
+  Object.assign(store, $actions)
   Object.defineProperty(store, '$state', {
     enumerable: true,
     configurable: false,
     get() {
-      return redoxStore.$state()
+      return $state()
     },
     set() {
       if (process.env.NODE_ENV === 'development') {
@@ -428,7 +433,7 @@ function getStoreApi<M extends AnyModel = AnyModel>(
       return false
     },
   })
-  const views = redoxStore.$views
+  const views = $views
   Object.keys(views).forEach((viewKey) => {
     Object.defineProperty(store, viewKey, {
       enumerable: true,
