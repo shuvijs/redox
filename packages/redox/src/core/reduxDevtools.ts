@@ -1,5 +1,5 @@
-import { IPlugin } from './redoxStore'
-import validate from './validate'
+import validate from '../validate'
+import type { IPlugin } from './types'
 
 const SET_FROM_DEVTOOLS = '@@redox/SET_FROM_DEVTOOLS'
 

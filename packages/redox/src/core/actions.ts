@@ -1,5 +1,6 @@
-import { AnyModel, Store, DispatchOfModel } from './types'
-import type { RedoxStore, StoreAndApi } from './redoxStore'
+import { AnyModel, DispatchOfModel } from '../types'
+import { StoreAndApi } from './types'
+import type { RedoxStore } from '../redoxStore'
 
 export const createActions = <IModel extends AnyModel>(
   $actions: DispatchOfModel<IModel>,
