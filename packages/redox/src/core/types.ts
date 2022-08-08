@@ -1,15 +1,15 @@
-import { Store, AnyModel, AnyAction, State } from '../types'
+import { storeApi, AnyModel, AnyAction, State } from '../types'
 import type { RedoxStore } from '../redoxStore'
 
 export type StoreAndApi = {
   store: RedoxStore<AnyModel>
-  storeApi: Store<AnyModel>
+  storeApi: storeApi<AnyModel>
 }
 
 type unSubscribe = () => void
 
 export type IStoreManager = {
-  get<IModel extends AnyModel>(model: IModel): Store<IModel>
+  get<IModel extends AnyModel>(model: IModel): storeApi<IModel>
   getState(): Record<string, State>
   dispatch(action: AnyAction): void
   subscribe(model: AnyModel, fn: () => any): unSubscribe
