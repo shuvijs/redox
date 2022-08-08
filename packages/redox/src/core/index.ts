@@ -1,6 +1,6 @@
 import {
   State,
-  Store,
+  storeApi,
   DispatchOfModel,
   RedoxViews,
   AnyModel,
@@ -162,7 +162,7 @@ export function redox(
     createReducers($actions, store)
     createActions($actions, store, getRedox)
 
-    const storeApi: Store<M> = getStoreApi(
+    const storeApi: storeApi<M> = getStoreApi(
       store,
       $state,
       $actions,

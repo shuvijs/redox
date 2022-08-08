@@ -1,6 +1,6 @@
 import type { RedoxStore } from '../redoxStore'
 import {
-  Store,
+  storeApi,
   DispatchOfModel,
   RedoxViews,
   AnyModel,
@@ -17,8 +17,8 @@ export default function getStoreApi<M extends AnyModel = AnyModel>(
   $createSelector: <TReturn>(
     selector: ISelector<M, TReturn>
   ) => (() => TReturn) & { clearCache: () => void }
-): Store<M> {
-  const store = {} as Store<M>
+): storeApi<M> {
+  const store = {} as storeApi<M>
   store.$set = redoxStore.$set
   store.$patch = redoxStore.$patch
   store.$modify = redoxStore.$modify

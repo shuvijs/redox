@@ -9,8 +9,6 @@ import {
   RedoxActions,
   Views,
   Model,
-  DispatchOfModel,
-  RedoxViews,
   AnyModel,
   ObjectState,
 } from './types'
@@ -30,9 +28,7 @@ const ActionTypes = {
 export class RedoxStore<IModel extends AnyModel> {
   public name: Readonly<string>
   public model: Readonly<IModel>
-  public $actions = {} as DispatchOfModel<IModel>
-  public $views = {} as RedoxViews<IModel['views']>
-  public reducer: ReduxReducer<IModel['state']> | null
+  public reducer: ReduxReducer<IModel['state']>
 
   private currentState: IModel['state']
   private listeners: Set<() => void> = new Set()
@@ -155,7 +151,7 @@ export class RedoxStore<IModel extends AnyModel> {
 
     try {
       this.isDispatching = true
-      nextState = this.reducer!(this.currentState, action)
+      nextState = this.reducer(this.currentState, action)
     } finally {
       this.isDispatching = false
     }
@@ -176,25 +172,16 @@ export class RedoxStore<IModel extends AnyModel> {
   }
 
   destroy = () => {
-    // @ts-ignore
     this.currentState = null
-    this.reducer = null
+    this.reducer = () => {}
     this.listeners.clear()
     this.model = emptyObject
-    if (this.$views) {
-      const viewsKeys = Object.keys(this.$views)
-      for (const viewsKey of viewsKeys) {
-        // @ts-ignore
-        this.$views[viewsKey] = null
-      }
-      this.$views = emptyObject
-    }
   }
 }
 
 setAutoFreeze(false)
 
-export function createModelReducer<
+function createModelReducer<
   N extends string,
   S extends State,
   MC extends ModelCollection,
