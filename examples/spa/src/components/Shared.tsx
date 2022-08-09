@@ -1,29 +1,29 @@
 import * as React from 'react'
 import { redox } from '@shuvi/redox'
-import { LocalProviderA, LocalProviderB, A, B } from './useSharedModels'
+import { LocalProviderA, LocalProviderB, A, B } from './use-shared-models'
 
-const storeManager0 = redox()
-const storeManager1 = redox()
+const redoxStore0 = redox()
+const redoxStore1 = redox()
 
 function Shared() {
-	let [data, setState] = React.useState(false)
-	return (
-		<>
-			<button
-				onClick={() => {
-					setState(!data)
-				}}
-			>
-				togglestoreManager {data}
-			</button>
-			<LocalProviderA storeManager={data ? storeManager0 : storeManager1}>
-				<LocalProviderB storeManager={data ? storeManager0 : storeManager1}>
-					<A></A>
-					<B></B>
-				</LocalProviderB>
-			</LocalProviderA>
-		</>
-	)
+  let [data, setState] = React.useState(false)
+  return (
+    <>
+      <button
+        onClick={() => {
+          setState(!data)
+        }}
+      >
+        toggleredoxStore {data}
+      </button>
+      <LocalProviderA redoxStore={data ? redoxStore0 : redoxStore1}>
+        <LocalProviderB redoxStore={data ? redoxStore0 : redoxStore1}>
+          <A></A>
+          <B></B>
+        </LocalProviderB>
+      </LocalProviderA>
+    </>
+  )
 }
 
 export default Shared

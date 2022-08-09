@@ -3,12 +3,12 @@ import ReactDOM from 'react-dom/client'
 import { RedoxRoot } from '@shuvi/redox-react'
 
 import App from './App'
-import { storeManager } from './storeManager'
+import { redoxStore } from './redox-store'
 
 const rootElement = document.getElementById('root')
 const root = ReactDOM.createRoot(rootElement)
 root.render(
-	<RedoxRoot storeManager={storeManager}>
-		<App />
-	</RedoxRoot>
+  <RedoxRoot redoxStore={redoxStore}>
+    <App />
+  </RedoxRoot>
 )
