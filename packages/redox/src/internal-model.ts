@@ -3,10 +3,10 @@ import {
   Action,
   State,
   ModelCollection,
-  ReduxReducer,
-  ReduxDispatch,
+  Reducer,
+  Dispatch,
   Reducers,
-  RedoxActions,
+  Actions,
   Views,
   Model,
   AnyModel,
@@ -25,10 +25,10 @@ const ActionTypes = {
   PATCH: '@@redox/PATCH',
 }
 
-export class RedoxStore<IModel extends AnyModel> {
+export class InternalModel<IModel extends AnyModel> {
   public name: Readonly<string>
   public model: Readonly<IModel>
-  public reducer: ReduxReducer<IModel['state']>
+  public reducer: Reducer<IModel['state']>
 
   private currentState: IModel['state']
   private listeners: Set<() => void> = new Set()
@@ -136,7 +136,7 @@ export class RedoxStore<IModel extends AnyModel> {
     }
   }
 
-  dispatch: ReduxDispatch = (action) => {
+  dispatch: Dispatch = (action) => {
     if (process.env.NODE_ENV === 'development') {
       validate(() => [
         [
@@ -186,9 +186,9 @@ function createModelReducer<
   S extends State,
   MC extends ModelCollection,
   R extends Reducers<S>,
-  RA extends RedoxActions,
+  RA extends Actions,
   V extends Views
->(model: Model<N, S, MC, R, RA, V>): ReduxReducer<S, Action> {
+>(model: Model<N, S, MC, R, RA, V>): Reducer<S> {
   // select and run a reducer based on the incoming action
   return (state: S = model.state, action: Action): S => {
     if (action.type === ActionTypes.SET) {

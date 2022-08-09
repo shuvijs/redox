@@ -1,52 +1,52 @@
 import { defineModel, redox, expectType, Action } from './'
 
-const manager = redox()
+const redoxStore = redox()
 
 interface State {
-	count: number
+  count: number
 }
 
 const model = defineModel({
-	name: 'model',
-	state: {
-		count: 0,
-	},
-	actions: {
-		accessibleThisValue() {
-			expectType<State>(this.$state)
-			expectType<void>(this.$set({ count: 0 }))
-			expectType<void>(this.$patch({ count: 0 }))
-			expectType<void>(this.$modify((_) => {}))
-			expectType<number>(this.getValue())
-			expectType<Promise<void>>(this.asyncAdd(1))
-			expectType<void>(this.viewFunction)
-			expectType<Action>(this.add(1))
-		},
-		otherAction() {
-			return this.getValue()
-		},
-		getValue(): number {
-			this.otherAction()
-			return this.$state.count
-		},
-		triggerReducer() {
-			this.add(1)
-		},
-		async asyncAdd(payload: number): Promise<void> {
-			await this.add(payload)
-		},
-	},
-	reducers: {
-		add(state, payload) {
-			state.count += payload
-		},
-	},
-	views: {
-		viewFunction() {},
-	},
+  name: 'model',
+  state: {
+    count: 0,
+  },
+  actions: {
+    accessibleThisValue() {
+      expectType<State>(this.$state)
+      expectType<void>(this.$set({ count: 0 }))
+      expectType<void>(this.$patch({ count: 0 }))
+      expectType<void>(this.$modify((_) => {}))
+      expectType<number>(this.getValue())
+      expectType<Promise<void>>(this.asyncAdd(1))
+      expectType<void>(this.viewFunction)
+      expectType<Action>(this.add(1))
+    },
+    otherAction() {
+      return this.getValue()
+    },
+    getValue(): number {
+      this.otherAction()
+      return this.$state.count
+    },
+    triggerReducer() {
+      this.add(1)
+    },
+    async asyncAdd(payload: number): Promise<void> {
+      await this.add(payload)
+    },
+  },
+  reducers: {
+    add(state, payload) {
+      state.count += payload
+    },
+  },
+  views: {
+    viewFunction() {},
+  },
 })
 
-const store = manager.get(model)
+const store = redoxStore.getModel(model)
 
 expectType<number>(store.getValue())
 expectType<number>(store.otherAction())
@@ -54,9 +54,9 @@ expectType<void>(store.triggerReducer())
 //@ts-expect-error
 store.add()
 store.$modify((state) => {
-	expectType<number>(state.count)
-	//@ts-expect-error
-	state.count = ''
+  expectType<number>(state.count)
+  //@ts-expect-error
+  state.count = ''
 })
 
 expectType<void>(store.$set(0))

@@ -1,44 +1,3 @@
-type CheckIfParameterOptional<P> = P extends [unknown, ...unknown[]]
-  ? false
-  : true
-
-type Without<FirstType, SecondType> = {
-  [KeyType in Exclude<keyof FirstType, keyof SecondType>]: never
-}
-export type MergeExclusive<FirstType, SecondType> =
-  | FirstType
-  | SecondType extends object
-  ?
-      | (Without<FirstType, SecondType> & SecondType)
-      | (Without<SecondType, FirstType> & FirstType)
-  : FirstType | SecondType
-
-export type DeepReadonly<T> = {
-  readonly [P in keyof T]: keyof T[P] extends never ? T[P] : DeepReadonly<T[P]>
-}
-
-/** ************************** redux-start *************************** */
-
-interface ReduxAction<T = string> {
-  type: T
-}
-
-export interface AnyAction extends ReduxAction {
-  // Allows any extra properties to be defined in an action.
-  [extraProps: string]: any
-}
-
-export type ReduxReducer<S = any, A extends ReduxAction = AnyAction> = (
-  state: S | undefined,
-  action: A
-) => S
-
-export interface ReduxDispatch<A extends ReduxAction = AnyAction> {
-  <T extends A>(action: T): T
-}
-
-/** ************************** redux-end *************************** */
-
 /** ************************** modal-start *************************** */
 
 export type ObjectState = {
@@ -54,11 +13,21 @@ export type State =
   | undefined
   | null
 
-export interface Action<TPayload = any> extends ReduxAction<string> {
+export interface Action<TPayload = any> {
+  type: string
   payload?: TPayload
 }
 
-type Reducer<S extends State> = (
+export interface AnyAction extends Action {
+  // Allows any extra properties to be defined in an action.
+  [extraProps: string]: any
+}
+
+export interface Dispatch<A extends Action = AnyAction> {
+  <T extends A>(action: T): T
+}
+
+export type Reducer<S extends State> = (
   state: S,
   payload?: Action['payload']
 ) => S | void
@@ -67,7 +36,7 @@ export type Reducers<S extends State> = {
   [x: string]: Reducer<S>
 }
 
-type ExtractParameterFromReducer<P extends unknown[]> = P extends []
+type ExtractParameter<P extends unknown[]> = P extends []
   ? never
   : P extends [p?: infer TPayload]
   ? P extends [infer TPayloadMayUndefined, ...unknown[]]
@@ -75,18 +44,18 @@ type ExtractParameterFromReducer<P extends unknown[]> = P extends []
     : [p?: TPayload]
   : never
 
-export type ExtractRedoxDispatcherFromReducer<TState, TReducer> =
+export type ExtractDispatchOfReducer<TState, TReducer> =
   TReducer extends () => any
     ? RedoxDispatcher<false>
     : TReducer extends (state: TState, ...args: infer TRest) => TState | void
     ? TRest extends []
       ? RedoxDispatcher<false>
       : TRest[1] extends undefined
-      ? RedoxDispatcher<false, ExtractParameterFromReducer<TRest>>
-      : RedoxDispatcher<false, ExtractParameterFromReducer<TRest>, never>
+      ? RedoxDispatcher<false, ExtractParameter<TRest>>
+      : RedoxDispatcher<false, ExtractParameter<TRest>, never>
     : never
 
-export type RedoxActions = {
+export type Actions = {
   [x: string]: Function
 }
 
@@ -96,11 +65,11 @@ export type Views = {
 
 export type ModelCollection = Record<string, AnyModel>
 
-type MiniStoreOfStoreCollection<MC extends ModelCollection> = {
-  [K in keyof MC]: storeApi<MC[K]>
+type MiniStoreOfInstanceCollection<MC extends ModelCollection> = {
+  [K in keyof MC]: ModelInstance<MC[K]>
 }
 
-type StateOfStoreCollection<MC extends ModelCollection> = {
+type StateOfInstanceCollection<MC extends ModelCollection> = {
   [K in keyof MC]: MC[K]['state']
 } &
   {
@@ -109,7 +78,7 @@ type StateOfStoreCollection<MC extends ModelCollection> = {
     }
   }
 
-type ViewOfStoreCollection<MC extends ModelCollection> = {
+type ViewOfInstanceCollection<MC extends ModelCollection> = {
   [K in keyof MC]: RedoxViews<MC[K]['views']>
 }
 
@@ -126,21 +95,21 @@ export type DispatchOfModel<M> = M extends Model<
   infer RA,
   any
 >
-  ? DispatchOfModelByProps<S, R, RA> & noExist
+  ? DispatchByProps<S, R, RA> & noExist
   : never
 
-type DispatchOfModelByProps<S, R, RA> = DispatcherOfReducers<S, R> &
-  DispatcherOfRedoxActions<RA>
+type DispatchByProps<S, R, RA> = DispatchByReducers<S, R> &
+  DispatchByActions<RA>
 
-export type DispatcherOfReducers<S, R> = R extends undefined
+export type DispatchByReducers<S, R> = R extends undefined
   ? {}
   : FilterIndex<R> extends infer FilterR
   ? {
-      [K in keyof FilterR]: ExtractRedoxDispatcherFromReducer<S, FilterR[K]>
+      [K in keyof FilterR]: ExtractDispatchOfReducer<S, FilterR[K]>
     }
   : never
 
-export type DispatcherOfRedoxActions<E> = E extends RedoxActions
+export type DispatchByActions<E> = E extends Actions
   ? FilterIndex<E> extends infer FilterE
     ? {
         [K in keyof FilterE]: FilterE[K]
@@ -237,7 +206,7 @@ export interface Model<
   S extends State,
   MC extends ModelCollection,
   R extends Reducers<S>,
-  RA extends RedoxActions,
+  RA extends Actions,
   V extends Views
 > {
   name?: N
@@ -251,15 +220,15 @@ export interface Model<
         $patch: (s: ObjectState) => void
         $modify: (modifier: (s: S) => void) => void
       } & RedoxViews<V> & {
-          $dep: MiniStoreOfStoreCollection<MC>
-        } & DispatchOfModelByProps<S, R, RA>
+          $dep: MiniStoreOfInstanceCollection<MC>
+        } & DispatchByProps<S, R, RA>
     >
   views?: V &
     ThisType<
       S & {
         $state: S
       } & RedoxViews<V> & {
-          $dep: StateOfStoreCollection<MC> & ViewOfStoreCollection<MC>
+          $dep: StateOfInstanceCollection<MC> & ViewOfInstanceCollection<MC>
         }
     >
   _depends?: Depends
@@ -270,7 +239,7 @@ export type Depends = AnyModel[]
 
 /** ************************** modal-end *************************** */
 
-/** ************************** store-start *************************** */
+/** ************************** instance-start *************************** */
 
 export type ISelectorParams<IModel extends AnyModel> = {
   $state: IModel['state']
@@ -282,7 +251,7 @@ export type ISelector<IModel extends AnyModel, TReturn = any> = (
   stateAndViews: ISelectorParams<IModel>
 ) => TReturn
 
-export type storeApi<IModel extends AnyModel> = {
+export type ModelInstance<IModel extends AnyModel> = {
   $state: IModel['state']
   $set: (state: State) => void
   $modify: (modifier: (state: IModel['state']) => void) => void
@@ -311,4 +280,23 @@ export type RedoxViews<V> = {
   [K in keyof V]: V[K] extends () => any ? ReturnType<V[K]> : never
 }
 
-/** ************************** store-end *************************** */
+/** ************************** instance-end *************************** */
+
+type CheckIfParameterOptional<P> = P extends [unknown, ...unknown[]]
+  ? false
+  : true
+
+type Without<FirstType, SecondType> = {
+  [KeyType in Exclude<keyof FirstType, keyof SecondType>]: never
+}
+export type MergeExclusive<FirstType, SecondType> =
+  | FirstType
+  | SecondType extends object
+  ?
+      | (Without<FirstType, SecondType> & SecondType)
+      | (Without<SecondType, FirstType> & FirstType)
+  : FirstType | SecondType
+
+export type DeepReadonly<T> = {
+  readonly [P in keyof T]: keyof T[P] extends never ? T[P] : DeepReadonly<T[P]>
+}

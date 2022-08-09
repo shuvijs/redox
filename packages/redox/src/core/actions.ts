@@ -1,13 +1,13 @@
 import { AnyModel, DispatchOfModel } from '../types'
-import { StoreAndApi } from './types'
-import type { RedoxStore } from '../redoxStore'
+import { RedoxCacheValue } from './types'
+import type { InternalModel } from '../internal-model'
 
 export const createActions = <IModel extends AnyModel>(
   $actions: DispatchOfModel<IModel>,
-  redoxStore: RedoxStore<IModel>,
-  getRedox: (m: AnyModel) => StoreAndApi
+  internalModelInstance: InternalModel<IModel>,
+  getCacheValue: (m: AnyModel) => RedoxCacheValue
 ): void => {
-  const actions = redoxStore.model.actions
+  const actions = internalModelInstance.model.actions
   if (!actions) {
     return
   }
@@ -17,31 +17,31 @@ export const createActions = <IModel extends AnyModel>(
     // @ts-ignore
     $actions[actionsName as string] = function (...args: any[]) {
       const action = actions[actionsName]
-      const dependsStoreApi = {} as any
-      const depends = redoxStore.model._depends
+      const dependsApi = {} as any
+      const depends = internalModelInstance.model._depends
       if (depends) {
         depends.forEach((depend) => {
-          const { storeApi } = getRedox(depend)
+          const { publicApi } = getCacheValue(depend)
           const { $createView, $actions, $views, $state, ...dependApiRest } =
-            storeApi
+            publicApi
           const res = dependApiRest
           Object.defineProperty(res, '$state', {
             enumerable: true,
             get() {
-              return storeApi.$state
+              return publicApi.$state
             },
           })
-          dependsStoreApi[depend.name] = res
+          dependsApi[depend.name] = res
         })
       }
-      const storeAndStoreApi = getRedox(redoxStore.model)
-      const storeApi = storeAndStoreApi.storeApi
+      const instance = getCacheValue(internalModelInstance.model)
+      const publicApi = instance.publicApi
       const { $createView, $actions, $views, $state, ...storeApiRest } =
-        storeApi
-      const thisPoint = Object.assign(storeApiRest, { $dep: dependsStoreApi })
+        publicApi
+      const thisPoint = Object.assign(storeApiRest, { $dep: dependsApi })
       Object.defineProperty(thisPoint, '$state', {
         get() {
-          return storeApi.$state
+          return publicApi.$state
         },
       })
       return action.call(thisPoint, ...args)
