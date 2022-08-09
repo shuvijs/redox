@@ -1,6 +1,6 @@
-import type { RedoxStore } from '../../redoxStore'
-import { StoreAndApi } from '../types'
-import { createCache } from './createCache'
+import type { InternalModel } from '../../internal-model'
+import { RedoxCacheValue } from '../types'
+import { createCache } from './create-cache'
 import { RedoxViews, AnyModel } from '../../types'
 import validate, { isObject } from '../../validate'
 import { isComplexObject } from '../../utils'
@@ -246,10 +246,10 @@ function resetCompare() {
 
 export const createViews = <IModel extends AnyModel>(
   $views: RedoxViews<IModel['views']>,
-  redoxStore: RedoxStore<IModel>,
-  getRedox: (m: AnyModel) => StoreAndApi
+  internalModelInstance: InternalModel<IModel>,
+  getCacheValue: (m: AnyModel) => RedoxCacheValue
 ): void => {
-  const views = redoxStore.model.views
+  const views = internalModelInstance.model.views
   if (!views) {
     return
   }
@@ -273,21 +273,24 @@ export const createViews = <IModel extends AnyModel>(
         $views[viewsKey] = function () {
           // generate dependsState by dependencies
           let dependsStateAndView = {} as Record<string, any>
-          const depends = redoxStore.model._depends
+          const depends = internalModelInstance.model._depends
           if (depends) {
             depends.forEach((depend) => {
-              const { store, storeApi } = getRedox(depend)
-              const state = store.getState()
-              const { $views } = storeApi
+              const { internalModelInstance: instance, publicApi } =
+                getCacheValue(depend)
+              const state = instance.getState()
+              const { $views } = publicApi
               const res = Object.assign({}, state, $views, {
                 $state: state,
               })
               dependsStateAndView[depend.name] = res
             })
           }
-          const { store, storeApi } = getRedox(redoxStore.model)
-          const state = store.getState()
-          const { $views } = storeApi
+          const { internalModelInstance: instance, publicApi } = getCacheValue(
+            internalModelInstance.model
+          )
+          const state = instance.getState()
+          const { $views } = publicApi
           const thisPoint = Object.assign({}, state, $views, {
             $dep: dependsStateAndView,
             $state: state,
