@@ -6,35 +6,35 @@ import { createUseModel } from './createUseModel'
 import { IUseModel } from './types'
 
 const useModel: IUseModel = <
-	IModel extends AnyModel,
-	Selector extends ISelector<IModel>
+  IModel extends AnyModel,
+  Selector extends ISelector<IModel>
 >(
-	model: IModel,
-	selector?: Selector,
-	depends?: any[]
+  model: IModel,
+  selector?: Selector,
+  depends?: any[]
 ) => {
-	if (process.env.NODE_ENV === 'development') {
-		validate(() => [[!Boolean(model), `useModel param model is necessary`]])
-	}
+  if (process.env.NODE_ENV === 'development') {
+    validate(() => [[!Boolean(model), `useModel param model is necessary`]])
+  }
 
-	let [storeManager, batchManager] = useMemo(function () {
-		return [redox(), createBatchManager()]
-	}, [])
+  let [redoxStore, batchManager] = useMemo(function () {
+    return [redox(), createBatchManager()]
+  }, [])
 
-	const contextValue = useRef({
-		storeManager,
-		batchManager,
-	})
+  const contextValue = useRef({
+    redoxStore,
+    batchManager,
+  })
 
-	return useMemo(
-		function () {
-			return createUseModel(
-				contextValue.current.storeManager,
-				contextValue.current.batchManager
-			)
-		},
-		[contextValue.current.storeManager, contextValue.current.batchManager]
-	)(model, selector, depends)
+  return useMemo(
+    function () {
+      return createUseModel(
+        contextValue.current.redoxStore,
+        contextValue.current.batchManager
+      )
+    },
+    [contextValue.current.redoxStore, contextValue.current.batchManager]
+  )(model, selector, depends)
 }
 
 export { useModel }

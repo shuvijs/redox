@@ -2,8 +2,7 @@ import { redox as internalRedox, RedoxOptions } from './core'
 import validate from './validate'
 import { defineModel } from './defineModel'
 import devTools from './devtools'
-import { IStoreManager, IPlugin } from './core/types'
-import { storeApi as Store } from './types'
+import { RedoxStore, Plugin } from './core/types'
 
 const redox = function (
   { initialState, plugins = [] }: RedoxOptions = {} as RedoxOptions
@@ -17,14 +16,6 @@ const redox = function (
   })
 }
 
-export {
-  validate,
-  defineModel,
-  IStoreManager,
-  Store,
-  redox,
-  IPlugin,
-  RedoxOptions,
-}
+export { validate, defineModel, RedoxStore, redox, Plugin, RedoxOptions }
 
 export * from './types'

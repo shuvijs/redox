@@ -31,62 +31,62 @@ const ssrRegex = /^\/(?!static|favicon\.ico|.*hot-update\.js).*/
 
 // do server-side rendering
 router.use(
-	ssrRegex,
-	async (
-		request: express.Request,
-		response: express.Response,
-		next: express.NextFunction
-	) => {
-		const storeManager = redox()
-		await storeManager.get(count).incrementAsync()
-		await storeManager.get(test).setString(Math.random().toString())
-		const template = readFileSync('build/index.html')
-			.toString()
-			.replace(/%BASE_HREF%/g, process.env.BASE_HREF || '')
-			.replace(/%CLIENT_ENV%/g, JSON.stringify(storeManager.getState()))
+  ssrRegex,
+  async (
+    request: express.Request,
+    response: express.Response,
+    next: express.NextFunction
+  ) => {
+    const redoxStore = redox()
+    await redoxStore.getModel(count).incrementAsync()
+    await redoxStore.getModel(test).setString(Math.random().toString())
+    const template = readFileSync('build/index.html')
+      .toString()
+      .replace(/%BASE_HREF%/g, process.env.BASE_HREF || '')
+      .replace(/%CLIENT_ENV%/g, JSON.stringify(redoxStore.getState()))
 
-		const [head, tail] = template.split('%ROOT%')
-		let didError = false
-		const stream = renderToPipeableStream(<App storeManager={storeManager} />, {
-			onShellReady() {
-				// The content above all Suspense boundaries is ready.
-				// If something errored before we started streaming, we set the error code appropriately.
-				response.statusCode = didError ? 500 : 200
-				response.setHeader('Content-type', 'text/html')
-				response.write(head)
-				stream.pipe(response)
-			},
-			onShellError(error) {
-				// Something errored before we could complete the shell so we emit an alternative shell.
-				response.statusCode = 500
-				response.send(
-					'<!doctype html><p>Loading...</p><script src="clientrender.js"></script>'
-				)
-			},
-			onAllReady() {
-				// If you don't want streaming, use this instead of onShellReady.
-				// This will fire after the entire page content is ready.
-				// You can use this for crawlers or static generation.
-				// res.statusCode = didError ? 500 : 200;
-				// res.setHeader('Content-type', 'text/html');
-				// stream.pipe(res);
-				response.write(tail)
-				response.end()
-			},
-			onError(err) {
-				didError = true
-				console.error(err)
-			},
-		})
-	}
+    const [head, tail] = template.split('%ROOT%')
+    let didError = false
+    const stream = renderToPipeableStream(<App redoxStore={redoxStore} />, {
+      onShellReady() {
+        // The content above all Suspense boundaries is ready.
+        // If something errored before we started streaming, we set the error code appropriately.
+        response.statusCode = didError ? 500 : 200
+        response.setHeader('Content-type', 'text/html')
+        response.write(head)
+        stream.pipe(response)
+      },
+      onShellError(error) {
+        // Something errored before we could complete the shell so we emit an alternative shell.
+        response.statusCode = 500
+        response.send(
+          '<!doctype html><p>Loading...</p><script src="clientrender.js"></script>'
+        )
+      },
+      onAllReady() {
+        // If you don't want streaming, use this instead of onShellReady.
+        // This will fire after the entire page content is ready.
+        // You can use this for crawlers or static generation.
+        // res.statusCode = didError ? 500 : 200;
+        // res.setHeader('Content-type', 'text/html');
+        // stream.pipe(res);
+        response.write(tail)
+        response.end()
+      },
+      onError(err) {
+        didError = true
+        console.error(err)
+      },
+    })
+  }
 )
 
 // serve static files from build/ dir
 router.use(
-	express.static('build', {
-		// do not send index.html for '/'
-		index: false,
-	})
+  express.static('build', {
+    // do not send index.html for '/'
+    index: false,
+  })
 )
 
 /**
@@ -102,18 +102,18 @@ export default router
  * @param compiler webpack compiler which compiles the ssr entry point
  */
 export const devServerHandler = (compiler: any) => {
-	// redirect file access to use in-memory fs of the compiler
-	readFileSync = (fileName) =>
-		compiler.outputFileSystem.readFileSync(
-			path.resolve(
-				// handlers should expect files in build/ but the dev server writes them to dist/
-				fileName.replace('build', 'dist')
-			)
-		)
+  // redirect file access to use in-memory fs of the compiler
+  readFileSync = (fileName) =>
+    compiler.outputFileSystem.readFileSync(
+      path.resolve(
+        // handlers should expect files in build/ but the dev server writes them to dist/
+        fileName.replace('build', 'dist')
+      )
+    )
 
-	// ignore in-memory file requests, will be handled by the webpack dev middleware
-	const devServerRouter = express.Router()
-	devServerRouter.use(require('express-status-monitor')())
-	devServerRouter.use(ssrRegex, router)
-	return devServerRouter
+  // ignore in-memory file requests, will be handled by the webpack dev middleware
+  const devServerRouter = express.Router()
+  devServerRouter.use(require('express-status-monitor')())
+  devServerRouter.use(ssrRegex, router)
+  return devServerRouter
 }
