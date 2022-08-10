@@ -1,6 +1,6 @@
 import type { InternalModel } from '../../internalModel'
 import { RedoxCacheValue } from '../types'
-import { createCache } from './create-cache'
+import { createCache } from './createCache'
 import { RedoxViews, AnyModel } from '../../types'
 import validate from '../../validate'
 import { isPlainObject } from '../../utils'

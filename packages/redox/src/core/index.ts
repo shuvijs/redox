@@ -19,7 +19,7 @@ import { createReducers } from './reducers'
 import { createActions } from './actions'
 import { createViews, createSelector } from './views'
 import { InternalModel } from '../internalModel'
-import getStoreApi from './get-public-api'
+import getPublicApi from './getPublicApi'
 import validate from '../validate'
 import { emptyObject, readonlyDeepClone } from '../utils'
 
@@ -161,7 +161,7 @@ export function redox(
     createReducers($actions, internalModelInstance)
     createActions($actions, internalModelInstance, getCacheValue)
 
-    const publicApi: ModelInstance<M> = getStoreApi(
+    const publicApi: ModelInstance<M> = getPublicApi(
       internalModelInstance,
       $state,
       $actions,
