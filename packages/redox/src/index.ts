@@ -1,19 +1,21 @@
-import {
-	internalRedox,
-	IStoreManager,
-	IPlugin,
-	RedoxOptions,
-} from './redoxStore'
+import { redox as internalRedox, RedoxOptions } from './core'
 import validate from './validate'
 import { defineModel } from './defineModel'
+import devTools from './devtools'
+import { RedoxStore, Plugin } from './core/types'
 
-function redox(options?: RedoxOptions): IStoreManager {
-	const { _getRedox, ...rest } = internalRedox(options)
-	return {
-		...rest,
-	}
+const redox = function (
+  { initialState, plugins = [] }: RedoxOptions = {} as RedoxOptions
+) {
+  if (process.env.NODE_ENV === 'development') {
+    plugins.unshift([devTools])
+  }
+  return internalRedox({
+    initialState,
+    plugins,
+  })
 }
 
-export { validate, defineModel, IStoreManager, redox, IPlugin, RedoxOptions }
+export { validate, defineModel, RedoxStore, redox, Plugin, RedoxOptions }
 
 export * from './types'
