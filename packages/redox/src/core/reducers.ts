@@ -2,7 +2,7 @@ import { Action, RedoxDispatcher, AnyModel, DispatchOfModel } from '../types'
 import type { InternalModel } from '../internalModel'
 
 const createReducer = <IModel extends AnyModel>(
-  store: InternalModel<IModel>,
+  internalModelInstance: InternalModel<IModel>,
   actionName: string
 ): RedoxDispatcher<boolean> => {
   return (payload?: any): Action => {
@@ -11,7 +11,7 @@ const createReducer = <IModel extends AnyModel>(
     if (typeof payload !== 'undefined') {
       action.payload = payload
     }
-    return store.dispatch(action)
+    return internalModelInstance.dispatch(action)
   }
 }
 
@@ -21,10 +21,10 @@ const createReducer = <IModel extends AnyModel>(
  */
 export const createReducers = <IModel extends AnyModel>(
   $actions: DispatchOfModel<IModel>,
-  redoxStore: InternalModel<IModel>
+  internalModelInstance: InternalModel<IModel>
 ): void => {
   // map reducer names to dispatch actions
-  const reducers = redoxStore.model.reducers
+  const reducers = internalModelInstance.model.reducers
 
   if (!reducers) {
     return
@@ -33,6 +33,6 @@ export const createReducers = <IModel extends AnyModel>(
   const reducersKeys = Object.keys(reducers)
   reducersKeys.forEach((reducerName) => {
     // @ts-ignore
-    $actions[reducerName] = createReducer(redoxStore, reducerName)
+    $actions[reducerName] = createReducer(internalModelInstance, reducerName)
   })
 }
