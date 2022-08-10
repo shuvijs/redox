@@ -1,6 +1,6 @@
 import { AnyModel, DispatchOfModel } from '../types'
 import { RedoxCacheValue } from './types'
-import type { InternalModel } from '../internal-model'
+import type { InternalModel } from '../internalModel'
 
 export const createActions = <IModel extends AnyModel>(
   $actions: DispatchOfModel<IModel>,

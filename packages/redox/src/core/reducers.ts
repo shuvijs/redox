@@ -1,5 +1,5 @@
 import { Action, RedoxDispatcher, AnyModel, DispatchOfModel } from '../types'
-import type { InternalModel } from '../internal-model'
+import type { InternalModel } from '../internalModel'
 
 const createReducer = <IModel extends AnyModel>(
   store: InternalModel<IModel>,

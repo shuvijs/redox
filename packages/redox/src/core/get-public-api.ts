@@ -1,4 +1,4 @@
-import type { InternalModel } from '../internal-model'
+import type { InternalModel } from '../internalModel'
 import {
   ModelInstance,
   DispatchOfModel,

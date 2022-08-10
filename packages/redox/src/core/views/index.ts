@@ -1,4 +1,4 @@
-import type { InternalModel } from '../../internal-model'
+import type { InternalModel } from '../../internalModel'
 import { RedoxCacheValue } from '../types'
 import { createCache } from './create-cache'
 import { RedoxViews, AnyModel } from '../../types'

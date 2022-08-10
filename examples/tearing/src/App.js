@@ -1,7 +1,7 @@
 import { defineModel } from '@shuvi/redox'
 import { useEffect, useState, startTransition } from 'react'
 import { useRootModel } from '@shuvi/redox-react'
-import { redoxStore } from './redox-store'
+import { redoxStore } from './redoxStore'
 
 let externalState = { counter: 0 }
 let listeners = []

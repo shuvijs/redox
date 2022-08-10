@@ -18,7 +18,7 @@ import {
 import { createReducers } from './reducers'
 import { createActions } from './actions'
 import { createViews, createSelector } from './views'
-import { InternalModel } from '../internal-model'
+import { InternalModel } from '../internalModel'
 import getStoreApi from './get-public-api'
 import validate from '../validate'
 import { emptyObject, readonlyDeepClone } from '../utils'

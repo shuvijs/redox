@@ -1,6 +1,6 @@
 import { redox as internalRedox, RedoxOptions } from './core'
 import validate from './validate'
-import { defineModel } from './define-model'
+import { defineModel } from './defineModel'
 import devTools from './devtools'
 import { RedoxStore, Plugin } from './core/types'
 
