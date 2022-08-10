@@ -2,7 +2,7 @@ import * as React from 'react'
 import { ISelectorParams } from '@shuvi/redox'
 import { useModel } from '@shuvi/redox-react'
 
-import { fetchA, fetchB } from '../models/fetch-data'
+import { fetchA, fetchB } from '../models/fetchData'
 
 export type fetchASelectorParams = ISelectorParams<typeof fetchA>
 export type fetchBSelectorParams = ISelectorParams<typeof fetchB>

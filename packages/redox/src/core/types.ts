@@ -1,5 +1,5 @@
 import { ModelInstance, AnyModel, AnyAction, State } from '../types'
-import type { InternalModel } from '../internal-model'
+import type { InternalModel } from '../internalModel'
 
 export type RedoxCacheValue = {
   internalModelInstance: InternalModel<AnyModel>
