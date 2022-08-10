@@ -1,26 +1,26 @@
 import validate from './validate'
-import type { IPlugin } from './core/types'
+import type { Plugin } from './core/types'
 
 const SET_FROM_DEVTOOLS = '@@redox/SET_FROM_DEVTOOLS'
 
-const reduxDevTools: IPlugin = function () {
+const reduxDevTools: Plugin = function () {
   let id = 0
   const unsubscribeSet = new Set<() => void>()
   return {
-    onStoreCreated(Store) {
+    onModelInstanced(instance) {
       if (
         typeof window !== 'undefined' &&
         (window as any).__REDUX_DEVTOOLS_EXTENSION__
       ) {
         const devTools = (window as any).__REDUX_DEVTOOLS_EXTENSION__!.connect({
-          name: Store.name || `model_${id++}`,
+          name: instance.name || `model_${id++}`,
         })
 
-        const initialState = Store.getState()
+        const initialState = instance.getState()
         devTools.init(initialState)
 
         let isLatestState = true
-        let latestState: any = Store.getState()
+        let latestState: any = instance.getState()
         const fn = (message: any) => {
           switch (message.type) {
             case 'ACTION':
@@ -32,7 +32,7 @@ const reduxDevTools: IPlugin = function () {
               ])
               try {
                 const action = JSON.parse(message.payload)
-                return Store.dispatch(action)
+                return instance.dispatch(action)
               } catch (e) {
                 return validate(() => [
                   [true, `Could not parse the received json.`],
@@ -42,11 +42,11 @@ const reduxDevTools: IPlugin = function () {
             case 'DISPATCH':
               switch (message.payload.type) {
                 case 'RESET':
-                  return devTools.init(Store.getState())
+                  return devTools.init(instance.getState())
 
                 case 'COMMIT':
                   isLatestState = true
-                  return devTools.init(Store.getState())
+                  return devTools.init(instance.getState())
 
                 case 'ROLLBACK':
                   isLatestState = true
@@ -56,8 +56,8 @@ const reduxDevTools: IPlugin = function () {
                       type: SET_FROM_DEVTOOLS,
                       payload: parsedState,
                     }
-                    Store.dispatch(action)
-                    return devTools.init(Store.getState())
+                    instance.dispatch(action)
+                    return devTools.init(instance.getState())
                   } catch (e) {
                     return validate(() => [
                       [true, 'Could not parse the received json'],
@@ -75,13 +75,13 @@ const reduxDevTools: IPlugin = function () {
                       isLatestState = true
                     } else if (isLatestState) {
                       isLatestState = false
-                      latestState = Store.getState()
+                      latestState = instance.getState()
                     }
                     const action = {
                       type: SET_FROM_DEVTOOLS,
                       payload: parsedState,
                     }
-                    return Store.dispatch(action)
+                    return instance.dispatch(action)
                   } catch (e) {
                     return validate(() => [
                       [true, 'Could not parse the received json'],
@@ -94,8 +94,8 @@ const reduxDevTools: IPlugin = function () {
         const unsubscribe = devTools.subscribe(fn)
         unsubscribeSet.add(unsubscribe)
 
-        const originReducer = Store.reducer!
-        Store.reducer = function (state, action) {
+        const originReducer = instance.reducer
+        instance.reducer = function (state, action) {
           if (action.type === SET_FROM_DEVTOOLS) {
             return action.payload
           }

@@ -1,6 +1,6 @@
-import type { RedoxStore } from '../redoxStore'
+import type { InternalModel } from '../internalModel'
 import {
-  storeApi,
+  ModelInstance,
   DispatchOfModel,
   RedoxViews,
   AnyModel,
@@ -10,18 +10,18 @@ import {
 import validate from '../validate'
 
 export default function getStoreApi<M extends AnyModel = AnyModel>(
-  redoxStore: RedoxStore<M>,
+  internalModelInstance: InternalModel<M>,
   $state: () => M['state'],
   $actions: DispatchOfModel<M>,
   $views: RedoxViews<M['views']>,
   $createSelector: <TReturn>(
     selector: ISelector<M, TReturn>
   ) => (() => TReturn) & { clearCache: () => void }
-): storeApi<M> {
-  const store = {} as storeApi<M>
-  store.$set = redoxStore.$set
-  store.$patch = redoxStore.$patch
-  store.$modify = redoxStore.$modify
+): ModelInstance<M> {
+  const store = {} as ModelInstance<M>
+  store.$set = internalModelInstance.$set
+  store.$patch = internalModelInstance.$patch
+  store.$modify = internalModelInstance.$modify
   store.$actions = $actions
   store.$views = $views
   store.$createSelector = $createSelector

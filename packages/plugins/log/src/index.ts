@@ -1,17 +1,17 @@
-import { IPlugin } from '@shuvi/redox'
+import { Plugin } from '@shuvi/redox'
 
-const redoxLog: IPlugin = function () {
-	return {
-		onStoreCreated(Store) {
-			const StoreDispatch = Store.dispatch
-			Store.dispatch = function (action) {
-				console.log('action: ', action)
-				const res = StoreDispatch(action)
-				console.log('$state :', Store.getState())
-				return res
-			}
-		},
-	}
+const redoxLog: Plugin = function () {
+  return {
+    onModelInstanced(instance) {
+      const originDispatch = instance.dispatch
+      instance.dispatch = function (action) {
+        console.log('action: ', action)
+        const res = originDispatch(action)
+        console.log('$state :', instance.getState())
+        return res
+      }
+    },
+  }
 }
 
 export default redoxLog
