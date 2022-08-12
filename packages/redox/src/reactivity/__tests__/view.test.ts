@@ -20,6 +20,71 @@ describe('reactivity/view', () => {
     expect(fn).toHaveBeenCalledTimes(1)
   })
 
+  it("should not be invoked when deps ref don't change", () => {
+    const fn = jest.fn()
+    const obj = {
+      foo: 'bar',
+    }
+    const store: any = {
+      state: {
+        a: obj,
+      },
+    }
+    let $state = reactive(() => store.state)
+    const viewFn = function (this: any) {
+      this.a.foo
+      return {}
+    }
+    const double = view(() => {
+      fn()
+      return viewFn.call($state)
+    })
+
+    const value = double.value
+    expect(fn).toHaveBeenCalledTimes(1)
+
+    store.state = {
+      a: obj,
+    }
+    $state = reactive(() => store.state)
+
+    expect(double.value).toBe(value)
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  it('should be invoked when deps ref change', () => {
+    const fn = jest.fn()
+    const store: any = {
+      state: {
+        a: {
+          foo: 'bar',
+        },
+      },
+    }
+    let $state = reactive(() => store.state)
+    const viewFn = function (this: any) {
+      const a = this.a
+      void this.a.foo
+      return a
+    }
+    const double = view(() => {
+      fn()
+      return viewFn.call($state)
+    })
+
+    const value = double.value
+    expect(fn).toHaveBeenCalledTimes(1)
+
+    store.state = {
+      a: {
+        foo: 'bar',
+      },
+    }
+    $state = reactive(() => store.state)
+    expect(double.value === value).toBeFalsy()
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
+
   it('should return the last value', () => {
     const fn = jest.fn()
     const store: any = {
