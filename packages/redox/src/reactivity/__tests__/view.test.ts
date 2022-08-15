@@ -145,7 +145,7 @@ describe('reactivity/view', () => {
   })
 
   // FIXME: tracked other viewed result
-  it('should not collect other view result', () => {
+  it('should not tracked other view result', () => {
     const store: any = {
       state: {
         a: {
@@ -167,7 +167,7 @@ describe('reactivity/view', () => {
   })
 
   // FIXME: repeated tracked other view
-  it('should not repeated collect view ', () => {
+  it('should not tracked view repeated', () => {
     const store: any = {
       state: {
         a: {
