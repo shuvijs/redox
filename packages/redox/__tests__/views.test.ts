@@ -16,8 +16,7 @@ describe('defineModel/views', () => {
       state: initState,
       views: {
         view() {
-          const state = this.$state
-          state.a = 1
+          this.a = 1
           return this.$state
         },
       },
