@@ -219,7 +219,7 @@ describe('defineModel/views', () => {
           return value1.a
         },
         objView() {
-          return this.selfView.b
+          return this.selfView
         },
       },
     })
