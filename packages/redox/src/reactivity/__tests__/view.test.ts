@@ -144,6 +144,68 @@ describe('reactivity/view', () => {
     expect(fn2).toHaveBeenCalledTimes(2)
   })
 
+  // FIXME: tracked other viewed result
+  it('should not collect other view result', () => {
+    const store: any = {
+      state: {
+        a: {
+          b: {
+            c: 'c',
+          },
+        },
+      },
+    }
+    store.$state = reactive(() => store.state)
+    const objB = view(() => {
+      return store.$state.a.b
+    })
+    const objC = view(() => {
+      // @ts-ignore
+      return objB.value.c
+    })
+    expect(objC.value).toBe('c')
+  })
+
+  // FIXME: repeated tracked other view
+  it('should not repeated collect view ', () => {
+    const store: any = {
+      state: {
+        a: {
+          b: 'b',
+        },
+      },
+    }
+    let $state = reactive(() => store.state)
+    const viewFn = function (this: any) {
+      return this.a
+    }
+    const viewA = view(() => {
+      return viewFn.call($state)
+    })
+
+    const thisRef = reactive(
+      () =>
+        new Proxy(
+          {},
+          {
+            get(target, p: string, receiver) {
+              if (p === 'viewA') {
+                return viewA.value
+              }
+              return undefined
+            },
+          }
+        )
+    )
+
+    const viewB = view(() => {
+      // @ts-ignore
+      return thisRef.viewA.b
+    })
+
+    expect(viewB.value).toBe('b')
+  })
+
   it('should support multiple reactive objects', () => {
     const fn = jest.fn()
     const store: any = {

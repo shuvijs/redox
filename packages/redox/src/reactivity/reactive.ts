@@ -229,7 +229,7 @@ export function toRaw<T>(observed: T): T {
 
 export function toCompanion<T>(target: T): T | undefined {
   const companionGetter = companionMap.get(target)
-  return companionGetter ? companionGetter() : undefined
+  return companionGetter ? companionGetter() : target
 }
 
 export function markRaw<T extends object>(

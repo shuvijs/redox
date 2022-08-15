@@ -11,6 +11,7 @@ export interface AccessRecord {
 }
 
 export type KeyAccessRecord = Map<unknown, AccessRecord>
+export type TargetMap = Map<any, KeyAccessRecord>
 
 export type EffectScheduler = (...args: any[]) => any
 
@@ -37,7 +38,7 @@ export const MAP_KEY_ITERATE_KEY = Symbol(
 )
 
 export class ReactiveEffect<T = any> {
-  targetMap = new Map<any, KeyAccessRecord>()
+  targetMap: TargetMap = new Map()
 
   views = new Map<View<any>, any>()
 
