@@ -149,10 +149,6 @@ function createSetter(shallow = false) {
     value: unknown,
     receiver: object
   ): boolean {
-    if (process.env.NODE_ENV === 'development') {
-      warn('Write operation failed: computed value is readonly')
-      return false
-    }
     let oldValue = (target as any)[key]
     if (isReadonly(oldValue)) {
       return false

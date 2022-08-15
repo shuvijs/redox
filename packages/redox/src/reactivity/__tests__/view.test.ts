@@ -163,47 +163,9 @@ describe('reactivity/view', () => {
       // @ts-ignore
       return objB.value.c
     })
-    expect(objC.value).toBe('c')
-  })
-
-  // FIXME: repeated tracked other view
-  it('should not tracked view repeated', () => {
-    const store: any = {
-      state: {
-        a: {
-          b: 'b',
-        },
-      },
-    }
-    let $state = reactive(() => store.state)
-    const viewFn = function (this: any) {
-      return this.a
-    }
-    const viewA = view(() => {
-      return viewFn.call($state)
-    })
-
-    const thisRef = reactive(
-      () =>
-        new Proxy(
-          {},
-          {
-            get(target, p: string, receiver) {
-              if (p === 'viewA') {
-                return viewA.value
-              }
-              return undefined
-            },
-          }
-        )
-    )
-
-    const viewB = view(() => {
-      // @ts-ignore
-      return thisRef.viewA.b
-    })
-
-    expect(viewB.value).toBe('b')
+    objC.value
+    expect(objC.effect.targetMap.size).toBe(0)
+    expect(objC.effect.views.size).toBe(1)
   })
 
   it('should support multiple reactive objects', () => {
