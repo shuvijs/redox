@@ -6,6 +6,7 @@ import { ReactiveFlags, toRaw, toCompanion } from './reactive'
 
 export interface View<T = any> {
   readonly value: T
+  readonly effect: ReactiveEffect<T>
 }
 
 export type ViewGetter<T> = (...args: any[]) => T
@@ -101,5 +102,5 @@ export function view<T>(
     cRef.effect.onTrigger = debugOptions.onTrigger
   }
 
-  return cRef as any
+  return cRef
 }

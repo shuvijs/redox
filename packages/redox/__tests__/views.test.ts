@@ -3,6 +3,7 @@ import { defineModel, redox, ISelectorParams } from '../src'
 let redoxStore: ReturnType<typeof redox>
 beforeEach(() => {
   redoxStore = redox()
+  process.env.NODE_ENV = 'development'
 })
 
 describe('defineModel/views', () => {
@@ -218,7 +219,7 @@ describe('defineModel/views', () => {
           return value1.a
         },
         objView() {
-          return this.selfView
+          return this.selfView.b
         },
       },
     })
@@ -389,15 +390,15 @@ describe('defineModel/views', () => {
         },
         getLevel1() {
           numberOfCalls++
-          return this.$state.level1
+          return this.level1
         },
         getLevel2() {
           numberOfCalls++
-          return this.$state.level1.level2
+          return this.level1.level2
         },
         getLevel3() {
           numberOfCalls++
-          return this.$state.level1.level2.level3
+          return this.level1.level2.level3
         },
       },
     })
