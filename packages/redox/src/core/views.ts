@@ -7,6 +7,7 @@ import { warn } from '../warning'
 import { reactive } from '../reactivity/reactive'
 import { view } from '../reactivity/view'
 
+const $STATEREF = '$stateRef'
 const STATEREF = 'stateRef'
 const DEPREF = 'depRef'
 const SAMPLEOBJ = {}
@@ -19,6 +20,9 @@ function createGetter<IModel extends AnyModel>(
     target: Record<string | symbol, any>,
     key: string | symbol
   ) {
+    if (key === '$state') {
+      return instanceProxy[$STATEREF][key]
+    }
     if (hasOwn(instanceProxy[STATEREF], key)) {
       return instanceProxy[STATEREF][key]
     }
@@ -64,6 +68,7 @@ export const createViews = <IModel extends AnyModel>(
     if (depends) {
       depends.forEach((depend) => {
         dependState[depend.name as string] = {
+          [$STATEREF]: SAMPLEOBJ,
           [STATEREF]: SAMPLEOBJ,
         }
         const { publicApi } = getCacheValue(depend)
@@ -77,6 +82,7 @@ export const createViews = <IModel extends AnyModel>(
       })
     }
     const currentModelProxy = {
+      [$STATEREF]: SAMPLEOBJ,
       [STATEREF]: SAMPLEOBJ,
       [DEPREF]: dependsStructure,
     }
@@ -86,17 +92,25 @@ export const createViews = <IModel extends AnyModel>(
       set: proxySetter,
     })
     const viewRes = view(() => {
+      currentModelProxy[$STATEREF] = reactive(() => {
+        const state = internalModelInstance.getState()
+        return { $state: state }
+      })
       currentModelProxy[STATEREF] = reactive(() => {
         const state = internalModelInstance.getState()
-        return Object.assign({ $state: state }, state)
+        return state
       })
       const depends = internalModelInstance.model._depends
       if (depends) {
         depends.forEach((depend) => {
           const { internalModelInstance: instance } = getCacheValue(depend)
+          dependState[depend.name as string][$STATEREF] = reactive(() => {
+            const state = instance.getState()
+            return { $state: state }
+          })
           dependState[depend.name as string][STATEREF] = reactive(() => {
             const state = instance.getState()
-            return Object.assign({ $state: state }, state)
+            return state
           })
         })
       }
@@ -115,6 +129,7 @@ export function createSelector<IModel extends AnyModel, TReturn>(
   selector: ISelector<IModel, TReturn>
 ) {
   const currentModelProxy = {
+    [$STATEREF]: SAMPLEOBJ,
     [STATEREF]: SAMPLEOBJ,
   }
 
@@ -125,9 +140,13 @@ export function createSelector<IModel extends AnyModel, TReturn>(
     set: proxySetter,
   })
   let viewRes = view(() => {
+    currentModelProxy[$STATEREF] = reactive(() => {
+      const state = internalModelInstance.getState()
+      return { $state: state }
+    })
     currentModelProxy[STATEREF] = reactive(() => {
       const state = internalModelInstance.getState()
-      return Object.assign({ $state: state }, state)
+      return state
     })
     return selector.call(null, thisRefProxy)
   })
