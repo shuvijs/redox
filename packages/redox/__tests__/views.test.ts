@@ -389,15 +389,15 @@ describe('defineModel/views', () => {
         },
         getLevel1() {
           numberOfCalls++
-          return this.level1
+          return this.$state.level1
         },
         getLevel2() {
           numberOfCalls++
-          return this.level1.level2
+          return this.$state.level1.level2
         },
         getLevel3() {
           numberOfCalls++
-          return this.level1.level2.level3
+          return this.$state.level1.level2.level3
         },
       },
     })
@@ -409,27 +409,27 @@ describe('defineModel/views', () => {
     store.getState
     expect(numberOfCalls).toBe(1)
 
-    store.getLevel1
+    const level1 = store.getLevel1
     expect(numberOfCalls).toBe(2)
 
-    store.getLevel2
+    const level2 = store.getLevel2
     expect(numberOfCalls).toBe(3)
 
-    store.getLevel3
+    const level3 = store.getLevel3
     expect(numberOfCalls).toBe(4)
 
     store.$modify((state) => {
       state.other = 'modify other value'
     })
 
-    store.getLevel1
-    expect(numberOfCalls).toBe(4)
+    expect(store.getLevel1).toBe(level1)
+    expect(numberOfCalls).toBe(5)
 
-    store.getLevel2
-    expect(numberOfCalls).toBe(4)
+    expect(store.getLevel2).toBe(level2)
+    expect(numberOfCalls).toBe(6)
 
-    store.getLevel3
-    expect(numberOfCalls).toBe(4)
+    expect(store.getLevel3).toBe(level3)
+    expect(numberOfCalls).toBe(7)
   })
 
   describe('view with depends', () => {
