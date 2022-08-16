@@ -1,21 +1,16 @@
 import type { InternalModel } from '../internalModel'
-import {
-  ModelInstance,
-  DispatchOfModel,
-  RedoxViews,
-  AnyModel,
-  ISelector,
-} from '../types'
+import { AnyModel } from './defineModel'
+import { ModelInstance, Actions, Views, Selector } from './model'
 
 import validate from '../validate'
 
 export default function getStoreApi<M extends AnyModel = AnyModel>(
   internalModelInstance: InternalModel<M>,
   $state: () => M['state'],
-  $actions: DispatchOfModel<M>,
-  $views: RedoxViews<M['views']>,
+  $actions: Actions<M>,
+  $views: Views<M['views']>,
   $createSelector: <TReturn>(
-    selector: ISelector<M, TReturn>
+    selector: Selector<M, TReturn>
   ) => (() => TReturn) & { clearCache: () => void }
 ): ModelInstance<M> {
   const store = {} as ModelInstance<M>

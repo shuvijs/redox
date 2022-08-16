@@ -1,5 +1,8 @@
-import { ModelInstance, AnyModel, AnyAction, State } from '../types'
+import { AnyModel } from './defineModel'
+import { ModelInstance, State, Action } from './model'
 import type { InternalModel } from '../internalModel'
+
+export type Dispatch = (action: Action) => Action
 
 export type RedoxCacheValue = {
   internalModelInstance: InternalModel<AnyModel>
@@ -13,7 +16,7 @@ type unSubscribe = () => void
 export type RedoxStore = {
   getModel<IModel extends AnyModel>(model: IModel): ModelInstance<IModel>
   getState(): Record<string, State>
-  dispatch(action: AnyAction): void
+  dispatch(action: Action): void
   subscribe(model: AnyModel, fn: () => any): unSubscribe
   destroy(): void
 }

@@ -10,8 +10,8 @@ import {
   defineModel,
   redox,
   AnyModel,
-  ISelector,
-  ISelectorParams,
+  Selector,
+  SelectorParams,
 } from '@shuvi/redox'
 import { createBatchManager } from '../src/batchManager'
 import { IUseModel, IUseStaticModel } from '../src/types'
@@ -28,9 +28,9 @@ beforeEach(() => {
   jest.useFakeTimers()
   redoxStore = redox()
   batchManager = createBatchManager()
-  useTestModel = <IModel extends AnyModel, Selector extends ISelector<IModel>>(
+  useTestModel = <IModel extends AnyModel, S extends Selector<IModel>>(
     model: IModel,
-    selector?: Selector,
+    selector?: S,
     depends?: any[]
   ) => {
     return useMemo(
@@ -38,12 +38,9 @@ beforeEach(() => {
       [redoxStore, batchManager]
     )(model, selector, depends)
   }
-  useTestStaticModel = <
-    IModel extends AnyModel,
-    Selector extends ISelector<IModel>
-  >(
+  useTestStaticModel = <IModel extends AnyModel, S extends Selector<IModel>>(
     model: IModel,
-    selector?: Selector,
+    selector?: S,
     depends?: any[]
   ) => {
     return useMemo(
@@ -264,7 +261,7 @@ describe('createUseModel', () => {
       test('global selector', async () => {
         let selectorRunCount = 0
         const countSelector = function (
-          stateAndViews: ISelectorParams<typeof countModel>
+          stateAndViews: SelectorParams<typeof countModel>
         ) {
           selectorRunCount++
           return stateAndViews.value
@@ -307,7 +304,7 @@ describe('createUseModel', () => {
         let selectorRunCount = 0
         const App = () => {
           const countSelector = useCallback(function (
-            stateAndViews: ISelectorParams<typeof countModel>
+            stateAndViews: SelectorParams<typeof countModel>
           ) {
             selectorRunCount++
             return stateAndViews.value
@@ -351,7 +348,7 @@ describe('createUseModel', () => {
         const App = () => {
           const [_state, actions] = useTestModel(
             countModel,
-            function (stateAndViews: ISelectorParams<typeof countModel>) {
+            function (stateAndViews: SelectorParams<typeof countModel>) {
               selectorRunCount++
               return stateAndViews.value
             },
@@ -392,7 +389,7 @@ describe('createUseModel', () => {
       test('depends not changed', async () => {
         let selectorRunCount = 0
         const selector = function (
-          stateAndViews: ISelectorParams<typeof countModel>
+          stateAndViews: SelectorParams<typeof countModel>
         ) {
           selectorRunCount++
           return stateAndViews.value
@@ -444,7 +441,7 @@ describe('createUseModel', () => {
         const App = () => {
           const [_state, actions] = useTestModel(
             countModel,
-            function (stateAndViews: ISelectorParams<typeof countModel>) {
+            function (stateAndViews: SelectorParams<typeof countModel>) {
               selectorRunCount++
               return stateAndViews.value
             }
@@ -538,7 +535,7 @@ describe('createUseModel', () => {
       test('global selector with depends', async () => {
         let selectorRunCount = 0
         const selector = function (
-          stateAndViews: ISelectorParams<typeof countModel>
+          stateAndViews: SelectorParams<typeof countModel>
         ) {
           selectorRunCount++
           return stateAndViews.value

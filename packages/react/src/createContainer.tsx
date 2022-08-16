@@ -7,12 +7,7 @@ import React, {
   useState,
 } from 'react'
 import { validate, redox } from '@shuvi/redox'
-import type {
-  RedoxStore,
-  AnyModel,
-  RedoxOptions,
-  ISelector,
-} from '@shuvi/redox'
+import type { RedoxStore, AnyModel, RedoxOptions, Selector } from '@shuvi/redox'
 import { createUseModel, createUseStaticModel } from './createUseModel'
 import { createBatchManager } from './batchManager'
 import { IUseModel, IUseStaticModel } from './types'
@@ -57,10 +52,10 @@ const createContainer = function (options?: RedoxOptions) {
 
   const useSharedModel: IUseModel = <
     IModel extends AnyModel,
-    Selector extends ISelector<IModel>
+    S extends Selector<IModel>
   >(
     model: IModel,
-    selector?: Selector,
+    selector?: S,
     depends?: any[]
   ) => {
     const context = useContext(Context)
@@ -90,10 +85,10 @@ const createContainer = function (options?: RedoxOptions) {
 
   const useStaticModel: IUseStaticModel = <
     IModel extends AnyModel,
-    Selector extends ISelector<IModel>
+    S extends Selector<IModel>
   >(
     model: IModel,
-    selector?: Selector,
+    selector?: S,
     depends?: any[]
   ) => {
     const context = useContext(Context)

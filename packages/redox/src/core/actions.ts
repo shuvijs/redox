@@ -1,5 +1,6 @@
 import { emptyObject, hasOwn } from '../utils'
-import { AnyModel, DispatchOfModel } from '../types'
+import { AnyModel } from './defineModel'
+import { Actions } from './model'
 import { RedoxCacheValue } from './types'
 import type { InternalModel } from '../internalModel'
 
@@ -25,7 +26,7 @@ function createActionContext(
 }
 
 export const createActions = <IModel extends AnyModel>(
-  $actions: DispatchOfModel<IModel>,
+  $actions: Actions<IModel>,
   internalModelInstance: InternalModel<IModel>,
   getCacheValue: (m: AnyModel) => RedoxCacheValue
 ): void => {

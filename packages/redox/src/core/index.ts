@@ -1,12 +1,5 @@
-import {
-  State,
-  ModelInstance,
-  DispatchOfModel,
-  RedoxViews,
-  AnyModel,
-  AnyAction,
-  ISelector,
-} from '../types'
+import { State, ModelInstance, Actions, Views, Action, Selector } from './model'
+import { AnyModel } from './defineModel'
 import {
   RedoxCacheValue,
   RedoxStoreCache,
@@ -14,6 +7,7 @@ import {
   RedoxStore,
   ProxyMethods,
   proxyMethods,
+  Dispatch,
 } from './types'
 import { createReducers } from './reducers'
 import { createActions } from './actions'
@@ -22,6 +16,11 @@ import { InternalModel } from '../internalModel'
 import getPublicApi from './getPublicApi'
 import validate from '../validate'
 import { emptyObject, readonlyDeepClone } from '../utils'
+
+export * from './model'
+export * from './defineModel'
+
+export { Dispatch }
 
 export type RedoxOptions = {
   initialState?: Record<string, any>
@@ -58,7 +57,7 @@ export function redox(
       }
       return allState
     },
-    dispatch(action: AnyAction) {
+    dispatch(action: Action) {
       for (const { internalModelInstance } of cacheMap.values()) {
         internalModelInstance.dispatch(action)
       }
@@ -142,14 +141,14 @@ export function redox(
       $state = internalModelInstance.getState
     }
 
-    const $views = {} as RedoxViews<M['views']>
+    const $views = {} as Views<M['views']>
     createViews($views, internalModelInstance, getCacheValue)
 
-    const $createSelector = <TReturn>(selector: ISelector<M, TReturn>) => {
+    const $createSelector = <TReturn>(selector: Selector<M, TReturn>) => {
       return createSelector(internalModelInstance, getCacheValue, selector)
     }
 
-    const $actions = {} as DispatchOfModel<M>
+    const $actions = {} as Actions<M>
     createReducers($actions, internalModelInstance)
     createActions($actions, internalModelInstance, getCacheValue)
 

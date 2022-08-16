@@ -1,6 +1,14 @@
-import { redox as internalRedox, RedoxOptions } from './core'
+import {
+  defineModel,
+  redox as internalRedox,
+  RedoxOptions,
+  ModelInstance,
+  Action,
+  Selector,
+  SelectorParams,
+  AnyModel,
+} from './core'
 import validate from './validate'
-import { defineModel } from './defineModel'
 import devTools from './devtools'
 import { RedoxStore, Plugin } from './core/types'
 
@@ -16,6 +24,18 @@ const redox = function (
   })
 }
 
-export { validate, defineModel, RedoxStore, redox, Plugin, RedoxOptions }
+export {
+  validate,
+  defineModel,
+  RedoxStore,
+  redox,
+  Plugin,
+  ModelInstance,
+  RedoxOptions,
+  AnyModel,
+  Action,
+  Selector,
+  SelectorParams,
+}
 
 export * from './types'

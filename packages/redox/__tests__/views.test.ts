@@ -1,4 +1,4 @@
-import { defineModel, redox, ISelectorParams } from '../src'
+import { defineModel, redox, SelectorParams } from '../src'
 
 let redoxStore: ReturnType<typeof redox>
 beforeEach(() => {
@@ -700,7 +700,7 @@ describe('createSelector', () => {
 
     const store = redoxStore.getModel(model)
 
-    const selector = function (stateAndViews: ISelectorParams<typeof model>) {
+    const selector = function (stateAndViews: SelectorParams<typeof model>) {
       return stateAndViews
     }
 
@@ -734,7 +734,7 @@ describe('createSelector', () => {
       },
     })
 
-    const selector = function (stateAndViews: ISelectorParams<typeof sample>) {
+    const selector = function (stateAndViews: SelectorParams<typeof sample>) {
       return stateAndViews.viewA
     }
 
@@ -769,7 +769,7 @@ describe('createSelector', () => {
       },
     })
 
-    const selector = function (stateAndViews: ISelectorParams<typeof sample>) {
+    const selector = function (stateAndViews: SelectorParams<typeof sample>) {
       return stateAndViews
     }
 
@@ -800,7 +800,7 @@ describe('createSelector', () => {
       },
     })
 
-    const selector = function (stateAndViews: ISelectorParams<typeof model>) {
+    const selector = function (stateAndViews: SelectorParams<typeof model>) {
       calltime++
       return stateAndViews.$state.foo
     }
@@ -841,7 +841,7 @@ describe('createSelector', () => {
       },
     })
 
-    const selector = function (stateAndViews: ISelectorParams<typeof model>) {
+    const selector = function (stateAndViews: SelectorParams<typeof model>) {
       calltime++
       return stateAndViews.getFoo
     }
@@ -875,7 +875,7 @@ describe('createSelector', () => {
       })
 
       const selector = function (
-        stateAndViews: ISelectorParams<typeof numberModel>
+        stateAndViews: SelectorParams<typeof numberModel>
       ) {
         numberOfCalls++
         return stateAndViews.$state
@@ -910,7 +910,7 @@ describe('createSelector', () => {
       })
 
       const selector = function (
-        stateAndViews: ISelectorParams<typeof numberModel>
+        stateAndViews: SelectorParams<typeof numberModel>
       ) {
         numberOfCalls++
         return stateAndViews.$state
@@ -947,7 +947,7 @@ describe('createSelector', () => {
       })
 
       const selector = function (
-        stateAndViews: ISelectorParams<typeof arrayModel>
+        stateAndViews: SelectorParams<typeof arrayModel>
       ) {
         numberOfCalls++
         return stateAndViews.$state[0]
@@ -988,7 +988,7 @@ describe('createSelector', () => {
       })
 
       const selector = function (
-        stateAndViews: ISelectorParams<typeof arrayModel>
+        stateAndViews: SelectorParams<typeof arrayModel>
       ) {
         numberOfCalls++
         return stateAndViews.$state
