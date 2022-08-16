@@ -1,6 +1,6 @@
 import { AnyModel } from './defineModel'
 import { Views, Selector } from './modelOptions'
-import { RedoxCacheValue } from './types'
+import { RedoxModel } from './redox'
 import type { Model } from './model'
 import { isPlainObject, hasOwn, hasChanged, emptyObject } from '../utils'
 import { warn } from '../warning'
@@ -55,7 +55,7 @@ function proxySetter(_newValue: any) {
 export const createViews = <IModel extends AnyModel>(
   $views: Views<IModel['views']>,
   internalModelInstance: Model<IModel>,
-  getCacheValue: (m: AnyModel) => RedoxCacheValue
+  getCacheValue: (m: AnyModel) => RedoxModel
 ): void => {
   const views = internalModelInstance.model.views
   if (!views) {
@@ -152,7 +152,7 @@ export const createViews = <IModel extends AnyModel>(
 
 export function createSelector<IModel extends AnyModel, TReturn>(
   internalModelInstance: Model<IModel>,
-  getCacheValue: (m: AnyModel) => RedoxCacheValue,
+  getCacheValue: (m: AnyModel) => RedoxModel,
   selector: Selector<IModel, TReturn>
 ) {
   let currentModelProxy = {

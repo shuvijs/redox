@@ -1,5 +1,5 @@
 import { invariant } from './utils'
-import type { Plugin } from './core/types'
+import type { Plugin } from './core'
 
 const SET_FROM_DEVTOOLS = '@@redox/SET_FROM_DEVTOOLS'
 

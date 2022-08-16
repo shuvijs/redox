@@ -1,14 +1,14 @@
 import { emptyObject, hasOwn } from '../utils'
 import { AnyModel } from './defineModel'
 import { Actions } from './modelOptions'
-import { RedoxCacheValue } from './types'
+import { RedoxModel } from './redox'
 import type { Model } from './model'
 
 // list for not allow to access publicApi property
 const ACTION_CONTEXT_BLACK_LIST = ['$createView', '$actions', '$views']
 
 function createActionContext(
-  publicApi: RedoxCacheValue['publicApi'],
+  publicApi: RedoxModel['publicApi'],
   depends: Record<string, any> = emptyObject
 ) {
   return function get(
@@ -28,7 +28,7 @@ function createActionContext(
 export const createActions = <IModel extends AnyModel>(
   $actions: Actions<IModel>,
   internalModelInstance: Model<IModel>,
-  getCacheValue: (m: AnyModel) => RedoxCacheValue
+  getCacheValue: (m: AnyModel) => RedoxModel
 ): void => {
   const actions = internalModelInstance.model.actions
   if (!actions) {
