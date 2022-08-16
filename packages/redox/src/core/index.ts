@@ -1,4 +1,11 @@
-import { State, ModelInstance, Actions, Views, Action, Selector } from './model'
+import {
+  State,
+  ModelInstance,
+  Actions,
+  Views,
+  Action,
+  Selector,
+} from './modelOptions'
 import { AnyModel } from './defineModel'
 import {
   RedoxCacheValue,
@@ -12,12 +19,11 @@ import {
 import { createReducers } from './reducers'
 import { createActions } from './actions'
 import { createViews, createSelector } from './views'
-import { InternalModel } from '../internalModel'
+import { Model } from './model'
 import getPublicApi from './getPublicApi'
-import validate from '../validate'
 import { emptyObject, readonlyDeepClone } from '../utils'
 
-export * from './model'
+export * from './modelOptions'
 export * from './defineModel'
 
 export { Dispatch }
@@ -88,10 +94,7 @@ export function redox(
   function initModel<M extends AnyModel>(model: M): RedoxCacheValue {
     hooks.map((hook) => hook.onModel?.(model))
 
-    const internalModelInstance = new InternalModel(
-      model,
-      getInitialState(model.name)
-    )
+    const internalModelInstance = new Model(model, getInitialState(model.name))
 
     const depends = model._depends
     if (depends) {
@@ -107,24 +110,18 @@ export function redox(
 
     const internalModelInstanceProxy = new Proxy(internalModelInstance, {
       get(target, prop: ProxyMethods) {
-        if (process.env.NODE_ENV === 'development') {
-          validate(() => [
-            [
-              !proxyMethods.includes(prop),
-              `invalidate props ${prop}, should be one of ${proxyMethods.join(
-                ' | '
-              )}`,
-            ],
-          ])
+        if (proxyMethods.includes(prop)) {
+          return target[prop]
         }
-        return target[prop]
+
+        return undefined
       },
     })
     hooks.map((hook) => {
       hook.onModelInstanced?.(internalModelInstanceProxy)
     })
 
-    let $state: InternalModel<M>['getState']
+    let $state: Model<M>['getState']
     // $state function
     if (process.env.NODE_ENV === 'development') {
       let lastState = internalModelInstance.getState()
@@ -136,7 +133,7 @@ export function redox(
         lastState = internalModelInstance.getState()
         $stateCache = readonlyDeepClone(lastState)
         return $stateCache
-      } as InternalModel<M>['getState']
+      } as Model<M>['getState']
     } else {
       $state = internalModelInstance.getState
     }

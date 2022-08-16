@@ -3,9 +3,7 @@
  */
 
 import React, { useMemo, useCallback } from 'react'
-import ReactDOM from 'react-dom/client'
-// @ts-ignore
-import { act } from 'react-dom/test-utils'
+import { render, act } from '@testing-library/react'
 import {
   defineModel,
   redox,
@@ -79,9 +77,7 @@ describe('createUseModel', () => {
         </>
       )
     }
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
+    const { container } = render(<App />)
 
     expect(container.querySelector('#v')?.innerHTML).toEqual('1')
     expect(container.querySelector('#t')?.innerHTML).toEqual('2')
@@ -102,10 +98,8 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
 
+        const { container } = render(<App />)
         expect(container.querySelector('#value')?.innerHTML).toEqual('1')
         act(() => {
           container
@@ -139,10 +133,8 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
 
+        const { container } = render(<App />)
         expect(container.querySelector('#value')?.innerHTML).toEqual('1')
         act(() => {
           container
@@ -169,10 +161,8 @@ describe('createUseModel', () => {
             </>
           )
         }
-        await act(async () => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
 
+        const { container } = render(<App />)
         expect(container.querySelector('#value')?.innerHTML).toEqual('1')
         await act(async () => {
           container
@@ -237,9 +227,8 @@ describe('createUseModel', () => {
           </>
         )
       }
-      act(() => {
-        ReactDOM.createRoot(container).render(<App />)
-      })
+
+      const { container } = render(<App />)
 
       expect(container.querySelector('#v')?.innerHTML).toEqual('0')
       expect(container.querySelector('#t')?.innerHTML).toEqual('2')
@@ -281,9 +270,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -324,9 +311,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -367,9 +352,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -421,9 +404,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -459,9 +440,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -513,9 +492,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -567,9 +544,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -625,9 +600,7 @@ describe('createUseModel', () => {
         )
       }
 
-      act(() => {
-        ReactDOM.createRoot(container).render(<App />)
-      })
+      const { container } = render(<App />)
 
       // countSelector1 run and cache countSelector1
       expect(selectorRunTime0).toBe(0)
@@ -692,9 +665,7 @@ describe('createUseModel', () => {
         return null
       }
       expect(() => {
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        render(<App />)
       }).toThrow()
     })
   })
@@ -713,10 +684,7 @@ describe('createUseModel', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
-
+    render(<App />)
     expect(AppRenderCount).toBe(1)
 
     act(() => {
@@ -740,9 +708,7 @@ describe('createUseModel', () => {
       return <div id="value">{value}</div>
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
+    const { container } = render(<App />)
 
     expect(container.querySelector('#value')!.textContent).toEqual('2')
   })
@@ -770,9 +736,7 @@ describe('createUseStaticModel', () => {
         </>
       )
     }
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
+    const { container } = render(<App />)
 
     expect(container.querySelector('#v')?.innerHTML).toEqual('1')
     expect(container.querySelector('#t')?.innerHTML).toEqual('2')
@@ -808,9 +772,7 @@ describe('createUseStaticModel', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
+    const { container } = render(<App />)
 
     expect(renderTime).toBe(1)
     expect(currentCount).toBe(1)

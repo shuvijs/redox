@@ -1,17 +1,17 @@
 import { defineModel, redox } from '../src'
 
 let redoxStore: ReturnType<typeof redox>
+beforeEach(() => {
+  redoxStore = redox()
+})
 
-const oldEnv = process.env.NODE_ENV
+let oldEnv: any
 beforeAll(() => {
+  oldEnv = process.env.NODE_ENV
   process.env.NODE_ENV = 'development'
 })
 afterAll(() => {
   process.env.NODE_ENV = oldEnv
-})
-
-beforeEach(() => {
-  redoxStore = redox()
 })
 
 describe('defineModel/actions', () => {
@@ -215,7 +215,7 @@ describe('defineModel/actions', () => {
   })
 
   describe('this.$patch()', () => {
-    it('primitive value should throw error', () => {
+    it('should warn primitive value', () => {
       const count = defineModel({
         name: 'count',
         state: 1,
@@ -228,9 +228,8 @@ describe('defineModel/actions', () => {
 
       const store = redoxStore.getModel(count)
 
-      expect(() => {
-        store.patch(1)
-      }).toThrow()
+      store.patch(2)
+      expect('$patch argument should be an object').toHaveBeenWarned()
     })
 
     it('should patch the state', () => {

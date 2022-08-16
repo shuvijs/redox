@@ -1,179 +1,189 @@
+import { produce, setAutoFreeze } from 'immer'
 import {
-  ViewOptions,
+  Deps,
+  Reducer,
   ReducerOptions,
   ActionOptions,
-  Deps,
-  AnyModel,
+  ViewOptions,
   DefineModel,
+  AnyModel,
 } from './defineModel'
+import { Action, State, StateObject } from './modelOptions'
+import { emptyObject, isPlainObject, patchObj, invariant } from '../utils'
+import { warn } from '../warning'
 
-type PickFirst<Arr extends unknown[]> = Arr extends [infer First, ...unknown[]]
-  ? First
-  : Arr extends []
-  ? never
-  : Arr extends [first?: infer First]
-  ? First | undefined
-  : never
+export type Dispatch = (action: Action) => Action
 
-export type Optional<T> = T | undefined
+const randomString = () =>
+  Math.random().toString(36).substring(7).split('').join('.')
 
-export type StateObject = {
-  [x: string]: any
+const ActionTypes = {
+  INIT: `@@redox/INIT${/* #__PURE__ */ randomString()}`,
+  SET: '@@redox/SET',
+  MODIFY: '@@redox/MODIFY',
+  PATCH: '@@redox/PATCH',
 }
 
-export type StatePrimitive =
-  | String
-  | Number
-  | Boolean
-  | any[]
-  | undefined
-  | null
+export class Model<IModel extends AnyModel> {
+  public name: Readonly<string>
+  public model: Readonly<IModel>
+  public reducer: Reducer<IModel['state']>
 
-export type State = StateObject | StatePrimitive
+  private currentState: IModel['state']
+  private listeners: Set<() => void> = new Set()
+  private isDispatching: boolean
 
-export interface Action<T = any> {
-  type: string
-  payload?: T
-  // Allows any extra properties to be defined in an action.
-  [extraProps: string]: any
-}
+  constructor(model: IModel, initState: State) {
+    this.model = model
+    this.name = this.model.name || ''
+    this.reducer = createModelReducer(model)
+    this.currentState = initState || model.state
+    this.isDispatching = false
 
-export interface ActionWithPayload<T = any> {
-  type: string
-  payload: T
-  // Allows any extra properties to be defined in an action.
-  [extraProps: string]: any
-}
+    this.dispatch({ type: ActionTypes.INIT })
+  }
 
-type EmptyObject = { [X: string | number | symbol]: never }
+  getState = () => {
+    return this.currentState!
+  }
 
-export type ReducerFn<Payload = never> = [Payload] extends [never]
-  ? () => Action<never>
-  : [Payload] extends [optional?: infer T]
-  ? (
-      payload?: Exclude<T, undefined>
-    ) => ActionWithPayload<Exclude<T, undefined>>
-  : (payload: Payload) => ActionWithPayload<Payload>
+  $set = (newState: State) => {
+    invariant(
+      typeof newState !== 'bigint' && typeof newState !== 'symbol',
+      "'BigInt' and 'Symbol' are not assignable to the State"
+    )
 
-export type GetDispatchFromReducer<State, Reducer> = Reducer extends () => any
-  ? ReducerFn
-  : Reducer extends (state: State, ...args: infer Args) => State | void
-  ? ReducerFn<PickFirst<Args>>
-  : never
+    return this.dispatch({
+      type: ActionTypes.SET,
+      payload: newState,
+    })
+  }
 
-type FilterIndex<T> = {
-  [P in keyof T as string extends P
-    ? never
-    : number extends P
-    ? never
-    : P]: T[P]
-}
+  $patch = (partState: StateObject) => {
+    return this.dispatch({
+      type: ActionTypes.PATCH,
+      payload: function patch(state: State) {
+        if (!isPlainObject(partState)) {
+          if (process.env.NODE_ENV === 'development') {
+            warn(
+              `$patch argument should be an object, but receive a ${Object.prototype.toString.call(
+                partState
+              )}`
+            )
+          }
+          return
+        }
 
-export type DispatchFunctionsByReducerOptions<S, R> = R extends undefined
-  ? {}
-  : FilterIndex<R> extends infer FilterR
-  ? {
-      [K in keyof FilterR]: GetDispatchFromReducer<S, FilterR[K]>
-    }
-  : never
+        if (!state) {
+          return partState
+        }
 
-export type DispatchFunctionsByActionOptions<A> = A extends ActionOptions
-  ? FilterIndex<A> extends infer FilterA
-    ? {
-        [K in keyof FilterA]: FilterA[K]
-      }
-    : {}
-  : {}
+        patchObj(state as StateObject, partState)
+        return
+      },
+    })
+  }
 
-export type DispatchFuncions<S, R, A> = DispatchFunctionsByReducerOptions<
-  S,
-  R
-> &
-  DispatchFunctionsByActionOptions<A>
+  $modify = (modifier: (state: State) => void) => {
+    return this.dispatch({
+      type: ActionTypes.MODIFY,
+      payload: function modify(state: State) {
+        modifier(state)
+      },
+    })
+  }
 
-export type Actions<Model> = Model extends DefineModel<
-  any,
-  infer S,
-  infer R,
-  infer A,
-  any,
-  any
->
-  ? DispatchFuncions<S, R, A> & EmptyObject
-  : never
+  subscribe = (listener: () => void) => {
+    this.listeners.add(listener)
 
-export type Views<ViewOptions> = {
-  [K in keyof ViewOptions]: ViewOptions[K] extends () => any
-    ? ReturnType<ViewOptions[K]>
-    : never
-}
-
-export type SelectorParams<Model extends AnyModel> = {
-  $state: Model['state']
-} & Model['state'] &
-  Views<Model['views']> &
-  EmptyObject
-
-export type Selector<Model extends AnyModel, TReturn = any> = (
-  stateAndViews: SelectorParams<Model>
-) => TReturn
-
-export type ModelInstance<Model extends AnyModel> = {
-  $state: Model['state']
-  $set: (state: State) => void
-  $modify: (modifier: (state: Model['state']) => void) => void
-  $patch: (partState: StateObject) => void
-  $actions: Actions<Model>
-  $views: Views<Model['views']>
-  $createSelector: <R>(
-    selector: Selector<Model, R>
-  ) => (() => R) & { clearCache: () => void }
-} & Views<Model['views']> &
-  Actions<Model>
-
-export type ActionThis<
-  S extends State = {},
-  R extends ReducerOptions<any> = {},
-  A extends ActionOptions = {},
-  V extends ViewOptions = {},
-  D extends Deps = {}
-> = {
-  $state: S
-  $set: (s: S) => void
-  $patch: (s: StateObject) => void
-  $modify: (modifier: (s: S) => void) => void
-} & Views<V> & {
-    $dep: {
-      [K in keyof D]: D[K] extends DefineModel<
-        any,
-        infer DS,
-        infer DR,
-        infer DA,
-        infer DV,
-        infer DDeps
-      >
-        ? ActionThis<DS, DR, DA, DV, DDeps>
-        : ActionThis
-    }
-  } & DispatchFuncions<S, R, A>
-
-export type ViewThis<
-  S extends State = {},
-  V extends ViewOptions = {},
-  D extends Deps = {}
-> = S & {
-  $state: S
-} & Views<V> & {
-    $dep: {
-      [K in keyof D]: D[K] extends DefineModel<
-        any,
-        infer DS,
-        any,
-        any,
-        infer DV,
-        infer DDeps
-      >
-        ? ViewThis<DS, DV, DDeps>
-        : ActionThis
+    return () => {
+      this.listeners.delete(listener)
     }
   }
+
+  dispatch: Dispatch = (action) => {
+    if (typeof action.type === 'undefined') {
+      if (process.env.NODE_ENV === 'development') {
+        warn(
+          `Actions may not have an undefined "type" property. You may have misspelled an action type string constant.`
+        )
+      }
+      return action
+    }
+
+    if (this.isDispatching) {
+      if (process.env.NODE_ENV === 'development') {
+        warn(`Cannot dispatch action from a reducer.`)
+      }
+      return action
+    }
+
+    let nextState
+
+    try {
+      this.isDispatching = true
+      nextState = this.reducer(this.currentState, action)
+    } finally {
+      this.isDispatching = false
+    }
+
+    if (nextState !== this.currentState) {
+      this.currentState = nextState
+      // trigger self listeners
+      this.triggerListener()
+    }
+
+    return action
+  }
+
+  triggerListener = () => {
+    for (const listener of this.listeners) {
+      listener()
+    }
+  }
+
+  destroy = () => {
+    this.currentState = null
+    this.reducer = () => {}
+    this.listeners.clear()
+    this.model = emptyObject
+  }
+}
+
+setAutoFreeze(false)
+
+export function createModelReducer<
+  N extends string,
+  S extends State,
+  R extends ReducerOptions<S>,
+  A extends ActionOptions,
+  V extends ViewOptions,
+  D extends Deps
+>(model: DefineModel<N, S, R, A, V, D>): Reducer<S> {
+  // select and run a reducer based on the incoming action
+  return (state: S = model.state, action: Action): S => {
+    if (action.type === ActionTypes.SET) {
+      return action.payload
+    }
+
+    let reducer = model.reducers?.[action.type]
+
+    if (
+      action.type === ActionTypes.MODIFY ||
+      action.type === ActionTypes.PATCH
+    ) {
+      reducer = action.payload
+    }
+
+    if (typeof reducer === 'function') {
+      // immer does not support 'undefined' state
+      if (state === undefined) return reducer(state, action.payload) as S
+      return produce(
+        state,
+        (draft: any) => reducer!(draft, action.payload) as S
+      )
+    }
+
+    return state
+  }
+}

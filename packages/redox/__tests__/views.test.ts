@@ -3,11 +3,19 @@ import { defineModel, redox, SelectorParams } from '../src'
 let redoxStore: ReturnType<typeof redox>
 beforeEach(() => {
   redoxStore = redox()
+})
+
+let oldEnv: any
+beforeAll(() => {
+  oldEnv = process.env.NODE_ENV
   process.env.NODE_ENV = 'development'
+})
+afterAll(() => {
+  process.env.NODE_ENV = oldEnv
 })
 
 describe('defineModel/views', () => {
-  it('should throw error if changed state in a view', () => {
+  it('should throw if changed state in a view', () => {
     let initState = {
       a: 0,
     }
@@ -23,6 +31,7 @@ describe('defineModel/views', () => {
     })
     const store = redoxStore.getModel(model)
     expect(() => store.view).toThrow()
+    expect('cannot change state in view function').toHaveBeenWarned()
   })
 
   it('$state and any view should be object', () => {
@@ -682,6 +691,7 @@ describe('createSelector', () => {
     expect(() => {
       view()
     }).toThrow()
+    expect('cannot change state in view function').toHaveBeenWarned()
   })
 
   it('$state and any view should be object', () => {

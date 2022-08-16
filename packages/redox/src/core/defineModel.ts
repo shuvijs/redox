@@ -1,5 +1,11 @@
-import { State, Action, ActionThis, ViewThis } from './model'
-import validate, { validateModel } from '../validate'
+import {
+  State,
+  Action,
+  ActionThis,
+  ViewThis,
+  validateModelOptions,
+} from './modelOptions'
+import { invariant } from '../utils'
 
 export type Reducer<S extends State> = (
   state: S,
@@ -134,14 +140,13 @@ export const defineModel = <
   depends?: Tuple<D>
 ) => {
   if (process.env.NODE_ENV === 'development') {
-    validate(() => [
-      [
-        depends && !Array.isArray(depends),
-        `second argument depends should be an array, now is ${typeof depends} !`,
-      ],
-    ])
-    validateModel(modelOptions)
+    invariant(
+      !depends || Array.isArray(depends),
+      `second argument depends should be an array, now is ${typeof depends} !`
+    )
+    validateModelOptions(modelOptions)
   }
+
   const finalModel = modelOptions as DefineModel<N, S, R, A, V, Deps>
   finalModel._depends = depends
   if (finalModel._depends) {

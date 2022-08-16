@@ -1,4 +1,4 @@
-import validate from './validate'
+import { invariant } from './utils'
 import type { Plugin } from './core/types'
 
 const SET_FROM_DEVTOOLS = '@@redox/SET_FROM_DEVTOOLS'
@@ -24,19 +24,17 @@ const reduxDevTools: Plugin = function () {
         const fn = (message: any) => {
           switch (message.type) {
             case 'ACTION':
-              validate(() => [
-                [
-                  typeof message.payload !== 'string',
-                  'Unsupported action format',
-                ],
-              ])
+              invariant(
+                typeof message.payload === 'string',
+                'Unsupported action format'
+              )
               try {
                 const action = JSON.parse(message.payload)
                 return instance.dispatch(action)
               } catch (e) {
-                return validate(() => [
-                  [true, `Could not parse the received json.`],
-                ])
+                throw new Error(
+                  `[Redox Devtool] Could not parse the received json.`
+                )
               }
 
             case 'DISPATCH':
@@ -59,9 +57,9 @@ const reduxDevTools: Plugin = function () {
                     instance.dispatch(action)
                     return devTools.init(instance.getState())
                   } catch (e) {
-                    return validate(() => [
-                      [true, 'Could not parse the received json'],
-                    ])
+                    throw new Error(
+                      `[Redox Devtool] Could not parse the received json.`
+                    )
                   }
 
                 case 'JUMP_TO_STATE':
@@ -83,9 +81,9 @@ const reduxDevTools: Plugin = function () {
                     }
                     return instance.dispatch(action)
                   } catch (e) {
-                    return validate(() => [
-                      [true, 'Could not parse the received json'],
-                    ])
+                    throw new Error(
+                      `[Redox Devtool] Could not parse the received json.`
+                    )
                   }
               }
               return
