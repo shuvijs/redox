@@ -19,7 +19,7 @@ import { createReducers } from './reducers'
 import { createActions } from './actions'
 import { createViews, createSelector } from './views'
 import { InternalModel } from '../internalModel'
-import getStoreApi from './get-public-api'
+import getPublicApi from './getPublicApi'
 import validate from '../validate'
 import { emptyObject, readonlyDeepClone } from '../utils'
 
@@ -146,22 +146,14 @@ export function redox(
     createViews($views, internalModelInstance, getCacheValue)
 
     const $createSelector = <TReturn>(selector: ISelector<M, TReturn>) => {
-      const cacheSelectorFn = createSelector(selector)
-      const res = () => {
-        const stateAndViews = {} as Record<string, any>
-        Object.assign(stateAndViews, internalModelInstance.getState(), $views)
-        stateAndViews['$state'] = internalModelInstance.getState()
-        return cacheSelectorFn(stateAndViews) as TReturn
-      }
-      res.clearCache = cacheSelectorFn.clearCache
-      return res
+      return createSelector(internalModelInstance, getCacheValue, selector)
     }
 
     const $actions = {} as DispatchOfModel<M>
     createReducers($actions, internalModelInstance)
     createActions($actions, internalModelInstance, getCacheValue)
 
-    const publicApi: ModelInstance<M> = getStoreApi(
+    const publicApi: ModelInstance<M> = getPublicApi(
       internalModelInstance,
       $state,
       $actions,
