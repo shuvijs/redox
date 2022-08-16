@@ -1,4 +1,4 @@
-import produce, { setAutoFreeze } from 'immer'
+import { produce, setAutoFreeze } from 'immer'
 import {
   Action,
   State,
@@ -13,7 +13,7 @@ import {
   ObjectState,
 } from './types'
 import validate from './validate'
-import { emptyObject, isComplexObject, patchObj } from './utils'
+import { emptyObject, isObject, patchObj } from './utils'
 
 const randomString = () =>
   Math.random().toString(36).substring(7).split('').join('.')
@@ -40,6 +40,7 @@ export class InternalModel<IModel extends AnyModel> {
     this.reducer = createModelReducer(model)
     this.currentState = initState || model.state
     this.isDispatching = false
+
     this.dispatch({ type: ActionTypes.INIT })
   }
 
@@ -69,7 +70,7 @@ export class InternalModel<IModel extends AnyModel> {
         if (process.env.NODE_ENV === 'development') {
           validate(() => [
             [
-              !isComplexObject(partState),
+              !isObject(partState),
               `$patch argument should be a object, but receive a ${Object.prototype.toString.call(
                 partState
               )}`,
@@ -181,7 +182,7 @@ export class InternalModel<IModel extends AnyModel> {
 
 setAutoFreeze(false)
 
-function createModelReducer<
+export function createModelReducer<
   N extends string,
   S extends State,
   MC extends ModelCollection,
