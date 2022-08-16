@@ -1,8 +1,16 @@
-import { redox as internalRedox, RedoxOptions } from './core'
-import validate from './validate'
-import { defineModel } from './defineModel'
+import {
+  defineModel,
+  redox as _redox,
+  RedoxOptions,
+  ModelInstance,
+  Action,
+  Selector,
+  SelectorParams,
+  AnyModel,
+  RedoxStore,
+  Plugin,
+} from './core'
 import devTools from './devtools'
-import { RedoxStore, Plugin } from './core/types'
 
 const redox = function (
   { initialState, plugins = [] }: RedoxOptions = {} as RedoxOptions
@@ -10,12 +18,24 @@ const redox = function (
   if (process.env.NODE_ENV === 'development') {
     plugins.unshift([devTools])
   }
-  return internalRedox({
+
+  return _redox({
     initialState,
     plugins,
   })
 }
 
-export { validate, defineModel, RedoxStore, redox, Plugin, RedoxOptions }
+export {
+  defineModel,
+  RedoxStore,
+  redox,
+  Plugin,
+  ModelInstance,
+  RedoxOptions,
+  AnyModel,
+  Action,
+  Selector,
+  SelectorParams,
+}
 
 export * from './types'

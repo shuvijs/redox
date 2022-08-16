@@ -3,15 +3,13 @@
  */
 
 import React, { useMemo, useCallback } from 'react'
-import ReactDOM from 'react-dom/client'
-// @ts-ignore
-import { act } from 'react-dom/test-utils'
+import { render, act } from '@testing-library/react'
 import {
   defineModel,
   redox,
   AnyModel,
-  ISelector,
-  ISelectorParams,
+  Selector,
+  SelectorParams,
 } from '@shuvi/redox'
 import { createBatchManager } from '../src/batchManager'
 import { IUseModel, IUseStaticModel } from '../src/types'
@@ -28,9 +26,9 @@ beforeEach(() => {
   jest.useFakeTimers()
   redoxStore = redox()
   batchManager = createBatchManager()
-  useTestModel = <IModel extends AnyModel, Selector extends ISelector<IModel>>(
+  useTestModel = <IModel extends AnyModel, S extends Selector<IModel>>(
     model: IModel,
-    selector?: Selector,
+    selector?: S,
     depends?: any[]
   ) => {
     return useMemo(
@@ -38,12 +36,9 @@ beforeEach(() => {
       [redoxStore, batchManager]
     )(model, selector, depends)
   }
-  useTestStaticModel = <
-    IModel extends AnyModel,
-    Selector extends ISelector<IModel>
-  >(
+  useTestStaticModel = <IModel extends AnyModel, S extends Selector<IModel>>(
     model: IModel,
-    selector?: Selector,
+    selector?: S,
     depends?: any[]
   ) => {
     return useMemo(
@@ -82,9 +77,7 @@ describe('createUseModel', () => {
         </>
       )
     }
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
+    const { container } = render(<App />)
 
     expect(container.querySelector('#v')?.innerHTML).toEqual('1')
     expect(container.querySelector('#t')?.innerHTML).toEqual('2')
@@ -105,10 +98,8 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
 
+        const { container } = render(<App />)
         expect(container.querySelector('#value')?.innerHTML).toEqual('1')
         act(() => {
           container
@@ -142,10 +133,8 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
 
+        const { container } = render(<App />)
         expect(container.querySelector('#value')?.innerHTML).toEqual('1')
         act(() => {
           container
@@ -172,10 +161,8 @@ describe('createUseModel', () => {
             </>
           )
         }
-        await act(async () => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
 
+        const { container } = render(<App />)
         expect(container.querySelector('#value')?.innerHTML).toEqual('1')
         await act(async () => {
           container
@@ -240,9 +227,8 @@ describe('createUseModel', () => {
           </>
         )
       }
-      act(() => {
-        ReactDOM.createRoot(container).render(<App />)
-      })
+
+      const { container } = render(<App />)
 
       expect(container.querySelector('#v')?.innerHTML).toEqual('0')
       expect(container.querySelector('#t')?.innerHTML).toEqual('2')
@@ -287,7 +273,7 @@ describe('createUseModel', () => {
       test('global selector', async () => {
         let selectorRunCount = 0
         const countSelector = function (
-          stateAndViews: ISelectorParams<typeof countModel>
+          stateAndViews: SelectorParams<typeof countModel>
         ) {
           selectorRunCount++
           return stateAndViews.value
@@ -307,9 +293,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -330,7 +314,7 @@ describe('createUseModel', () => {
         let selectorRunCount = 0
         const App = () => {
           const countSelector = useCallback(function (
-            stateAndViews: ISelectorParams<typeof countModel>
+            stateAndViews: SelectorParams<typeof countModel>
           ) {
             selectorRunCount++
             return stateAndViews.value
@@ -350,9 +334,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -374,7 +356,7 @@ describe('createUseModel', () => {
         const App = () => {
           const [_state, actions] = useTestModel(
             countModel,
-            function (stateAndViews: ISelectorParams<typeof countModel>) {
+            function (stateAndViews: SelectorParams<typeof countModel>) {
               selectorRunCount++
               return stateAndViews.value
             },
@@ -393,9 +375,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -415,7 +395,7 @@ describe('createUseModel', () => {
       test('depends not changed', async () => {
         let selectorRunCount = 0
         const selector = function (
-          stateAndViews: ISelectorParams<typeof countModel>
+          stateAndViews: SelectorParams<typeof countModel>
         ) {
           selectorRunCount++
           return stateAndViews.value
@@ -447,9 +427,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -467,7 +445,7 @@ describe('createUseModel', () => {
         const App = () => {
           const [_state, actions] = useTestModel(
             countModel,
-            function (stateAndViews: ISelectorParams<typeof countModel>) {
+            function (stateAndViews: SelectorParams<typeof countModel>) {
               selectorRunCount++
               return stateAndViews.value
             }
@@ -485,9 +463,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -539,9 +515,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -561,7 +535,7 @@ describe('createUseModel', () => {
       test('global selector with depends', async () => {
         let selectorRunCount = 0
         const selector = function (
-          stateAndViews: ISelectorParams<typeof countModel>
+          stateAndViews: SelectorParams<typeof countModel>
         ) {
           selectorRunCount++
           return stateAndViews.value
@@ -593,9 +567,7 @@ describe('createUseModel', () => {
             </>
           )
         }
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        const { container } = render(<App />)
 
         expect(selectorRunCount).toBe(1)
         act(() => {
@@ -651,9 +623,7 @@ describe('createUseModel', () => {
         )
       }
 
-      act(() => {
-        ReactDOM.createRoot(container).render(<App />)
-      })
+      const { container } = render(<App />)
 
       // countSelector1 run and cache countSelector1
       expect(selectorRunTime0).toBe(0)
@@ -718,9 +688,7 @@ describe('createUseModel', () => {
         return null
       }
       expect(() => {
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        render(<App />)
       }).toThrow()
     })
   })
@@ -739,10 +707,7 @@ describe('createUseModel', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
-
+    render(<App />)
     expect(AppRenderCount).toBe(1)
 
     act(() => {
@@ -766,9 +731,7 @@ describe('createUseModel', () => {
       return <div id="value">{value}</div>
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
+    const { container } = render(<App />)
 
     expect(container.querySelector('#value')!.textContent).toEqual('2')
   })
@@ -796,9 +759,7 @@ describe('createUseStaticModel', () => {
         </>
       )
     }
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
+    const { container } = render(<App />)
 
     expect(container.querySelector('#v')?.innerHTML).toEqual('1')
     expect(container.querySelector('#t')?.innerHTML).toEqual('2')
@@ -834,9 +795,7 @@ describe('createUseStaticModel', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
+    const { container } = render(<App />)
 
     expect(renderTime).toBe(1)
     expect(currentCount).toBe(1)

@@ -1,17 +1,18 @@
-import { Action, RedoxDispatcher, AnyModel, DispatchOfModel } from '../types'
-import type { InternalModel } from '../internalModel'
+import { AnyModel } from './defineModel'
+import { Action, Actions } from './modelOptions'
+import type { Model } from './model'
 
 const createReducer = <IModel extends AnyModel>(
-  store: InternalModel<IModel>,
+  internalModelInstance: Model<IModel>,
   actionName: string
-): RedoxDispatcher<boolean> => {
+): Function => {
   return (payload?: any): Action => {
     const action: Action = { type: actionName }
 
     if (typeof payload !== 'undefined') {
       action.payload = payload
     }
-    return store.dispatch(action)
+    return internalModelInstance.dispatch(action)
   }
 }
 
@@ -20,11 +21,11 @@ const createReducer = <IModel extends AnyModel>(
  * reducers to functions which dispatch their corresponding actions.
  */
 export const createReducers = <IModel extends AnyModel>(
-  $actions: DispatchOfModel<IModel>,
-  redoxStore: InternalModel<IModel>
+  $actions: Actions<IModel>,
+  internalModelInstance: Model<IModel>
 ): void => {
   // map reducer names to dispatch actions
-  const reducers = redoxStore.model.reducers
+  const reducers = internalModelInstance.options.reducers
 
   if (!reducers) {
     return
@@ -33,6 +34,6 @@ export const createReducers = <IModel extends AnyModel>(
   const reducersKeys = Object.keys(reducers)
   reducersKeys.forEach((reducerName) => {
     // @ts-ignore
-    $actions[reducerName] = createReducer(redoxStore, reducerName)
+    $actions[reducerName] = createReducer(internalModelInstance, reducerName)
   })
 }

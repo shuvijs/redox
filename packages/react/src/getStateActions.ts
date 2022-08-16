@@ -2,8 +2,8 @@ import type {
   RedoxStore,
   ModelInstance,
   AnyModel,
-  ISelector,
-  ISelectorParams,
+  Selector,
+  SelectorParams,
 } from '@shuvi/redox'
 
 function tuplify<T extends any[]>(...elements: T) {
@@ -11,11 +11,11 @@ function tuplify<T extends any[]>(...elements: T) {
 }
 
 function updateProxy<IModel extends AnyModel>(store: ModelInstance<IModel>) {
-  const tempProxy = { $state: store.$state } as ISelectorParams<IModel>
+  const tempProxy = { $state: store.$state } as SelectorParams<IModel>
   Object.assign(tempProxy, store.$state, store.$views)
   ;(
     store as ModelInstance<IModel> & {
-      __proxy: ISelectorParams<IModel>
+      __proxy: SelectorParams<IModel>
     }
   ).__proxy = new Proxy(tempProxy, {
     get(target: any, p: string | symbol): any {
@@ -42,16 +42,13 @@ function updateProxy<IModel extends AnyModel>(store: ModelInstance<IModel>) {
   })
 }
 
-function getStateActions<
-  IModel extends AnyModel,
-  Selector extends ISelector<IModel>
->(
-  model: IModel,
+function getStateActions<M extends AnyModel, S extends Selector<M>>(
+  model: M,
   redoxStore: RedoxStore,
-  selector?: () => ReturnType<Selector>
+  selector?: () => ReturnType<S>
 ) {
   const store = redoxStore.getModel(model)
-  let state: ISelectorParams<IModel> | ReturnType<Selector>
+  let state: SelectorParams<M> | ReturnType<S>
   if (!selector) {
     if (!store.__proxy) {
       updateProxy(store)
@@ -59,7 +56,7 @@ function getStateActions<
         updateProxy(store)
       })
     }
-    state = store.__proxy as ISelectorParams<IModel>
+    state = store.__proxy as SelectorParams<M>
   } else {
     state = selector()
   }

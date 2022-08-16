@@ -6,16 +6,12 @@ import React, {
   useMemo,
   useState,
 } from 'react'
-import { validate, redox } from '@shuvi/redox'
-import type {
-  RedoxStore,
-  AnyModel,
-  RedoxOptions,
-  ISelector,
-} from '@shuvi/redox'
+import { redox } from '@shuvi/redox'
+import type { RedoxStore, AnyModel, RedoxOptions, Selector } from '@shuvi/redox'
 import { createUseModel, createUseStaticModel } from './createUseModel'
 import { createBatchManager } from './batchManager'
 import { IUseModel, IUseStaticModel } from './types'
+import { invariant } from './utils'
 
 const createContainer = function (options?: RedoxOptions) {
   const Context = createContext<{
@@ -57,28 +53,19 @@ const createContainer = function (options?: RedoxOptions) {
 
   const useSharedModel: IUseModel = <
     IModel extends AnyModel,
-    Selector extends ISelector<IModel>
+    S extends Selector<IModel>
   >(
     model: IModel,
-    selector?: Selector,
+    selector?: S,
     depends?: any[]
   ) => {
     const context = useContext(Context)
-    if (process.env.NODE_ENV === 'development') {
-      validate(() => [
-        [!Boolean(model), `useModel param model is necessary`],
-        [!model.name, 'model "name" is required and can\'t be empty !'],
-        [
-          model._depends?.some((model) => !model.name),
-          'depends model, "name" is required and can\'t be empty !',
-        ],
-        [typeof model.name !== 'string', 'model "name" must be string !'],
-        [
-          !Boolean(context),
-          `You should wrap your Component in createContainer().Provider.`,
-        ],
-      ])
-    }
+
+    invariant(model.name, 'name is required.')
+    invariant(
+      context,
+      'You should wrap your Component in createContainer().Provider.'
+    )
 
     const { redoxStore, batchManager } = context
 
@@ -90,28 +77,19 @@ const createContainer = function (options?: RedoxOptions) {
 
   const useStaticModel: IUseStaticModel = <
     IModel extends AnyModel,
-    Selector extends ISelector<IModel>
+    S extends Selector<IModel>
   >(
     model: IModel,
-    selector?: Selector,
+    selector?: S,
     depends?: any[]
   ) => {
     const context = useContext(Context)
-    if (process.env.NODE_ENV === 'development') {
-      validate(() => [
-        [!Boolean(model), `useModel param model is necessary`],
-        [!model.name, 'model "name" is required and can\'t be empty !'],
-        [
-          model._depends?.some((model) => !model.name),
-          'depends model, "name" is required and can\'t be empty !',
-        ],
-        [typeof model.name !== 'string', 'model "name" must be string !'],
-        [
-          !Boolean(context),
-          'You should wrap your Component in createContainer().Provider.',
-        ],
-      ])
-    }
+
+    invariant(model.name, 'name is required.')
+    invariant(
+      context,
+      'You should wrap your Component in createContainer().Provider.'
+    )
 
     const { redoxStore, batchManager } = context
 

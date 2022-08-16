@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
-import type { RedoxStore, AnyModel, ISelector } from '@shuvi/redox'
+import type { RedoxStore, AnyModel, Selector } from '@shuvi/redox'
 import { createBatchManager } from './batchManager'
 import { getStateActions } from './getStateActions'
 
@@ -8,13 +8,13 @@ export const createUseModel =
     redoxStore: RedoxStore,
     batchManager: ReturnType<typeof createBatchManager>
   ) =>
-  <IModel extends AnyModel, Selector extends ISelector<IModel>>(
+  <IModel extends AnyModel, S extends Selector<IModel>>(
     model: IModel,
-    selector?: Selector,
+    selector?: S,
     depends?: any[]
   ) => {
     const selectorRef = useRef<
-      undefined | ((() => ReturnType<Selector>) & { clearCache: () => void })
+      undefined | ((() => ReturnType<S>) & { clearCache: () => void })
     >(undefined)
 
     const cacheFn = useMemo(
@@ -113,13 +113,13 @@ export const createUseStaticModel =
     redoxStore: RedoxStore,
     batchManager: ReturnType<typeof createBatchManager>
   ) =>
-  <IModel extends AnyModel, Selector extends ISelector<IModel>>(
+  <IModel extends AnyModel, S extends Selector<IModel>>(
     model: IModel,
-    selector?: Selector,
+    selector?: S,
     depends?: any[]
   ) => {
     const selectorRef = useRef<
-      undefined | ((() => ReturnType<Selector>) & { clearCache: () => void })
+      undefined | ((() => ReturnType<S>) & { clearCache: () => void })
     >(undefined)
 
     const cacheFn = useMemo(

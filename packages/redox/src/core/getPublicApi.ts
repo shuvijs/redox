@@ -1,27 +1,21 @@
-import type { InternalModel } from '../internalModel'
-import {
-  ModelInstance,
-  DispatchOfModel,
-  RedoxViews,
-  AnyModel,
-  ISelector,
-} from '../types'
-
-import validate from '../validate'
+import type { Model } from './model'
+import { AnyModel } from './defineModel'
+import { ModelInstance, Actions, Views, Selector } from './modelOptions'
+import { warn } from '../warning'
 
 export default function getStoreApi<M extends AnyModel = AnyModel>(
-  internalModelInstance: InternalModel<M>,
+  internalModelInstance: Model<M>,
   $state: () => M['state'],
-  $actions: DispatchOfModel<M>,
-  $views: RedoxViews<M['views']>,
+  $actions: Actions<M>,
+  $views: Views<M['views']>,
   $createSelector: <TReturn>(
-    selector: ISelector<M, TReturn>
+    selector: Selector<M, TReturn>
   ) => (() => TReturn) & { clearCache: () => void }
 ): ModelInstance<M> {
   const store = {} as ModelInstance<M>
-  store.$set = internalModelInstance.$set
-  store.$patch = internalModelInstance.$patch
-  store.$modify = internalModelInstance.$modify
+  store.$set = internalModelInstance.$set.bind(internalModelInstance)
+  store.$patch = internalModelInstance.$patch.bind(internalModelInstance)
+  store.$modify = internalModelInstance.$modify.bind(internalModelInstance)
   store.$actions = $actions
   store.$views = $views
   store.$createSelector = $createSelector
@@ -34,7 +28,7 @@ export default function getStoreApi<M extends AnyModel = AnyModel>(
     },
     set() {
       if (process.env.NODE_ENV === 'development') {
-        validate(() => [[true, `not allow set property '$state'`]])
+        warn(`cannot set property '$state'`)
       }
       return false
     },
@@ -48,9 +42,7 @@ export default function getStoreApi<M extends AnyModel = AnyModel>(
       },
       set() {
         if (process.env.NODE_ENV === 'development') {
-          validate(() => [
-            [true, `not allow change view property '${viewKey}'`],
-          ])
+          warn(`cannot change view property '${viewKey}'`)
         }
         return false
       },

@@ -1,12 +1,21 @@
-import { defineModel, redox, ISelectorParams } from '../src'
+import { defineModel, redox, SelectorParams } from '../src'
 
 let redoxStore: ReturnType<typeof redox>
 beforeEach(() => {
   redoxStore = redox()
 })
 
+let oldEnv: any
+beforeAll(() => {
+  oldEnv = process.env.NODE_ENV
+  process.env.NODE_ENV = 'development'
+})
+afterAll(() => {
+  process.env.NODE_ENV = oldEnv
+})
+
 describe('defineModel/views', () => {
-  it('should throw error if changed state in a view', () => {
+  it('should throw if changed state in a view', () => {
     let initState = {
       a: 0,
     }
@@ -15,14 +24,14 @@ describe('defineModel/views', () => {
       state: initState,
       views: {
         view() {
-          const state = this.$state
-          state.a = 1
+          this.a = 1
           return this.$state
         },
       },
     })
     const store = redoxStore.getModel(model)
     expect(() => store.view).toThrow()
+    expect('cannot change state in view function').toHaveBeenWarned()
   })
 
   it('$state and any view should be object', () => {
@@ -409,27 +418,27 @@ describe('defineModel/views', () => {
     store.getState
     expect(numberOfCalls).toBe(1)
 
-    store.getLevel1
+    const level1 = store.getLevel1
     expect(numberOfCalls).toBe(2)
 
-    store.getLevel2
+    const level2 = store.getLevel2
     expect(numberOfCalls).toBe(3)
 
-    store.getLevel3
+    const level3 = store.getLevel3
     expect(numberOfCalls).toBe(4)
 
     store.$modify((state) => {
       state.other = 'modify other value'
     })
 
-    store.getLevel1
-    expect(numberOfCalls).toBe(4)
+    expect(store.getLevel1).toBe(level1)
+    expect(numberOfCalls).toBe(5)
 
-    store.getLevel2
-    expect(numberOfCalls).toBe(4)
+    expect(store.getLevel2).toBe(level2)
+    expect(numberOfCalls).toBe(6)
 
-    store.getLevel3
-    expect(numberOfCalls).toBe(4)
+    expect(store.getLevel3).toBe(level3)
+    expect(numberOfCalls).toBe(7)
   })
 
   describe('view with depends', () => {
@@ -682,6 +691,7 @@ describe('createSelector', () => {
     expect(() => {
       view()
     }).toThrow()
+    expect('cannot change state in view function').toHaveBeenWarned()
   })
 
   it('$state and any view should be object', () => {
@@ -700,7 +710,7 @@ describe('createSelector', () => {
 
     const store = redoxStore.getModel(model)
 
-    const selector = function (stateAndViews: ISelectorParams<typeof model>) {
+    const selector = function (stateAndViews: SelectorParams<typeof model>) {
       return stateAndViews
     }
 
@@ -734,7 +744,7 @@ describe('createSelector', () => {
       },
     })
 
-    const selector = function (stateAndViews: ISelectorParams<typeof sample>) {
+    const selector = function (stateAndViews: SelectorParams<typeof sample>) {
       return stateAndViews.viewA
     }
 
@@ -769,7 +779,7 @@ describe('createSelector', () => {
       },
     })
 
-    const selector = function (stateAndViews: ISelectorParams<typeof sample>) {
+    const selector = function (stateAndViews: SelectorParams<typeof sample>) {
       return stateAndViews
     }
 
@@ -800,7 +810,7 @@ describe('createSelector', () => {
       },
     })
 
-    const selector = function (stateAndViews: ISelectorParams<typeof model>) {
+    const selector = function (stateAndViews: SelectorParams<typeof model>) {
       calltime++
       return stateAndViews.$state.foo
     }
@@ -841,7 +851,7 @@ describe('createSelector', () => {
       },
     })
 
-    const selector = function (stateAndViews: ISelectorParams<typeof model>) {
+    const selector = function (stateAndViews: SelectorParams<typeof model>) {
       calltime++
       return stateAndViews.getFoo
     }
@@ -875,7 +885,7 @@ describe('createSelector', () => {
       })
 
       const selector = function (
-        stateAndViews: ISelectorParams<typeof numberModel>
+        stateAndViews: SelectorParams<typeof numberModel>
       ) {
         numberOfCalls++
         return stateAndViews.$state
@@ -910,7 +920,7 @@ describe('createSelector', () => {
       })
 
       const selector = function (
-        stateAndViews: ISelectorParams<typeof numberModel>
+        stateAndViews: SelectorParams<typeof numberModel>
       ) {
         numberOfCalls++
         return stateAndViews.$state
@@ -947,7 +957,7 @@ describe('createSelector', () => {
       })
 
       const selector = function (
-        stateAndViews: ISelectorParams<typeof arrayModel>
+        stateAndViews: SelectorParams<typeof arrayModel>
       ) {
         numberOfCalls++
         return stateAndViews.$state[0]
@@ -988,7 +998,7 @@ describe('createSelector', () => {
       })
 
       const selector = function (
-        stateAndViews: ISelectorParams<typeof arrayModel>
+        stateAndViews: SelectorParams<typeof arrayModel>
       ) {
         numberOfCalls++
         return stateAndViews.$state
