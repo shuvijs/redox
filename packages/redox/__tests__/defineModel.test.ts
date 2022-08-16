@@ -131,7 +131,7 @@ describe('defineModel', () => {
           reducers: {
             // @ts-ignore
             1: 1,
-          },
+          } as any,
         })
       }).toThrow()
     })
@@ -155,7 +155,7 @@ describe('defineModel', () => {
           actions: {
             // @ts-ignore
             1: 1,
-          },
+          } as any,
         })
       }).toThrow()
     })
@@ -179,7 +179,7 @@ describe('defineModel', () => {
           views: {
             // @ts-ignore
             1: 1,
-          },
+          } as any,
         })
       }).toThrow()
     })

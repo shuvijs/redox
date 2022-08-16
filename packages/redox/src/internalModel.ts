@@ -2,16 +2,16 @@ import { produce, setAutoFreeze } from 'immer'
 import {
   Action,
   State,
-  ModelCollection,
-  Reducer,
+  Deps,
   Dispatch,
-  Reducers,
-  Actions,
-  Views,
-  Model,
+  Reducer,
+  ReducerOptions,
+  ActionOptions,
+  ViewOptions,
+  DefineModel,
   AnyModel,
-  ObjectState,
-} from './types'
+  StateObject,
+} from './core'
 import validate from './validate'
 import { emptyObject, isObject, patchObj } from './utils'
 
@@ -63,7 +63,7 @@ export class InternalModel<IModel extends AnyModel> {
     })
   }
 
-  $patch = (partState: ObjectState) => {
+  $patch = (partState: StateObject) => {
     return this.dispatch({
       type: ActionTypes.PATCH,
       payload: function patch(state: State) {
@@ -84,7 +84,7 @@ export class InternalModel<IModel extends AnyModel> {
         if (!state) {
           return partState
         }
-        patchObj(state as ObjectState, partState)
+        patchObj(state as StateObject, partState)
         return
       },
     })
@@ -144,7 +144,7 @@ export class InternalModel<IModel extends AnyModel> {
           typeof action.type === 'undefined',
           'Actions may not have an undefined "type" property. You may have misspelled an action type string constant.',
         ],
-        [this.isDispatching, 'Reducers may not dispatch actions.'],
+        [this.isDispatching, 'ReducerOptions may not dispatch actions.'],
       ])
     }
 
@@ -185,11 +185,11 @@ setAutoFreeze(false)
 export function createModelReducer<
   N extends string,
   S extends State,
-  MC extends ModelCollection,
-  R extends Reducers<S>,
-  RA extends Actions,
-  V extends Views
->(model: Model<N, S, MC, R, RA, V>): Reducer<S> {
+  R extends ReducerOptions<S>,
+  A extends ActionOptions,
+  V extends ViewOptions,
+  D extends Deps
+>(model: DefineModel<N, S, R, A, V, D>): Reducer<S> {
   // select and run a reducer based on the incoming action
   return (state: S = model.state, action: Action): S => {
     if (action.type === ActionTypes.SET) {

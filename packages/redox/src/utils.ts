@@ -1,4 +1,4 @@
-import { DeepReadonly, ObjectState } from './types'
+import { DeepReadonly } from './types'
 
 export const NOOP = () => {}
 
@@ -105,7 +105,10 @@ export const readonlyDeepClone = <T extends any>(obj: T): DeepReadonly<T> => {
   return res
 }
 
-export function patchObj(obj: ObjectState, partObj: ObjectState) {
+export function patchObj(
+  obj: Record<string, any>,
+  partObj: Record<string, any>
+) {
   Object.keys(partObj as Record<string, any>).forEach(function (key) {
     if (obj.hasOwnProperty(key) && isObject(partObj[key])) {
       patchObj(obj[key], partObj[key])

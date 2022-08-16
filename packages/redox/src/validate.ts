@@ -1,4 +1,4 @@
-import { AnyModel } from './types'
+import { AnyModel } from './core'
 
 /**
  * If the first item is true, it means there is an error described by

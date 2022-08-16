@@ -1,34 +1,29 @@
-import {
-  AnyModel,
-  ISelector,
-  ModelInstance,
-  ISelectorParams,
-} from '@shuvi/redox'
+import { AnyModel, Selector, ModelInstance, SelectorParams } from '@shuvi/redox'
 
 type IActions<IModel extends AnyModel> = ModelInstance<IModel>['$actions']
 
 export interface IUseModel {
   <IModel extends AnyModel>(model: IModel): [
-    ISelectorParams<IModel>,
+    SelectorParams<IModel>,
     IActions<IModel>
   ]
 
-  <IModel extends AnyModel, Selector extends ISelector<IModel>>(
+  <IModel extends AnyModel, S extends Selector<IModel>>(
     model: IModel,
-    selectors: Selector,
+    selectors: S,
     depends?: any[]
-  ): [ReturnType<Selector>, IActions<IModel>]
+  ): [ReturnType<S>, IActions<IModel>]
 }
 
 export interface IUseStaticModel {
   <IModel extends AnyModel>(model: IModel): [
-    { current: ISelectorParams<IModel> },
+    { current: SelectorParams<IModel> },
     IActions<IModel>
   ]
 
-  <IModel extends AnyModel, Selector extends ISelector<IModel>>(
+  <IModel extends AnyModel, S extends Selector<IModel>>(
     model: IModel,
-    selectors: Selector,
+    selectors: S,
     depends?: any[]
-  ): [{ current: ReturnType<Selector> }, IActions<IModel>]
+  ): [{ current: ReturnType<S> }, IActions<IModel>]
 }

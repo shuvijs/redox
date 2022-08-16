@@ -1,4 +1,5 @@
-import { AnyModel, RedoxViews, ISelector } from '../types'
+import { AnyModel } from './defineModel'
+import { Views, Selector } from './model'
 import { RedoxCacheValue } from './types'
 import type { InternalModel } from '../internalModel'
 import validate from '../validate'
@@ -18,7 +19,7 @@ const DEP_REF = 'depRef'
 
 function createGetter<IModel extends AnyModel>(
   instanceProxy: Record<string, any>,
-  instanceViews: RedoxViews<IModel['views']>
+  instanceViews: Views<IModel['views']>
 ) {
   return function get(
     target: Record<string | symbol, any>,
@@ -53,7 +54,7 @@ function proxySetter(_newValue: any) {
 }
 
 export const createViews = <IModel extends AnyModel>(
-  $views: RedoxViews<IModel['views']>,
+  $views: Views<IModel['views']>,
   internalModelInstance: InternalModel<IModel>,
   getCacheValue: (m: AnyModel) => RedoxCacheValue
 ): void => {
@@ -160,7 +161,7 @@ export const createViews = <IModel extends AnyModel>(
 export function createSelector<IModel extends AnyModel, TReturn>(
   internalModelInstance: InternalModel<IModel>,
   getCacheValue: (m: AnyModel) => RedoxCacheValue,
-  selector: ISelector<IModel, TReturn>
+  selector: Selector<IModel, TReturn>
 ) {
   let currentModelProxy = {
     [$VALUE_REF]: emptyObject,
