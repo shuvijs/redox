@@ -1,10 +1,17 @@
 import { defineModel, redox } from '../src/index'
 
 let redoxStore: ReturnType<typeof redox>
-
 beforeEach(() => {
   redoxStore = redox()
+})
+
+let oldEnv: any
+beforeAll(() => {
+  oldEnv = process.env.NODE_ENV
   process.env.NODE_ENV = 'development'
+})
+afterAll(() => {
+  process.env.NODE_ENV = oldEnv
 })
 
 describe('defineModel', () => {
@@ -123,19 +130,6 @@ describe('defineModel', () => {
       }).toThrow()
     })
 
-    test('reducer should be function', () => {
-      expect(() => {
-        defineModel({
-          name: 'a',
-          state: {},
-          reducers: {
-            // @ts-ignore
-            1: 1,
-          } as any,
-        })
-      }).toThrow()
-    })
-
     test('actions should be object', () => {
       expect(() => {
         defineModel({
@@ -143,19 +137,6 @@ describe('defineModel', () => {
           state: {},
           // @ts-ignore
           actions: 1,
-        })
-      }).toThrow()
-    })
-
-    test('action should be function', () => {
-      expect(() => {
-        defineModel({
-          name: 'a',
-          state: {},
-          actions: {
-            // @ts-ignore
-            1: 1,
-          } as any,
         })
       }).toThrow()
     })
@@ -171,46 +152,36 @@ describe('defineModel', () => {
       }).toThrow()
     })
 
-    test('view should be function', () => {
-      expect(() => {
-        defineModel({
-          name: 'a',
-          state: {},
-          views: {
-            // @ts-ignore
-            1: 1,
-          } as any,
-        })
-      }).toThrow()
+    test('warn conflicted keys between state and view', () => {
+      defineModel({
+        name: 'a',
+        state: {
+          a: 0,
+        },
+        views: {
+          a() {},
+        },
+      })
+      expect(
+        `key "a" in "views" is conflicted with the key in "state"`
+      ).toHaveBeenWarned()
     })
 
-    test('not allow repeat key state views', () => {
-      expect(() => {
-        defineModel({
-          name: 'a',
-          state: {
-            a: 0,
-          },
-          views: {
-            a() {},
-          },
-        })
-      }).toThrow()
-    })
+    test('warn conflicted keys between reducers and actions', () => {
+      defineModel({
+        name: 'a',
+        state: {},
+        reducers: {
+          a() {},
+        },
+        actions: {
+          a() {},
+        },
+      })
 
-    test('not allow repeat key reducers actions views', () => {
-      expect(() => {
-        defineModel({
-          name: 'a',
-          state: {},
-          reducers: {
-            a() {},
-          },
-          actions: {
-            a() {},
-          },
-        })
-      }).toThrow()
+      expect(
+        `key "a" in "actions" is conflicted with the key in "reducers"`
+      ).toHaveBeenWarned()
     })
 
     test('depends should be array or undefined', () => {

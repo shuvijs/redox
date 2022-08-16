@@ -1,9 +1,9 @@
 import { AnyModel } from './defineModel'
-import { Action, Actions } from './model'
-import type { InternalModel } from '../internalModel'
+import { Action, Actions } from './modelOptions'
+import type { Model } from './model'
 
-const createReducer = <Model extends AnyModel>(
-  internalModelInstance: InternalModel<Model>,
+const createReducer = <IModel extends AnyModel>(
+  internalModelInstance: Model<IModel>,
   actionName: string
 ): Function => {
   return (payload?: any): Action => {
@@ -20,9 +20,9 @@ const createReducer = <Model extends AnyModel>(
  * Creates a dispatcher object for a model - it contains a mapping from all
  * reducers to functions which dispatch their corresponding actions.
  */
-export const createReducers = <Model extends AnyModel>(
-  $actions: Actions<Model>,
-  internalModelInstance: InternalModel<Model>
+export const createReducers = <IModel extends AnyModel>(
+  $actions: Actions<IModel>,
+  internalModelInstance: Model<IModel>
 ): void => {
   // map reducer names to dispatch actions
   const reducers = internalModelInstance.model.reducers

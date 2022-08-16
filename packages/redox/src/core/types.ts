@@ -1,11 +1,11 @@
 import { AnyModel } from './defineModel'
-import { ModelInstance, State, Action } from './model'
-import type { InternalModel } from '../internalModel'
+import { ModelInstance, State, Action } from './modelOptions'
+import type { Model } from './model'
 
 export type Dispatch = (action: Action) => Action
 
 export type RedoxCacheValue = {
-  internalModelInstance: InternalModel<AnyModel>
+  internalModelInstance: Model<AnyModel>
   publicApi: ModelInstance<AnyModel>
 }
 
@@ -38,7 +38,7 @@ export const proxyMethods = [
 
 export type ProxyMethods = typeof proxyMethods[number]
 
-type InternalModelProxy = Pick<InternalModel<AnyModel>, ProxyMethods>
+type InternalModelProxy = Pick<Model<AnyModel>, ProxyMethods>
 
 export type Plugin<IModel extends AnyModel = AnyModel, Option = any> = (
   option: Option

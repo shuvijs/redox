@@ -1,8 +1,7 @@
 import { AnyModel } from './defineModel'
-import { Views, Selector } from './model'
+import { Views, Selector } from './modelOptions'
 import { RedoxCacheValue } from './types'
-import type { InternalModel } from '../internalModel'
-import validate from '../validate'
+import type { Model } from './model'
 import { isPlainObject, hasOwn, hasChanged, emptyObject } from '../utils'
 import { warn } from '../warning'
 import { reactive } from '../reactivity/reactive'
@@ -48,28 +47,21 @@ function createGetter<IModel extends AnyModel>(
 
 function proxySetter(_newValue: any) {
   if (process.env.NODE_ENV === 'development') {
-    warn('Write operation failed: computed value is readonly')
+    warn('cannot change state in view function')
   }
   return false
 }
 
 export const createViews = <IModel extends AnyModel>(
   $views: Views<IModel['views']>,
-  internalModelInstance: InternalModel<IModel>,
+  internalModelInstance: Model<IModel>,
   getCacheValue: (m: AnyModel) => RedoxCacheValue
 ): void => {
   const views = internalModelInstance.model.views
   if (!views) {
     return
   }
-  if (process.env.NODE_ENV === 'development') {
-    validate(() => [
-      [
-        !isPlainObject(views),
-        `model.views should be object, now is ${typeof views}`,
-      ],
-    ])
-  }
+
   ;(Object.keys(views) as Array<keyof IModel['views']>).forEach((viewsKey) => {
     // generate depends context
     const dependsStructure: Record<string, any> = {}
@@ -159,7 +151,7 @@ export const createViews = <IModel extends AnyModel>(
 }
 
 export function createSelector<IModel extends AnyModel, TReturn>(
-  internalModelInstance: InternalModel<IModel>,
+  internalModelInstance: Model<IModel>,
   getCacheValue: (m: AnyModel) => RedoxCacheValue,
   selector: Selector<IModel, TReturn>
 ) {

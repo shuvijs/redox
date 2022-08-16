@@ -3,9 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react'
-import ReactDOM from 'react-dom/client'
-// @ts-ignore
-import { act } from 'react-dom/test-utils'
+import { render, act } from '@testing-library/react'
 import { redox } from '@shuvi/redox'
 import { createBatchManager } from '../src/batchManager'
 import { countModel } from './models'
@@ -14,16 +12,14 @@ let container: HTMLDivElement
 let redoxStore: ReturnType<typeof redox>
 let batchManager: ReturnType<typeof createBatchManager>
 
+jest.useFakeTimers()
+
 beforeEach(() => {
-  jest.useFakeTimers()
   redoxStore = redox()
   batchManager = createBatchManager()
-  container = document.createElement('div')
-  document.body.appendChild(container)
 })
 
 afterEach(() => {
-  document.body.removeChild(container)
   ;(container as unknown as null) = null
 })
 
@@ -44,9 +40,8 @@ describe('batchedUpdates', () => {
         </>
       )
     }
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
+
+    const { container } = render(<App />)
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('0')
     act(() => {
@@ -71,9 +66,7 @@ describe('batchedUpdates', () => {
         </>
       )
     }
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
+    const { container } = render(<App />)
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('0')
     act(() => {
@@ -103,9 +96,7 @@ describe('batchedUpdates', () => {
         </>
       )
     }
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
+    const { container } = render(<App />)
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('0')
     act(() => {
@@ -138,9 +129,7 @@ describe('batchedUpdates', () => {
         </>
       )
     }
-    act(() => {
-      ReactDOM.createRoot(container).render(<App />)
-    })
+    const { container } = render(<App />)
 
     expect(renderCount).toBe(1)
     expect(container.querySelector('#value')?.innerHTML).toEqual('0')

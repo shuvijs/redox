@@ -3,9 +3,7 @@
  */
 
 import React from 'react'
-import ReactDOM from 'react-dom/client'
-// @ts-ignore
-import { act } from 'react-dom/test-utils'
+import { render, act } from '@testing-library/react'
 import { defineModel, redox, Plugin } from '@shuvi/redox'
 import {
   createContainer,
@@ -16,17 +14,10 @@ import {
 
 import { countModel } from './models'
 
-let container: HTMLDivElement
+jest.useFakeTimers()
+
 beforeEach(() => {
   process.env.NODE_ENV = 'development'
-  jest.useFakeTimers()
-  container = document.createElement('div')
-  document.body.appendChild(container)
-})
-
-afterEach(() => {
-  document.body.removeChild(container)
-  ;(container as unknown as null) = null
 })
 
 describe('createContainer', () => {
@@ -69,13 +60,11 @@ describe('createContainer', () => {
       return null
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(
-        <LocalProvider>
-          <SubApp />
-        </LocalProvider>
-      )
-    })
+    render(
+      <LocalProvider>
+        <SubApp />
+      </LocalProvider>
+    )
 
     expect(onInit).toHaveBeenCalled()
     expect(onModel).toHaveBeenCalled()
@@ -98,13 +87,11 @@ describe('createContainer', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(
-        <LocalProvider>
-          <SubApp />
-        </LocalProvider>
-      )
-    })
+    const { container } = render(
+      <LocalProvider>
+        <SubApp />
+      </LocalProvider>
+    )
 
     expect(container.querySelector('#state')?.innerHTML).toEqual('1')
     act(() => {
@@ -161,16 +148,14 @@ describe('createContainer', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(
-        <LocalProviderA>
-          <LocalProviderB>
-            <A></A>
-            <B></B>
-          </LocalProviderB>
-        </LocalProviderA>
-      )
-    })
+    const { container } = render(
+      <LocalProviderA>
+        <LocalProviderB>
+          <A></A>
+          <B></B>
+        </LocalProviderB>
+      </LocalProviderA>
+    )
 
     expect(container.querySelector('#stateA')?.innerHTML).toEqual('1')
     expect(container.querySelector('#stateB')?.innerHTML).toEqual('1')
@@ -216,14 +201,12 @@ describe('createContainer', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(
-        <>
-          <Warp id={1}></Warp>
-          <Warp id={2}></Warp>
-        </>
-      )
-    })
+    const { container } = render(
+      <>
+        <Warp id={1}></Warp>
+        <Warp id={2}></Warp>
+      </>
+    )
 
     expect(container.querySelector('#stateA1')?.innerHTML).toEqual('1')
     expect(container.querySelector('#stateA2')?.innerHTML).toEqual('1')
@@ -283,16 +266,14 @@ describe('createContainer', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(
-        <LocalProviderA redoxStore={redoxStore}>
-          <LocalProviderB redoxStore={redoxStore}>
-            <A></A>
-            <B></B>
-          </LocalProviderB>
-        </LocalProviderA>
-      )
-    })
+    const { container } = render(
+      <LocalProviderA redoxStore={redoxStore}>
+        <LocalProviderB redoxStore={redoxStore}>
+          <A></A>
+          <B></B>
+        </LocalProviderB>
+      </LocalProviderA>
+    )
 
     expect(container.querySelector('#stateA')?.innerHTML).toEqual('1')
     expect(container.querySelector('#stateB')?.innerHTML).toEqual('1')
@@ -343,9 +324,7 @@ describe('createContainer', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(<App></App>)
-    })
+    const { container } = render(<App />)
 
     expect(container.querySelector('#state')?.innerHTML).toEqual('1')
     act(() => {
@@ -395,9 +374,7 @@ describe('createContainer', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(<App></App>)
-    })
+    const { container } = render(<App />)
 
     expect(container.querySelector('#state')?.innerHTML).toEqual('1')
     act(() => {
@@ -435,13 +412,11 @@ describe('createContainer/RedoxRoot', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(
-        <RedoxRoot>
-          <App />
-        </RedoxRoot>
-      )
-    })
+    const { container } = render(
+      <RedoxRoot>
+        <App />
+      </RedoxRoot>
+    )
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('1')
     act(() => {
@@ -470,13 +445,11 @@ describe('createContainer/RedoxRoot', () => {
       },
     })
 
-    act(() => {
-      ReactDOM.createRoot(container).render(
-        <RedoxRoot redoxStore={redoxStore}>
-          <App />
-        </RedoxRoot>
-      )
-    })
+    const { container } = render(
+      <RedoxRoot redoxStore={redoxStore}>
+        <App />
+      </RedoxRoot>
+    )
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('2')
   })
@@ -510,13 +483,11 @@ describe('createContainer/useRootModel', () => {
       }
 
       expect(() => {
-        act(() => {
-          ReactDOM.createRoot(container).render(
-            <RedoxRoot>
-              <App />
-            </RedoxRoot>
-          )
-        })
+        render(
+          <RedoxRoot>
+            <App />
+          </RedoxRoot>
+        )
       }).toThrow()
     })
 
@@ -547,13 +518,11 @@ describe('createContainer/useRootModel', () => {
       }
 
       expect(() => {
-        act(() => {
-          ReactDOM.createRoot(container).render(
-            <RedoxRoot>
-              <App />
-            </RedoxRoot>
-          )
-        })
+        render(
+          <RedoxRoot>
+            <App />
+          </RedoxRoot>
+        )
       }).toThrow()
     })
 
@@ -584,9 +553,7 @@ describe('createContainer/useRootModel', () => {
       }
 
       expect(() => {
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        render(<App />)
       }).toThrow()
     })
   })
@@ -616,13 +583,11 @@ describe('createContainer/useRootModel', () => {
       return <></>
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(
-        <RedoxRoot>
-          <App />
-        </RedoxRoot>
-      )
-    })
+    const { container } = render(
+      <RedoxRoot>
+        <App />
+      </RedoxRoot>
+    )
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('1')
 
@@ -665,13 +630,11 @@ describe('createContainer/useRootModel', () => {
       return <></>
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(
-        <RedoxRoot>
-          <App />
-        </RedoxRoot>
-      )
-    })
+    const { container } = render(
+      <RedoxRoot>
+        <App />
+      </RedoxRoot>
+    )
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('1')
 
@@ -715,13 +678,11 @@ describe('createContainer/useRootModel', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(
-        <RedoxRoot>
-          <App></App>
-        </RedoxRoot>
-      )
-    })
+    const { container } = render(
+      <RedoxRoot>
+        <App />
+      </RedoxRoot>
+    )
 
     expect(container.querySelector('#state')?.innerHTML).toEqual('1')
     act(() => {
@@ -773,13 +734,11 @@ describe('createContainer/useRootStaticModel', () => {
       }
 
       expect(() => {
-        act(() => {
-          ReactDOM.createRoot(container).render(
-            <RedoxRoot>
-              <App />
-            </RedoxRoot>
-          )
-        })
+        render(
+          <RedoxRoot>
+            <App />
+          </RedoxRoot>
+        )
       }).toThrow()
     })
 
@@ -810,13 +769,11 @@ describe('createContainer/useRootStaticModel', () => {
       }
 
       expect(() => {
-        act(() => {
-          ReactDOM.createRoot(container).render(
-            <RedoxRoot>
-              <App />
-            </RedoxRoot>
-          )
-        })
+        render(
+          <RedoxRoot>
+            <App />
+          </RedoxRoot>
+        )
       }).toThrow()
     })
 
@@ -847,9 +804,7 @@ describe('createContainer/useRootStaticModel', () => {
       }
 
       expect(() => {
-        act(() => {
-          ReactDOM.createRoot(container).render(<App />)
-        })
+        render(<App />)
       }).toThrow()
     })
   })
@@ -885,13 +840,11 @@ describe('createContainer/useRootStaticModel', () => {
       )
     }
 
-    act(() => {
-      ReactDOM.createRoot(container).render(
-        <RedoxRoot>
-          <StaticApp />
-        </RedoxRoot>
-      )
-    })
+    const { container } = render(
+      <RedoxRoot>
+        <StaticApp />
+      </RedoxRoot>
+    )
 
     act(() => {
       container

@@ -1,8 +1,8 @@
 import { emptyObject, hasOwn } from '../utils'
 import { AnyModel } from './defineModel'
-import { Actions } from './model'
+import { Actions } from './modelOptions'
 import { RedoxCacheValue } from './types'
-import type { InternalModel } from '../internalModel'
+import type { Model } from './model'
 
 // list for not allow to access publicApi property
 const ACTION_CONTEXT_BLACK_LIST = ['$createView', '$actions', '$views']
@@ -27,7 +27,7 @@ function createActionContext(
 
 export const createActions = <IModel extends AnyModel>(
   $actions: Actions<IModel>,
-  internalModelInstance: InternalModel<IModel>,
+  internalModelInstance: Model<IModel>,
   getCacheValue: (m: AnyModel) => RedoxCacheValue
 ): void => {
   const actions = internalModelInstance.model.actions

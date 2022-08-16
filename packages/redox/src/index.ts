@@ -8,7 +8,6 @@ import {
   SelectorParams,
   AnyModel,
 } from './core'
-import validate from './validate'
 import devTools from './devtools'
 import { RedoxStore, Plugin } from './core/types'
 
@@ -25,7 +24,6 @@ const redox = function (
 }
 
 export {
-  validate,
   defineModel,
   RedoxStore,
   redox,

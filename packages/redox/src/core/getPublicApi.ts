@@ -1,11 +1,10 @@
-import type { InternalModel } from '../internalModel'
+import type { Model } from './model'
 import { AnyModel } from './defineModel'
-import { ModelInstance, Actions, Views, Selector } from './model'
-
-import validate from '../validate'
+import { ModelInstance, Actions, Views, Selector } from './modelOptions'
+import { warn } from '../warning'
 
 export default function getStoreApi<M extends AnyModel = AnyModel>(
-  internalModelInstance: InternalModel<M>,
+  internalModelInstance: Model<M>,
   $state: () => M['state'],
   $actions: Actions<M>,
   $views: Views<M['views']>,
@@ -29,7 +28,7 @@ export default function getStoreApi<M extends AnyModel = AnyModel>(
     },
     set() {
       if (process.env.NODE_ENV === 'development') {
-        validate(() => [[true, `not allow set property '$state'`]])
+        warn(`cannot set property '$state'`)
       }
       return false
     },
@@ -43,9 +42,7 @@ export default function getStoreApi<M extends AnyModel = AnyModel>(
       },
       set() {
         if (process.env.NODE_ENV === 'development') {
-          validate(() => [
-            [true, `not allow change view property '${viewKey}'`],
-          ])
+          warn(`cannot change view property '${viewKey}'`)
         }
         return false
       },
