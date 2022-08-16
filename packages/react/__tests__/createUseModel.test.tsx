@@ -262,9 +262,8 @@ describe('createUseModel', () => {
           </button>
         )
       }
-      act(() => {
-        ReactDOM.createRoot(container).render(<App />)
-      })
+
+      render(<App />)
 
       expect(spy).toHaveReturnedTimes(0)
     })
