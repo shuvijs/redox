@@ -98,7 +98,8 @@ export const createUseModel =
         const unSubscribe = batchManager.addSubscribe(model, redoxStore, fn)
 
         return function () {
-          ;(isInit.current = false), unSubscribe()
+          unSubscribe()
+          isInit.current = false
         }
       },
       [redoxStore, batchManager]
@@ -186,8 +187,8 @@ export const createUseStaticModel =
       const unSubscribe = batchManager.addSubscribe(model, redoxStore, fn)
 
       return () => {
-        isInit.current = false
         unSubscribe()
+        isInit.current = false
       }
     }, [redoxStore, batchManager])
 

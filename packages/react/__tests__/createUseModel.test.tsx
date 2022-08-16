@@ -260,6 +260,29 @@ describe('createUseModel', () => {
   })
 
   describe('support selector', () => {
+    test('should not trigger subscribe when first render', async () => {
+      const spy = jest.spyOn(batchManager, 'triggerSubscribe')
+      const App = () => {
+        const [_state, actions] = useTestModel(
+          countModel,
+          function (stateAndViews) {
+            return stateAndViews.value
+          }
+        )
+
+        return (
+          <button id="action" type="button" onClick={() => actions.add()}>
+            action
+          </button>
+        )
+      }
+      act(() => {
+        ReactDOM.createRoot(container).render(<App />)
+      })
+
+      expect(spy).toHaveReturnedTimes(0)
+    })
+
     describe('should not render when selector not changed', () => {
       test('global selector', async () => {
         let selectorRunCount = 0
