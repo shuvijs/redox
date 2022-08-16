@@ -12,7 +12,7 @@ import { Action, State, StateObject } from './modelOptions'
 import { emptyObject, isPlainObject, patchObj, invariant } from '../utils'
 import { warn } from '../warning'
 
-export type Dispatch = (action: Action) => Action
+setAutoFreeze(false)
 
 const randomString = () =>
   Math.random().toString(36).substring(7).split('').join('.')
@@ -24,43 +24,64 @@ const ActionTypes = {
   PATCH: '@@redox/PATCH',
 }
 
-export class Model<IModel extends AnyModel> {
-  public name: Readonly<string>
-  public model: Readonly<IModel>
-  public reducer: Reducer<IModel['state']>
+export interface HelperActions {
+  $set(newState: State): void
+  $patch(newState: State): void
+  $modify(fn: (state: State) => void): void
+}
 
-  private currentState: IModel['state']
-  private listeners: Set<() => void> = new Set()
-  private isDispatching: boolean
+export type UnSubscribe = () => void
 
-  constructor(model: IModel, initState: State) {
-    this.model = model
-    this.name = this.model.name || ''
+export interface Store {
+  getState(): Record<string, State>
+  dispatch(action: Action): Action
+  subscribe(fn: () => any): UnSubscribe
+  destroy(): void
+}
+
+export type Dispatch = Store['dispatch']
+
+export type Model<ModelOptions extends AnyModel = AnyModel> = {
+  readonly name: string
+  readonly options: Readonly<ModelOptions>
+  reducer: Reducer<ModelOptions['state']>
+  triggerListener(): void
+} & Store &
+  HelperActions
+
+class ModelImpl<ModelOptions extends AnyModel> implements Model<ModelOptions> {
+  public name: string
+  public options: ModelOptions
+  public reducer: Reducer<ModelOptions['state']>
+
+  private _currentState: ModelOptions['state']
+  private _listeners: Set<() => void> = new Set()
+  private _isDispatching: boolean
+
+  constructor(model: ModelOptions, initState: State) {
+    this.options = model
+    this.name = this.options.name || ''
     this.reducer = createModelReducer(model)
-    this.currentState = initState || model.state
-    this.isDispatching = false
+    this._currentState = initState || model.state
+    this._isDispatching = false
 
     this.dispatch({ type: ActionTypes.INIT })
   }
 
-  getState = () => {
-    return this.currentState!
-  }
-
-  $set = (newState: State) => {
+  $set(newState: State) {
     invariant(
       typeof newState !== 'bigint' && typeof newState !== 'symbol',
       "'BigInt' and 'Symbol' are not assignable to the State"
     )
 
-    return this.dispatch({
+    this.dispatch({
       type: ActionTypes.SET,
       payload: newState,
     })
   }
 
-  $patch = (partState: StateObject) => {
-    return this.dispatch({
+  $patch(partState: StateObject) {
+    this.dispatch({
       type: ActionTypes.PATCH,
       payload: function patch(state: State) {
         if (!isPlainObject(partState)) {
@@ -84,8 +105,8 @@ export class Model<IModel extends AnyModel> {
     })
   }
 
-  $modify = (modifier: (state: State) => void) => {
-    return this.dispatch({
+  $modify(modifier: (state: State) => void) {
+    this.dispatch({
       type: ActionTypes.MODIFY,
       payload: function modify(state: State) {
         modifier(state)
@@ -93,15 +114,11 @@ export class Model<IModel extends AnyModel> {
     })
   }
 
-  subscribe = (listener: () => void) => {
-    this.listeners.add(listener)
-
-    return () => {
-      this.listeners.delete(listener)
-    }
+  getState() {
+    return this._currentState!
   }
 
-  dispatch: Dispatch = (action) => {
+  dispatch(action: Action) {
     if (typeof action.type === 'undefined') {
       if (process.env.NODE_ENV === 'development') {
         warn(
@@ -111,7 +128,7 @@ export class Model<IModel extends AnyModel> {
       return action
     }
 
-    if (this.isDispatching) {
+    if (this._isDispatching) {
       if (process.env.NODE_ENV === 'development') {
         warn(`Cannot dispatch action from a reducer.`)
       }
@@ -121,38 +138,51 @@ export class Model<IModel extends AnyModel> {
     let nextState
 
     try {
-      this.isDispatching = true
-      nextState = this.reducer(this.currentState, action)
+      this._isDispatching = true
+      nextState = this.reducer(this._currentState, action)
     } finally {
-      this.isDispatching = false
+      this._isDispatching = false
     }
 
-    if (nextState !== this.currentState) {
-      this.currentState = nextState
-      // trigger self listeners
+    if (nextState !== this._currentState) {
+      this._currentState = nextState
+      // trigger self _listeners
       this.triggerListener()
     }
 
     return action
   }
 
-  triggerListener = () => {
-    for (const listener of this.listeners) {
-      listener()
+  subscribe(listener: () => void) {
+    this._listeners.add(listener)
+
+    return () => {
+      this._listeners.delete(listener)
     }
   }
 
-  destroy = () => {
-    this.currentState = null
+  destroy() {
+    this._currentState = null
     this.reducer = () => {}
-    this.listeners.clear()
-    this.model = emptyObject
+    this._listeners.clear()
+    this.options = emptyObject
+  }
+
+  triggerListener() {
+    for (const listener of this._listeners) {
+      listener()
+    }
   }
 }
 
-setAutoFreeze(false)
+export function createModelInstnace<ModelOptions extends AnyModel>(
+  modelOptions: ModelOptions,
+  initState: State
+) {
+  return new ModelImpl<ModelOptions>(modelOptions, initState)
+}
 
-export function createModelReducer<
+function createModelReducer<
   N extends string,
   S extends State,
   R extends ReducerOptions<S>,

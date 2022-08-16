@@ -27,10 +27,10 @@ function createActionContext(
 
 export const createActions = <IModel extends AnyModel>(
   $actions: Actions<IModel>,
-  internalModelInstance: Model<IModel>,
+  internalModelInstance: Model,
   getCacheValue: (m: AnyModel) => RedoxModel
 ): void => {
-  const actions = internalModelInstance.model.actions
+  const actions = internalModelInstance.options.actions
   if (!actions) {
     return
   }
@@ -42,7 +42,7 @@ export const createActions = <IModel extends AnyModel>(
       const action = actions[actionsName]
       // generate depends context
       const dependsApi = {} as Record<string, any>
-      const depends = internalModelInstance.model._depends
+      const depends = internalModelInstance.options._depends
       if (depends) {
         depends.forEach((depend) => {
           const { publicApi } = getCacheValue(depend)
@@ -52,7 +52,7 @@ export const createActions = <IModel extends AnyModel>(
         })
       }
       // generate this ref context
-      const instance = getCacheValue(internalModelInstance.model)
+      const instance = getCacheValue(internalModelInstance.options)
       const publicApi = instance.publicApi
       const thisRefProxy = new Proxy(emptyObject, {
         get: createActionContext(publicApi, { $dep: dependsApi }),

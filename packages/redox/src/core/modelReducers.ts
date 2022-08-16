@@ -25,7 +25,7 @@ export const createReducers = <IModel extends AnyModel>(
   internalModelInstance: Model<IModel>
 ): void => {
   // map reducer names to dispatch actions
-  const reducers = internalModelInstance.model.reducers
+  const reducers = internalModelInstance.options.reducers
 
   if (!reducers) {
     return
