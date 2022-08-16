@@ -1,6 +1,28 @@
+import { emptyObject, hasOwn } from '../utils'
 import { AnyModel, DispatchOfModel } from '../types'
 import { RedoxCacheValue } from './types'
 import type { InternalModel } from '../internalModel'
+
+// list for not allow to access publicApi property
+const ACTION_CONTEXT_BLACK_LIST = ['$createView', '$actions', '$views']
+
+function createActionContext(
+  publicApi: RedoxCacheValue['publicApi'],
+  depends: Record<string, any> = emptyObject
+) {
+  return function get(
+    target: Record<string | symbol, any>,
+    key: string | symbol
+  ) {
+    if (hasOwn(publicApi, key) && !ACTION_CONTEXT_BLACK_LIST.includes(key)) {
+      return publicApi[key]
+    }
+    if (key === '$dep' && hasOwn(depends, key)) {
+      return depends[key]
+    }
+    return target[key]
+  }
+}
 
 export const createActions = <IModel extends AnyModel>(
   $actions: DispatchOfModel<IModel>,
@@ -17,34 +39,24 @@ export const createActions = <IModel extends AnyModel>(
     // @ts-ignore
     $actions[actionsName as string] = function (...args: any[]) {
       const action = actions[actionsName]
-      const dependsApi = {} as any
+      // generate depends context
+      const dependsApi = {} as Record<string, any>
       const depends = internalModelInstance.model._depends
       if (depends) {
         depends.forEach((depend) => {
           const { publicApi } = getCacheValue(depend)
-          const { $createView, $actions, $views, $state, ...dependApiRest } =
-            publicApi
-          const res = dependApiRest
-          Object.defineProperty(res, '$state', {
-            enumerable: true,
-            get() {
-              return publicApi.$state
-            },
+          dependsApi[depend.name] = new Proxy(emptyObject, {
+            get: createActionContext(publicApi),
           })
-          dependsApi[depend.name] = res
         })
       }
+      // generate this ref context
       const instance = getCacheValue(internalModelInstance.model)
       const publicApi = instance.publicApi
-      const { $createView, $actions, $views, $state, ...storeApiRest } =
-        publicApi
-      const thisPoint = Object.assign(storeApiRest, { $dep: dependsApi })
-      Object.defineProperty(thisPoint, '$state', {
-        get() {
-          return publicApi.$state
-        },
+      const thisRefProxy = new Proxy(emptyObject, {
+        get: createActionContext(publicApi, { $dep: dependsApi }),
       })
-      return action.call(thisPoint, ...args)
+      return action.call(thisRefProxy, ...args)
     }
   })
 }
