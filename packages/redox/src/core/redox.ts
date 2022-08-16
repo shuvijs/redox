@@ -10,7 +10,7 @@ import { AnyModel } from './defineModel'
 import { createReducers } from './modelReducers'
 import { createActions } from './modelActions'
 import { createViews, createSelector } from './modelViews'
-import { Model } from './model'
+import { createModelInstnace, Model, Store, UnSubscribe } from './model'
 import getPublicApi from './getPublicApi'
 import { emptyObject, readonlyDeepClone } from '../utils'
 
@@ -18,8 +18,6 @@ export type RedoxOptions = {
   initialState?: Record<string, any>
   plugins?: [Plugin, any?][]
 }
-
-export type UnSubscribe = () => void
 
 export const proxyMethods = [
   'name',
@@ -33,12 +31,9 @@ export type ProxyMethods = typeof proxyMethods[number]
 
 type InternalModelProxy = Pick<Model<AnyModel>, ProxyMethods>
 
-export interface RedoxStore {
+export interface RedoxStore extends Omit<Store, 'subscribe'> {
   getModel<IModel extends AnyModel>(model: IModel): ModelInstance<IModel>
-  getState(): Record<string, State>
-  dispatch(action: Action): void
   subscribe(model: AnyModel, fn: () => any): UnSubscribe
-  destroy(): void
 }
 
 export type PluginHook<IModel extends AnyModel = AnyModel> = {
@@ -85,8 +80,11 @@ class RedoxImpl implements RedoxStore {
     for (const { internalModelInstance } of this._models.values()) {
       internalModelInstance.dispatch(action)
     }
+
+    return action
   }
 
+  // fixme: listen all models
   subscribe(model: AnyModel, fn: () => any) {
     const { internalModelInstance } = this._getModelInstance(model)
     return internalModelInstance.subscribe(fn)
@@ -114,7 +112,7 @@ class RedoxImpl implements RedoxStore {
   private _initModel(model: AnyModel): RedoxModel {
     this._hooks.map((hook) => hook.onModel?.(model))
 
-    const internalModelInstance = new Model(
+    const internalModelInstance = createModelInstnace(
       model,
       this._getInitialState(model.name)
     )
@@ -125,16 +123,21 @@ class RedoxImpl implements RedoxStore {
         // trigger depends initial
         const depends = this._getModelInstance(depend)
         // collection beDepends, a depends b, when b update, call a need trigger listener
-        depends.internalModelInstance.subscribe(
-          internalModelInstance.triggerListener
-        )
+        depends.internalModelInstance.subscribe(() => {
+          internalModelInstance.triggerListener()
+        })
       })
     }
 
     const internalModelInstanceProxy = new Proxy(internalModelInstance, {
-      get(target, prop: ProxyMethods) {
+      get(target, prop: ProxyMethods, receiver: object) {
         if (proxyMethods.includes(prop)) {
-          return target[prop]
+          const value = Reflect.get(target, prop, receiver)
+          if (typeof value === 'function') {
+            return value.bind(target)
+          } else {
+            return value
+          }
         }
 
         return undefined
@@ -149,16 +152,16 @@ class RedoxImpl implements RedoxStore {
     if (process.env.NODE_ENV === 'development') {
       let lastState = internalModelInstance.getState()
       let $stateCache = readonlyDeepClone(lastState)
-      $state = function () {
+      $state = (() => {
         if (lastState === internalModelInstance.getState()) {
           return $stateCache
         }
         lastState = internalModelInstance.getState()
         $stateCache = readonlyDeepClone(lastState)
         return $stateCache
-      } as Model<AnyModel>['getState']
+      }) as Model<AnyModel>['getState']
     } else {
-      $state = internalModelInstance.getState
+      $state = () => internalModelInstance.getState()
     }
 
     const getModels = this._getModelInstance.bind(this)

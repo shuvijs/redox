@@ -57,7 +57,7 @@ export const createViews = <IModel extends AnyModel>(
   internalModelInstance: Model<IModel>,
   getCacheValue: (m: AnyModel) => RedoxModel
 ): void => {
-  const views = internalModelInstance.model.views
+  const views = internalModelInstance.options.views
   if (!views) {
     return
   }
@@ -66,7 +66,7 @@ export const createViews = <IModel extends AnyModel>(
     // generate depends context
     const dependsStructure: Record<string, any> = {}
     const dependState: Record<string, any> = {}
-    const depends = internalModelInstance.model._depends
+    const depends = internalModelInstance.options._depends
     if (depends) {
       depends.forEach((depend) => {
         // generate depend ref
@@ -119,7 +119,7 @@ export const createViews = <IModel extends AnyModel>(
         }
       }
       // depends is sa same as this ref
-      const depends = internalModelInstance.model._depends
+      const depends = internalModelInstance.options._depends
       if (depends) {
         depends.forEach((depend) => {
           const { internalModelInstance: instance } = getCacheValue(depend)
@@ -161,7 +161,7 @@ export function createSelector<IModel extends AnyModel, TReturn>(
     [PREV_STATE]: emptyObject,
   }
 
-  const { publicApi } = getCacheValue(internalModelInstance.model)
+  const { publicApi } = getCacheValue(internalModelInstance.options)
 
   let proxyRef = new Proxy(emptyObject, {
     get: createGetter(currentModelProxy, publicApi.$views),

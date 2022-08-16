@@ -13,9 +13,9 @@ export default function getStoreApi<M extends AnyModel = AnyModel>(
   ) => (() => TReturn) & { clearCache: () => void }
 ): ModelInstance<M> {
   const store = {} as ModelInstance<M>
-  store.$set = internalModelInstance.$set
-  store.$patch = internalModelInstance.$patch
-  store.$modify = internalModelInstance.$modify
+  store.$set = internalModelInstance.$set.bind(internalModelInstance)
+  store.$patch = internalModelInstance.$patch.bind(internalModelInstance)
+  store.$modify = internalModelInstance.$modify.bind(internalModelInstance)
   store.$actions = $actions
   store.$views = $views
   store.$createSelector = $createSelector
