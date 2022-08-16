@@ -58,6 +58,16 @@ export const createUseModel =
 
     const isInit = useRef<boolean>(false)
 
+    // selector change, need updated once
+    useEffect(
+      function () {
+        if (isInit.current) {
+          batchManager.triggerSubscribe(model)
+        }
+      },
+      [batchManager, selectorRef.current]
+    )
+
     useEffect(
       function () {
         // useEffect is async, there's maybe some async update state before store subscribe
@@ -72,15 +82,7 @@ export const createUseModel =
           setModelValue(newValue as any)
           lastValueRef.current = newValue
         }
-        return function () {
-          isInit.current = false
-        }
-      },
-      [redoxStore, batchManager]
-    )
 
-    useEffect(
-      function () {
         const fn = function () {
           const newValue = getStateActions(
             model,
@@ -95,21 +97,11 @@ export const createUseModel =
 
         const unSubscribe = batchManager.addSubscribe(model, redoxStore, fn)
 
-        return () => {
-          unSubscribe()
+        return function () {
+          ;(isInit.current = false), unSubscribe()
         }
       },
       [redoxStore, batchManager]
-    )
-
-    // selector change, need updated once
-    useEffect(
-      function () {
-        if (isInit.current) {
-          batchManager.triggerSubscribe(model)
-        }
-      },
-      [batchManager, selectorRef.current]
     )
 
     return modelValue
@@ -161,6 +153,16 @@ export const createUseStaticModel =
 
     const isInit = useRef<boolean>(false)
 
+    // selector change, need updated once
+    useEffect(
+      function () {
+        if (isInit.current) {
+          batchManager.triggerSubscribe(model)
+        }
+      },
+      [batchManager, selectorRef.current]
+    )
+
     useEffect(() => {
       // useEffect is async, there's maybe some async update state before store subscribe
       // check state and actions once, need update if it changed
@@ -173,12 +175,7 @@ export const createUseStaticModel =
         stateRef.current = newValue[0]
         value.current = [stateRef, newValue[1]]
       }
-      return () => {
-        isInit.current = false
-      }
-    }, [redoxStore, batchManager])
 
-    useEffect(() => {
       const fn = () => {
         const newValue = getStateActions(model, redoxStore, selectorRef.current)
         if (stateRef.current !== newValue[0]) {
@@ -189,19 +186,10 @@ export const createUseStaticModel =
       const unSubscribe = batchManager.addSubscribe(model, redoxStore, fn)
 
       return () => {
+        isInit.current = false
         unSubscribe()
       }
     }, [redoxStore, batchManager])
-
-    // selector change, need updated once
-    useEffect(
-      function () {
-        if (isInit.current) {
-          batchManager.triggerSubscribe(model)
-        }
-      },
-      [batchManager, selectorRef.current]
-    )
 
     return value.current
   }
