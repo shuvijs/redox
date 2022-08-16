@@ -16,9 +16,9 @@ import {
   proxyMethods,
   Dispatch,
 } from './types'
-import { createReducers } from './reducers'
-import { createActions } from './actions'
-import { createViews, createSelector } from './views'
+import { createReducers } from './modelReducers'
+import { createActions } from './modelActions'
+import { createViews, createSelector } from './modelViews'
 import { Model } from './model'
 import getPublicApi from './getPublicApi'
 import { emptyObject, readonlyDeepClone } from '../utils'
