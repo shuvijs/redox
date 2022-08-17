@@ -42,7 +42,7 @@ describe('reactivity/effect', () => {
         num: 1,
       },
     }
-    const $state = reactive(() => store.state)
+    const $state = reactive(store.state, () => store.state)
     const double = view(() => $state.num * 2)
     const runner = effect(() => {
       dummy1 = $state.num

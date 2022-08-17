@@ -21,7 +21,7 @@ export type ModelPublicInstance<Model extends AnyModel> = {
   Actions<Model>
 
 const enum AccessTypes {
-  // STATE,
+  STATE,
   ACTION,
   VIEW,
   CONTEXT,
@@ -33,7 +33,7 @@ export const publicPropertiesMap: PublicPropertiesMap =
   /*#__PURE__*/ extend(
     (Object.create(null),
     {
-      $state: (i) => i.getState(),
+      $state: (i) => i.stateWrapper.value,
       $set: (i) => i.$set.bind(i),
       $patch: (i) => i.$patch.bind(i),
       $modify: (i) => i.$modify.bind(i),
@@ -45,33 +45,47 @@ export const publicPropertiesMap: PublicPropertiesMap =
 
 export const PublicInstanceProxyHandlers = {
   get: ({ _: instance }: ProxyContext, key: string) => {
-    const { actions, views, accessCache, accessContext, depsProxy, ctx } =
-      instance
+    const {
+      actions,
+      views,
+      accessCache,
+      accessContext,
+      depsProxy,
+      ctx,
+      state,
+    } = instance
 
+    // console.log('111', key, hasOwn(views, key))
+    // console.log('222', views[key])
     if (key[0] !== '$') {
       const n = accessCache[key]
       if (n !== undefined) {
         switch (n) {
+          case AccessTypes.STATE:
+            return state[key]
+          case AccessTypes.VIEW:
+            return views[key]
           case AccessTypes.ACTION:
             if (accessContext === AccessContext.VIEW) {
               return
             }
             return actions[key]
-          case AccessTypes.VIEW:
-            return views[key]
           case AccessTypes.CONTEXT:
             return ctx[key]
           // default: just fallthrough
         }
+      } else if (hasOwn(state, key)) {
+        accessCache[key] = AccessTypes.STATE
+        return state[key]
+      } else if (hasOwn(views, key)) {
+        accessCache[key] = AccessTypes.VIEW
+        return views[key]
       } else if (hasOwn(actions, key)) {
         if (accessContext === AccessContext.VIEW) {
           return
         }
         accessCache[key] = AccessTypes.ACTION
         return actions[key]
-      } else if (hasOwn(views, key)) {
-        accessCache[key] = AccessTypes.VIEW
-        return views[key]
       } else if (hasOwn(ctx, key)) {
         accessCache[key] = AccessTypes.CONTEXT
         return ctx[key]
@@ -91,7 +105,14 @@ export const PublicInstanceProxyHandlers = {
     }
   },
   set({ _: instance }: ProxyContext, key: string, value: any): boolean {
-    const { ctx, actions, views } = instance
+    const { ctx, actions, views, accessContext } = instance
+
+    if (accessContext === AccessContext.VIEW) {
+      if (process.env.NODE_ENV === 'development') {
+        warn(`Cannot change state in view function`, instance)
+      }
+      return false
+    }
 
     if (hasOwn(actions, key)) {
       if (process.env.NODE_ENV === 'development') {

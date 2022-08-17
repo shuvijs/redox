@@ -10,7 +10,3 @@ export type MergeExclusive<FirstType, SecondType> =
       | (Without<FirstType, SecondType> & SecondType)
       | (Without<SecondType, FirstType> & FirstType)
   : FirstType | SecondType
-
-export type DeepReadonly<T> = {
-  readonly [P in keyof T]: keyof T[P] extends never ? T[P] : DeepReadonly<T[P]>
-}

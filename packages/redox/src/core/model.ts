@@ -1,13 +1,9 @@
 import { produce, setAutoFreeze } from 'immer'
-import {
-  emptyObject,
-  isPlainObject,
-  patchObj,
-  invariant,
-  isObject,
-} from '../utils'
+import { isPlainObject, patchObj, invariant } from '../utils'
 import { warn } from '../warning'
-import { readonly } from '../reactivity/reactive'
+import { reactive, readonly } from '../reactivity/reactive'
+import { ReactiveEffect } from '../reactivity/effect'
+import { view as reactiveView } from '../reactivity/view'
 import {
   Deps,
   Reducer,
@@ -88,7 +84,6 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
   public name: string
   public options: IModel
   public reducer: Reducer<IModel['state']>
-  private _currentState: IModel['state']
   public deps: Map<string, ModelInternal>
 
   public ctx: Record<string, any>
@@ -102,7 +97,14 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
 
   public depsProxy: object
 
-  private _devReadonlyState: IModel['state'] | null
+  public state!: IModel['state']
+  public stateWrapper!: {
+    value: IModel['state']
+  }
+
+  public effects: ReactiveEffect[]
+
+  private _currentState: IModel['state']
   private _listeners: Set<() => void> = new Set()
   private _isDispatching: boolean
 
@@ -111,12 +113,13 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
     this.name = this.options.name || ''
     this.reducer = createModelReducer(model)
     this._currentState = initState || model.state
+    this._afterStateUpdate()
+    this.effects = []
     this.actions = Object.create(null)
     this.views = Object.create(null)
     this.deps = new Map()
     this.accessContext = AccessContext.DEFAULT
 
-    this._devReadonlyState = null
     this._isDispatching = false
 
     this.ctx = {
@@ -131,6 +134,7 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
     this.depsProxy = new Proxy(this.deps, DepsPublicInstanceProxyHandlers)
 
     this._initActions()
+    this._initViews()
 
     this.dispatch({ type: ActionTypes.INIT })
   }
@@ -182,18 +186,7 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
   }
 
   getState() {
-    if (
-      process.env.NODE_ENV === 'development' &&
-      isObject(this._currentState)
-    ) {
-      if (this._devReadonlyState === null) {
-        this._devReadonlyState = readonly<{}>(this._currentState)
-      }
-
-      return this._devReadonlyState
-    }
-
-    return this._currentState!
+    return this.state
   }
 
   dispatch(action: Action) {
@@ -224,9 +217,7 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
 
     if (nextState !== this._currentState) {
       this._currentState = nextState
-      if (process.env.NODE_ENV === 'development') {
-        this._devReadonlyState = null
-      }
+      this._afterStateUpdate()
       // trigger self _listeners
       this.triggerListener()
     }
@@ -244,15 +235,49 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
 
   destroy() {
     this._currentState = null
-    this.reducer = () => {}
+    this.stateWrapper = {
+      value: null,
+    }
     this._listeners.clear()
-    this.options = emptyObject
+    this.effects.forEach((e) => e.stop())
+    this.effects.length = 0
   }
 
   triggerListener() {
     for (const listener of this._listeners) {
       listener()
     }
+  }
+
+  createView(viewFn: () => any) {
+    const view = reactiveView(() => {
+      const oldCtx = this.accessContext
+      this.accessContext = AccessContext.VIEW
+      try {
+        return viewFn.call(this.proxy)
+      } finally {
+        this.accessContext = oldCtx
+      }
+    })
+    this.effects.push(view.effect)
+
+    return view
+  }
+
+  private _afterStateUpdate() {
+    if (isPlainObject(this._currentState)) {
+      this.state = readonly(
+        reactive({ ...this._currentState }, () => this._currentState)
+      )
+    } else {
+      this.state = this._currentState
+    }
+
+    this.stateWrapper = readonly(
+      reactive(() => ({
+        value: this._currentState,
+      }))
+    )
   }
 
   private _initActions() {
@@ -285,6 +310,30 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
           return action.call(this.proxy, ...args)
         }
       })
+    }
+  }
+
+  private _initViews() {
+    const views = this.options.views
+    if (views) {
+      for (const viewName of Object.keys(views)) {
+        const viewFn = views[viewName]
+        const view = this.createView(viewFn)
+
+        Object.defineProperty(this.views, viewName, {
+          configurable: true,
+          enumerable: true,
+          get() {
+            return view.value
+          },
+          set() {
+            if (process.env.NODE_ENV === 'development') {
+              warn(`cannot change view property '${String(viewName)}'`)
+            }
+            return false
+          },
+        })
+      }
     }
   }
 }
