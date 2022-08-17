@@ -1,6 +1,5 @@
 import { State, Action } from './modelOptions'
 import { AnyModel } from './defineModel'
-import { createViews } from './modelViews'
 import {
   createModelInstnace,
   Model,
@@ -124,6 +123,7 @@ class RedoxImpl implements RedoxStore {
   }
 
   destroy() {
+    // todo: destroy all views
     this._hooks.map((hook) => hook.onDestroy?.())
     this._modelManger.clear()
     this._initialState = emptyObject
@@ -175,9 +175,6 @@ class RedoxImpl implements RedoxStore {
     this._hooks.map((hook) => {
       hook.onModelInstanced?.(modelInstanceProxy)
     })
-
-    const getModels = this._getModelInstance.bind(this)
-    createViews(modelInstance, getModels)
 
     this._modelManger.set(model, modelInstance)
     return modelInstance

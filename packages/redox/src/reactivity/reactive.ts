@@ -81,11 +81,11 @@ function getTargetType(value: Target) {
  * obj.count // -> 1
  * ```
  */
-export function reactive<T extends object>(targetCreator: () => T): T
-export function reactive<T extends object>(target: T): T
-export function reactive(target: any) {
-  let getCompanion: (() => Target) | undefined
 
+export function reactive<T extends () => any>(target: T): ReturnType<T>
+export function reactive<T extends {}>(target: T): T
+export function reactive<T extends {}>(target: T, targetCreator: () => T): T
+export function reactive(target: any, getCompanion?: any) {
   if (isFunction(target)) {
     getCompanion = target
     target = target()

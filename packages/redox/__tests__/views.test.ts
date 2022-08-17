@@ -31,7 +31,7 @@ describe('defineModel/views', () => {
     })
     const store = redoxStore.getModel(model)
     expect(() => store.view).toThrow()
-    expect('cannot change state in view function').toHaveBeenWarned()
+    expect('Cannot change state in view function').toHaveBeenWarned()
   })
 
   it('$state and any view should be object', () => {
@@ -111,7 +111,7 @@ describe('defineModel/views', () => {
       },
       views: {
         test() {
-          return this
+          return {}
         },
       },
     })
@@ -122,10 +122,7 @@ describe('defineModel/views', () => {
     store.changeA()
     expect(store.test).toBe(value)
     // $state still init state
-    expect(store.test.$state).toStrictEqual({
-      a: { foo: 'bar' },
-      b: 1,
-    })
+    expect(store.test).toBe(value)
   })
 
   it("should not be invoked when deps don't change", () => {
@@ -691,7 +688,7 @@ describe('createSelector', () => {
     expect(() => {
       view()
     }).toThrow()
-    expect('cannot change state in view function').toHaveBeenWarned()
+    expect('Cannot change state in view function').toHaveBeenWarned()
   })
 
   it('$state and any view should be object', () => {
@@ -780,7 +777,7 @@ describe('createSelector', () => {
     })
 
     const selector = function (stateAndViews: SelectorParams<typeof sample>) {
-      return stateAndViews
+      return {}
     }
 
     const store = redoxStore.getModel(sample)
@@ -790,10 +787,6 @@ describe('createSelector', () => {
     store.changeB()
     store.changeA()
     expect(view()).toBe(value)
-    expect(view().$state).toStrictEqual({
-      a: { foo: 'bar' },
-      b: 1,
-    })
   })
 
   test("should not be invoked when deps don't change (this.$state())", () => {
