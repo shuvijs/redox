@@ -8,7 +8,6 @@ import { redox } from '@shuvi/redox'
 import { createBatchManager } from '../src/batchManager'
 import { countModel } from './models'
 
-let container: HTMLDivElement
 let redoxStore: ReturnType<typeof redox>
 let batchManager: ReturnType<typeof createBatchManager>
 
@@ -19,9 +18,7 @@ beforeEach(() => {
   batchManager = createBatchManager()
 })
 
-afterEach(() => {
-  ;(container as unknown as null) = null
-})
+afterEach(() => {})
 
 describe('batchedUpdates', () => {
   test('addSubscribe worked', () => {

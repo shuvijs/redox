@@ -15,16 +15,8 @@ const countSelector = function (stateAndViews: countSelectorParameters) {
   }
 }
 
-let container: HTMLDivElement
 beforeEach(() => {
   jest.useFakeTimers()
-  container = document.createElement('div')
-  document.body.appendChild(container)
-})
-
-afterEach(() => {
-  document.body.removeChild(container)
-  ;(container as unknown as null) = null
 })
 
 describe('useModel', () => {

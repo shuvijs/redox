@@ -1,9 +1,14 @@
 import { produce, setAutoFreeze } from 'immer'
 import { isPlainObject, patchObj, invariant } from '../utils'
 import { warn } from '../warning'
-import { reactive, readonly } from '../reactivity/reactive'
-import { ReactiveEffect } from '../reactivity/effect'
-import { view as reactiveView } from '../reactivity/view'
+import {
+  reactive,
+  readonly,
+  view as reactiveView,
+  View,
+  effectScope,
+  EffectScope,
+} from '../reactivity'
 import {
   Deps,
   Reducer,
@@ -52,7 +57,6 @@ export type Model<IModel extends AnyModel = AnyModel> = {
   readonly name: string
   readonly options: Readonly<IModel>
   reducer: Reducer<IModel['state']>
-  triggerListener(): void
 } & Store &
   HelperActions
 
@@ -81,28 +85,33 @@ export const enum AccessContext {
 export class ModelInternal<IModel extends AnyModel = AnyModel>
   implements Model<IModel>
 {
-  public name: string
-  public options: IModel
-  public reducer: Reducer<IModel['state']>
-  public deps: Map<string, ModelInternal>
+  name: string
+  options: IModel
+  reducer: Reducer<IModel['state']>
 
-  public ctx: Record<string, any>
-  public accessCache: Record<string, any>
-  // proxy for pubilc this
-  public proxy: ModelPublicInstance<IModel> | null = null
+  // deps
+  deps: Map<string, ModelInternal>
+  depsProxy: object
 
-  public actions: Actions<IModel>
-  public views: Views<IModel['views']>
-  public accessContext: AccessContext
+  ctx: Record<string, any>
+  accessCache: Record<string, any>
 
-  public depsProxy: object
+  /**
+   * proxy for public this
+   */
+  proxy: ModelPublicInstance<IModel> | null = null
 
-  public state!: IModel['state']
-  public stateWrapper!: {
+  // props
+  actions: Actions<IModel>
+  views: Views<IModel['views']>
+  accessContext: AccessContext
+
+  // state
+  state!: IModel['state']
+  stateWrapper!: {
     value: IModel['state']
   }
-
-  public effects: ReactiveEffect[]
+  effectScope: EffectScope
 
   private _currentState: IModel['state']
   private _listeners: Set<() => void> = new Set()
@@ -114,13 +123,13 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
     this.reducer = createModelReducer(model)
     this._currentState = initState || model.state
     this._afterStateUpdate()
-    this.effects = []
     this.actions = Object.create(null)
     this.views = Object.create(null)
     this.deps = new Map()
     this.accessContext = AccessContext.DEFAULT
 
     this._isDispatching = false
+    this.effectScope = effectScope()
 
     this.ctx = {
       _: this,
@@ -219,7 +228,7 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
       this._currentState = nextState
       this._afterStateUpdate()
       // trigger self _listeners
-      this.triggerListener()
+      this._triggerListener()
     }
 
     return action
@@ -239,29 +248,38 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
       value: null,
     }
     this._listeners.clear()
-    this.effects.forEach((e) => e.stop())
-    this.effects.length = 0
+    this.effectScope.stop()
   }
 
-  triggerListener() {
+  depend(name: string, dep: ModelInternal<any>) {
+    this.deps.set(name, dep)
+    // collection beDepends, a depends b, when b update, call a need trigger listener
+    dep.subscribe(() => {
+      this._triggerListener()
+    })
+  }
+
+  private _triggerListener() {
     for (const listener of this._listeners) {
       listener()
     }
   }
 
   createView(viewFn: () => any) {
-    const view = reactiveView(() => {
-      const oldCtx = this.accessContext
-      this.accessContext = AccessContext.VIEW
-      try {
-        return viewFn.call(this.proxy)
-      } finally {
-        this.accessContext = oldCtx
-      }
+    let view: View
+    this.effectScope.run(() => {
+      view = reactiveView(() => {
+        const oldCtx = this.accessContext
+        this.accessContext = AccessContext.VIEW
+        try {
+          return viewFn.call(this.proxy)
+        } finally {
+          this.accessContext = oldCtx
+        }
+      })
     })
-    this.effects.push(view.effect)
 
-    return view
+    return view!
   }
 
   private _afterStateUpdate() {
