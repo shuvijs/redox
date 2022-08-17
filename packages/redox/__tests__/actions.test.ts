@@ -158,7 +158,6 @@ describe('defineModel/actions', () => {
     })
 
     it('should throw error if changed state not by reducer in development', async () => {
-      process.env.NODE_ENV = 'development'
       const count = defineModel({
         name: 'count',
         state: { value: 0 },
@@ -167,8 +166,11 @@ describe('defineModel/actions', () => {
       const store = redoxStore.getModel(count)
 
       const state = store.$state
+      state.value = 1
 
-      expect(() => (state.value = 1)).toThrow()
+      expect(
+        'Set operation on key "value" failed: target is readonly.'
+      ).toHaveBeenWarned()
     })
   })
 

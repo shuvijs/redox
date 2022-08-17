@@ -1,4 +1,6 @@
 export * from './modelOptions'
 export * from './defineModel'
+export { ModelPublicInstance } from './modelPublicInstance'
+export { Selector, SelectorParams } from './modelViews'
 export * from './model'
 export * from './redox'

@@ -129,7 +129,7 @@ describe('redox', () => {
     store.dependAdd()
     expect(redoxStore.getState()).toEqual({
       count: { value: 0 },
-      0: { depend: 1 },
+      _: [{ depend: 1 }],
     })
   })
 

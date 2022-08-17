@@ -22,8 +22,6 @@ export type ModelViews<V> = {
   [K in keyof V]: V[K] extends () => any ? ReturnType<V[K]> : never
 }
 
-export type Depends = AnyModel[]
-
 export type AnyModel = DefineModel<any, any, any, any, any, any>
 
 export type Deps = Record<string, AnyModel>
@@ -45,7 +43,7 @@ export type DefineModel<
   reducers?: R
   actions?: A & ThisType<ActionThis<S, R, A, V, D>>
   views?: V & ThisType<ViewThis<S, V, D>>
-  _depends?: Depends
+  _depends?: Deps
 }
 
 export type Tuple<T> = T extends [any, ...any] ? T : []
@@ -136,7 +134,7 @@ export const defineModel = <
   Deps extends MakeDeps<D>,
   D extends any[] = []
 >(
-  modelOptions: Omit<DefineModel<N, S, R, A, V, Deps>, 'depends'>,
+  modelOptions: Omit<DefineModel<N, S, R, A, V, Deps>, '_depends'>,
   depends?: Tuple<D>
 ) => {
   if (process.env.NODE_ENV === 'development') {
@@ -147,14 +145,15 @@ export const defineModel = <
     validateModelOptions(modelOptions)
   }
 
-  const finalModel = modelOptions as DefineModel<N, S, R, A, V, Deps>
-  finalModel._depends = depends
-  if (finalModel._depends) {
-    finalModel._depends.forEach((depend, index) => {
-      if (!depend.name) {
-        depend.name = `${index}`
-      }
-    })
+  const model = modelOptions as DefineModel<N, S, R, A, V, Deps>
+  if (depends) {
+    model._depends = {}
+    for (let index = 0; index < depends.length; index++) {
+      const dep = depends[index] as AnyModel
+      const name: string = dep.name || `${index}`
+      model._depends[name] = dep
+    }
   }
-  return finalModel
+
+  return model
 }

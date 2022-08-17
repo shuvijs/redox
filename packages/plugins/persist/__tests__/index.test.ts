@@ -1,6 +1,6 @@
 import { redox } from '@shuvi/redox'
 import createMemoryStorage from './utils/createMemoryStorage'
-import redoxPersist, { persistModel } from '../src/index'
+import redoxPersist from '../src/index'
 import getStoredState from '../src/getStoredState'
 import { a } from './models/a'
 import { b } from './models/b'

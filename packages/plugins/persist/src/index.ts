@@ -1,4 +1,4 @@
-import { Plugin, redox, AnyModel, ModelInstance } from '@shuvi/redox'
+import { Plugin, redox, AnyModel, ModelPublicInstance } from '@shuvi/redox'
 import createPersist from './createPersist'
 import getStoredState from './getStoredState'
 import { createWebStorage } from './storage'
@@ -26,7 +26,7 @@ function _rehydrated(storageState: IStorageState, store: StoreProxy) {
 
 const redoxPersist: Plugin<AnyModel, PersistOptions> = function (options) {
   const persist = createPersist(options)
-  let persistStore: ModelInstance<typeof persistModel>
+  let persistStore: ModelPublicInstance<typeof persistModel>
   let _redoxStore: ReturnType<typeof redox>
   const unSubscribes = new Set<() => void>()
   const collectLoadingStore = new Set<StoreProxy>()
