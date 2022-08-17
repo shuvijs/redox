@@ -1,6 +1,11 @@
-import { AnyModel, Selector, ModelInstance, SelectorParams } from '@shuvi/redox'
+import {
+  AnyModel,
+  Selector,
+  ModelPublicInstance,
+  SelectorParams,
+} from '@shuvi/redox'
 
-type IActions<IModel extends AnyModel> = ModelInstance<IModel>['$actions']
+type IActions<IModel extends AnyModel> = ModelPublicInstance<IModel>['$actions']
 
 export interface IUseModel {
   <IModel extends AnyModel>(model: IModel): [

@@ -194,11 +194,8 @@ function createReactiveObject(
     target,
     targetType === TargetType.COLLECTION ? collectionHandlers : baseHandlers
   )
-  if (isReadonly) {
-    companionMap.set(target, toCompanion(target))
-  } else {
-    companionMap.set(target, getCompanion)
-  }
+
+  companionMap.set(target, getCompanion)
   proxyMap.set(target, proxy)
   return proxy
 }

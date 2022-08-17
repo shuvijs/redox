@@ -1,5 +1,14 @@
 import { produce, setAutoFreeze } from 'immer'
 import {
+  emptyObject,
+  isPlainObject,
+  patchObj,
+  invariant,
+  isObject,
+} from '../utils'
+import { warn } from '../warning'
+import { readonly } from '../reactivity/reactive'
+import {
   Deps,
   Reducer,
   ReducerOptions,
@@ -8,9 +17,11 @@ import {
   DefineModel,
   AnyModel,
 } from './defineModel'
-import { Action, State, StateObject } from './modelOptions'
-import { emptyObject, isPlainObject, patchObj, invariant } from '../utils'
-import { warn } from '../warning'
+import { Views, Actions, Action, State, StateObject } from './modelOptions'
+import {
+  ModelPublicInstance,
+  PublicInstanceProxyHandlers,
+} from './modelPublicInstance'
 
 setAutoFreeze(false)
 
@@ -41,29 +52,85 @@ export interface Store {
 
 export type Dispatch = Store['dispatch']
 
-export type Model<ModelOptions extends AnyModel = AnyModel> = {
+export type Model<IModel extends AnyModel = AnyModel> = {
   readonly name: string
-  readonly options: Readonly<ModelOptions>
-  reducer: Reducer<ModelOptions['state']>
+  readonly options: Readonly<IModel>
+  reducer: Reducer<IModel['state']>
   triggerListener(): void
 } & Store &
   HelperActions
 
-class ModelImpl<ModelOptions extends AnyModel> implements Model<ModelOptions> {
-  public name: string
-  public options: ModelOptions
-  public reducer: Reducer<ModelOptions['state']>
+export type PublicPropertiesMap = Record<string, (i: ModelInternal) => any>
 
-  private _currentState: ModelOptions['state']
+export interface ProxyContext {
+  _: ModelInternal<any>
+}
+
+const DepsPublicInstanceProxyHandlers = {
+  get: (deps: Map<string, ModelInternal>, key: string) => {
+    const model = deps.get(key)
+    if (model) {
+      return model.proxy
+    }
+
+    return undefined
+  },
+}
+
+export const enum AccessContext {
+  DEFAULT,
+  VIEW,
+}
+
+export class ModelInternal<IModel extends AnyModel = AnyModel>
+  implements Model<IModel>
+{
+  public name: string
+  public options: IModel
+  public reducer: Reducer<IModel['state']>
+  private _currentState: IModel['state']
+  public deps: Map<string, ModelInternal>
+
+  public ctx: Record<string, any>
+  public accessCache: Record<string, any>
+  // proxy for pubilc this
+  public proxy: ModelPublicInstance<IModel> | null = null
+
+  public actions: Actions<IModel>
+  public views: Views<IModel['views']>
+  public accessContext: AccessContext
+
+  public depsProxy: object
+
+  private _devReadonlyState: IModel['state'] | null
   private _listeners: Set<() => void> = new Set()
   private _isDispatching: boolean
 
-  constructor(model: ModelOptions, initState: State) {
+  constructor(model: IModel, initState: State) {
     this.options = model
     this.name = this.options.name || ''
     this.reducer = createModelReducer(model)
     this._currentState = initState || model.state
+    this.actions = Object.create(null)
+    this.views = Object.create(null)
+    this.deps = new Map()
+    this.accessContext = AccessContext.DEFAULT
+
+    this._devReadonlyState = null
     this._isDispatching = false
+
+    this.ctx = {
+      _: this,
+    }
+    this.accessCache = Object.create(null)
+    this.proxy = new Proxy(
+      this.ctx,
+      PublicInstanceProxyHandlers
+    ) as ModelPublicInstance<IModel>
+
+    this.depsProxy = new Proxy(this.deps, DepsPublicInstanceProxyHandlers)
+
+    this._initActions()
 
     this.dispatch({ type: ActionTypes.INIT })
   }
@@ -115,6 +182,17 @@ class ModelImpl<ModelOptions extends AnyModel> implements Model<ModelOptions> {
   }
 
   getState() {
+    if (
+      process.env.NODE_ENV === 'development' &&
+      isObject(this._currentState)
+    ) {
+      if (this._devReadonlyState === null) {
+        this._devReadonlyState = readonly<{}>(this._currentState)
+      }
+
+      return this._devReadonlyState
+    }
+
     return this._currentState!
   }
 
@@ -146,6 +224,9 @@ class ModelImpl<ModelOptions extends AnyModel> implements Model<ModelOptions> {
 
     if (nextState !== this._currentState) {
       this._currentState = nextState
+      if (process.env.NODE_ENV === 'development') {
+        this._devReadonlyState = null
+      }
       // trigger self _listeners
       this.triggerListener()
     }
@@ -173,13 +254,46 @@ class ModelImpl<ModelOptions extends AnyModel> implements Model<ModelOptions> {
       listener()
     }
   }
+
+  private _initActions() {
+    // map reducer names to dispatch actions
+    const reducers = this.options.reducers
+    if (reducers) {
+      const reducersKeys = Object.keys(reducers)
+      reducersKeys.forEach((reducerName) => {
+        // @ts-ignore
+        this.actions[reducerName] = (payload?: any): Action => {
+          const action: Action = { type: reducerName }
+
+          if (typeof payload !== 'undefined') {
+            action.payload = payload
+          }
+
+          return this.dispatch(action)
+        }
+      })
+    }
+
+    // map actions names to dispatch actions
+    const actions = this.options.actions
+    if (actions) {
+      const actionKeys = Object.keys(actions)
+      actionKeys.forEach((actionsName) => {
+        const action = actions[actionsName]
+        // @ts-ignore
+        this.actions[actionsName as string] = (...args: any[]) => {
+          return action.call(this.proxy, ...args)
+        }
+      })
+    }
+  }
 }
 
-export function createModelInstnace<ModelOptions extends AnyModel>(
-  modelOptions: ModelOptions,
+export function createModelInstnace<IModel extends AnyModel>(
+  modelOptions: IModel,
   initState: State
 ) {
-  return new ModelImpl<ModelOptions>(modelOptions, initState)
+  return new ModelInternal<IModel>(modelOptions, initState)
 }
 
 function createModelReducer<

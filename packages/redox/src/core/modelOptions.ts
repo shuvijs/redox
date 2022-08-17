@@ -47,7 +47,7 @@ export interface ActionWithPayload<T = any> {
   [extraProps: string]: any
 }
 
-type EmptyObject = { [X: string | number | symbol]: never }
+export type EmptyObject = { [X: string | number | symbol]: never }
 
 export type ReducerFn<Payload = never> = [Payload] extends [never]
   ? () => Action<never>
@@ -109,29 +109,6 @@ export type Views<ViewOptions> = {
     ? ReturnType<ViewOptions[K]>
     : never
 }
-
-export type SelectorParams<Model extends AnyModel> = {
-  $state: Model['state']
-} & Model['state'] &
-  Views<Model['views']> &
-  EmptyObject
-
-export type Selector<Model extends AnyModel, TReturn = any> = (
-  stateAndViews: SelectorParams<Model>
-) => TReturn
-
-export type ModelInstance<Model extends AnyModel> = {
-  $state: Model['state']
-  $set: (state: State) => void
-  $modify: (modifier: (state: Model['state']) => void) => void
-  $patch: (partState: StateObject) => void
-  $actions: Actions<Model>
-  $views: Views<Model['views']>
-  $createSelector: <R>(
-    selector: Selector<Model, R>
-  ) => (() => R) & { clearCache: () => void }
-} & Views<Model['views']> &
-  Actions<Model>
 
 export type ActionThis<
   S extends State = {},

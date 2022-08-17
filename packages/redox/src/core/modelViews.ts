@@ -1,11 +1,20 @@
-import { AnyModel } from './defineModel'
-import { Views, Selector } from './modelOptions'
-import { RedoxModel } from './redox'
-import type { Model } from './model'
 import { isPlainObject, hasOwn, hasChanged, emptyObject } from '../utils'
+import { AnyModel } from './defineModel'
+import { Views, EmptyObject } from './modelOptions'
+import { ModelInternal } from './model'
 import { warn } from '../warning'
 import { reactive } from '../reactivity/reactive'
 import { view } from '../reactivity/view'
+
+export type SelectorParams<Model extends AnyModel> = {
+  $state: Model['state']
+} & Model['state'] &
+  Views<Model['views']> &
+  EmptyObject
+
+export type Selector<Model extends AnyModel, TReturn = any> = (
+  stateAndViews: SelectorParams<Model>
+) => TReturn
 
 // fot access state by this.$state.x
 const $VALUE_REF = '$valueRef'
@@ -38,8 +47,7 @@ function createGetter<IModel extends AnyModel>(
     }
     // access view by this.view
     if (hasOwn(instanceViews, key)) {
-      const view = instanceViews[key]
-      return view()
+      return instanceViews[key]
     }
     return target[key]
   }
@@ -53,22 +61,22 @@ function proxySetter(_newValue: any) {
 }
 
 export const createViews = <IModel extends AnyModel>(
-  $views: Views<IModel['views']>,
-  internalModelInstance: Model<IModel>,
-  getCacheValue: (m: AnyModel) => RedoxModel
+  instance: ModelInternal<IModel>,
+  getCacheValue: (m: AnyModel) => ModelInternal
 ): void => {
-  const views = internalModelInstance.options.views
+  const views = instance.options.views
   if (!views) {
     return
   }
 
-  ;(Object.keys(views) as Array<keyof IModel['views']>).forEach((viewsKey) => {
+  const $views = instance.views
+  ;(Object.keys(views) as Array<keyof IModel['views']>).forEach((viewKey) => {
     // generate depends context
     const dependsStructure: Record<string, any> = {}
     const dependState: Record<string, any> = {}
-    const depends = internalModelInstance.options._depends
+    const depends = instance.options._depends
     if (depends) {
-      depends.forEach((depend) => {
+      for (const depend of Object.values(depends)) {
         // generate depend ref
         const dependRef = {
           [$VALUE_REF]: emptyObject,
@@ -76,12 +84,12 @@ export const createViews = <IModel extends AnyModel>(
           [PREV_STATE]: emptyObject,
         }
         dependState[depend.name as string] = dependRef
-        const { publicApi } = getCacheValue(depend)
+        const depInstance = getCacheValue(depend)
         dependsStructure[depend.name as string] = new Proxy(emptyObject, {
-          get: createGetter(dependRef, publicApi.$views),
+          get: createGetter(dependRef, depInstance.proxy!.$views),
           set: proxySetter,
         })
-      })
+      }
     }
     // generate this ref context
     const currentModelProxy = {
@@ -91,7 +99,7 @@ export const createViews = <IModel extends AnyModel>(
       [DEP_REF]: dependsStructure,
     }
     // view function
-    const fn = views[viewsKey]
+    const fn = views[viewKey]
     let thisRefProxy = new Proxy(emptyObject, {
       get: createGetter(currentModelProxy, $views),
       set: proxySetter,
@@ -99,12 +107,12 @@ export const createViews = <IModel extends AnyModel>(
     // result view
     const viewRes = view(() => {
       const prevState = currentModelProxy[PREV_STATE]
-      const nextState = internalModelInstance.getState()
+      const nextState = instance.getState()
       // check is the state changed
       if (hasChanged(prevState, nextState)) {
         currentModelProxy[PREV_STATE] = nextState
         currentModelProxy[$VALUE_REF] = reactive(() => {
-          return { $state: internalModelInstance.getState() }
+          return { $state: instance.getState() }
         })
         // if state is not a object, no need create reactive object
         if (isPlainObject(nextState)) {
@@ -112,47 +120,56 @@ export const createViews = <IModel extends AnyModel>(
             // reactive will be store to weakMap target=>Fn
             // view context is independent of each other
             // return new object the context is unique
-            return { ...internalModelInstance.getState() }
+            return { ...instance.getState() }
           })
         } else {
           currentModelProxy[VALUE_REF] = emptyObject
         }
       }
       // depends is sa same as this ref
-      const depends = internalModelInstance.options._depends
+      const depends = instance.options._depends
       if (depends) {
-        depends.forEach((depend) => {
-          const { internalModelInstance: instance } = getCacheValue(depend)
+        for (const depend of Object.values(depends)) {
+          const depInstance = getCacheValue(depend)
           const dependRef = dependState[depend.name as string]
           const prevState = dependRef[PREV_STATE]
-          const nextState = instance.getState()
+          const nextState = depInstance.getState()
           if (hasChanged(prevState, nextState)) {
             dependRef[PREV_STATE] = nextState
             dependRef[$VALUE_REF] = reactive(() => {
-              return { $state: instance.getState() }
+              return { $state: depInstance.getState() }
             })
             if (isPlainObject(nextState)) {
               dependRef[VALUE_REF] = reactive(() => {
-                return { ...instance.getState() }
+                return { ...depInstance.getState() }
               })
             } else {
               dependRef[VALUE_REF] = emptyObject
             }
           }
-        })
+        }
       }
       return fn.call(thisRefProxy)
     })
-    // @ts-ignore
-    $views[viewsKey] = function () {
-      return viewRes.value
-    }
+
+    Object.defineProperty($views, viewKey, {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return viewRes.value
+      },
+      set() {
+        if (process.env.NODE_ENV === 'development') {
+          warn(`cannot change view property '${String(viewKey)}'`)
+        }
+        return false
+      },
+    })
   })
 }
 
 export function createSelector<IModel extends AnyModel, TReturn>(
-  internalModelInstance: Model<IModel>,
-  getCacheValue: (m: AnyModel) => RedoxModel,
+  instance: ModelInternal<IModel>,
   selector: Selector<IModel, TReturn>
 ) {
   let currentModelProxy = {
@@ -161,23 +178,21 @@ export function createSelector<IModel extends AnyModel, TReturn>(
     [PREV_STATE]: emptyObject,
   }
 
-  const { publicApi } = getCacheValue(internalModelInstance.options)
-
   let proxyRef = new Proxy(emptyObject, {
-    get: createGetter(currentModelProxy, publicApi.$views),
+    get: createGetter(currentModelProxy, instance.proxy!.$views),
     set: proxySetter,
   })
   let viewRes = view(() => {
     const prevState = currentModelProxy[PREV_STATE]
-    const nextState = internalModelInstance.getState()
+    const nextState = instance.getState()
     if (hasChanged(prevState, nextState)) {
       currentModelProxy[PREV_STATE] = nextState
       currentModelProxy[$VALUE_REF] = reactive(() => {
-        return { $state: internalModelInstance.getState() }
+        return { $state: instance.getState() }
       })
       if (isPlainObject(nextState)) {
         currentModelProxy[VALUE_REF] = reactive(() => {
-          return { ...internalModelInstance.getState() }
+          return { ...instance.getState() }
         })
       } else {
         currentModelProxy[VALUE_REF] = emptyObject

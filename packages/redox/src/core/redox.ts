@@ -1,18 +1,15 @@
-import {
-  State,
-  ModelInstance,
-  Actions,
-  Views,
-  Action,
-  Selector,
-} from './modelOptions'
+import { State, Action } from './modelOptions'
 import { AnyModel } from './defineModel'
-import { createReducers } from './modelReducers'
-import { createActions } from './modelActions'
-import { createViews, createSelector } from './modelViews'
-import { createModelInstnace, Model, Store, UnSubscribe } from './model'
-import getPublicApi from './getPublicApi'
-import { emptyObject, readonlyDeepClone } from '../utils'
+import { createViews } from './modelViews'
+import {
+  createModelInstnace,
+  Model,
+  ModelInternal,
+  Store,
+  UnSubscribe,
+} from './model'
+import { ModelPublicInstance } from './modelPublicInstance'
+import { emptyObject } from '../utils'
 
 export type RedoxOptions = {
   initialState?: Record<string, any>
@@ -32,7 +29,7 @@ export type ProxyMethods = typeof proxyMethods[number]
 type InternalModelProxy = Pick<Model<AnyModel>, ProxyMethods>
 
 export interface RedoxStore extends Omit<Store, 'subscribe'> {
-  getModel<IModel extends AnyModel>(model: IModel): ModelInstance<IModel>
+  getModel<IModel extends AnyModel>(model: IModel): ModelPublicInstance<IModel>
   subscribe(model: AnyModel, fn: () => any): UnSubscribe
 }
 
@@ -47,61 +44,93 @@ export type Plugin<IModel extends AnyModel = AnyModel, Option = any> = (
   option: Option
 ) => PluginHook<IModel>
 
-export type RedoxModel = {
-  internalModelInstance: Model<AnyModel>
-  publicApi: ModelInstance<AnyModel>
+export interface ModelManger {
+  get(key: AnyModel): ModelInternal | undefined
+  set(key: AnyModel, model: ModelInternal): void
+  each(fn: (item: ModelInternal) => void): void
+  clear(): void
+}
+
+const createModelManger = (): ModelManger => {
+  const models = new Map<string, ModelInternal>()
+
+  const self: ModelManger = {
+    get(modelOptions: AnyModel) {
+      return models.get(modelOptions.name || modelOptions)
+    },
+    set(modelOptions: AnyModel, model: ModelInternal) {
+      models.set(modelOptions.name || modelOptions, model)
+    },
+    each(fn) {
+      for (const model of models.values()) {
+        fn(model)
+      }
+    },
+    clear() {
+      self.each((m) => m.destroy())
+      models.clear()
+    },
+  }
+
+  return self
 }
 
 class RedoxImpl implements RedoxStore {
   private _initialState: Record<string, State>
   private _hooks: PluginHook[]
-  private _models = new Map<any, RedoxModel>()
+  private _modelManger: ModelManger
 
   constructor(initialState = emptyObject, plugins: [Plugin, any?][] = []) {
     this._initialState = initialState
+    this._modelManger = createModelManger()
     this._hooks = plugins.map(([plugin, option]) => plugin(option))
     this._hooks.map((hook) => hook.onInit?.(this, initialState))
   }
 
   getModel<IModel extends AnyModel>(model: IModel) {
     let instance = this._getModelInstance(model)
-    return instance.publicApi as ModelInstance<IModel>
+    return instance.proxy as ModelPublicInstance<IModel>
   }
 
   getState() {
     const allState = {} as ReturnType<RedoxStore['getState']>
-    for (const [key, { internalModelInstance }] of this._models.entries()) {
-      allState[key] = internalModelInstance.getState()
+    const anonymousState: any[] = []
+    this._modelManger.each((m) => {
+      if (m.name) {
+        allState[m.name] = m.getState()
+      } else {
+        anonymousState.push(m.getState())
+      }
+    })
+
+    if (anonymousState.length) {
+      allState['_'] = anonymousState
     }
+
     return allState
   }
 
   dispatch(action: Action) {
-    for (const { internalModelInstance } of this._models.values()) {
-      internalModelInstance.dispatch(action)
-    }
-
+    this._modelManger.each((m) => {
+      m.dispatch(action)
+    })
     return action
   }
 
   // fixme: listen all models
   subscribe(model: AnyModel, fn: () => any) {
-    const { internalModelInstance } = this._getModelInstance(model)
-    return internalModelInstance.subscribe(fn)
+    const instance = this._getModelInstance(model)
+    return instance.subscribe(fn)
   }
 
   destroy() {
     this._hooks.map((hook) => hook.onDestroy?.())
-    for (const { internalModelInstance } of this._models.values()) {
-      internalModelInstance.destroy()
-    }
-    this._models.clear()
+    this._modelManger.clear()
     this._initialState = emptyObject
   }
 
   private _getModelInstance(model: AnyModel) {
-    const name = model.name
-    let cacheStore = this._models.get(name)
+    let cacheStore = this._modelManger.get(model)
     if (cacheStore) {
       return cacheStore
     }
@@ -109,27 +138,27 @@ class RedoxImpl implements RedoxStore {
     return this._initModel(model)
   }
 
-  private _initModel(model: AnyModel): RedoxModel {
+  private _initModel(model: AnyModel): ModelInternal {
     this._hooks.map((hook) => hook.onModel?.(model))
 
-    const internalModelInstance = createModelInstnace(
+    const modelInstance = createModelInstnace(
       model,
       this._getInitialState(model.name)
     )
 
     const depends = model._depends
     if (depends) {
-      depends.forEach((depend) => {
-        // trigger depends initial
-        const depends = this._getModelInstance(depend)
+      for (const [name, dep] of Object.entries(depends)) {
+        const depInstance = this._getModelInstance(dep)
+        modelInstance.deps.set(name, depInstance)
         // collection beDepends, a depends b, when b update, call a need trigger listener
-        depends.internalModelInstance.subscribe(() => {
-          internalModelInstance.triggerListener()
+        depInstance.subscribe(() => {
+          modelInstance.triggerListener()
         })
-      })
+      }
     }
 
-    const internalModelInstanceProxy = new Proxy(internalModelInstance, {
+    const modelInstanceProxy = new Proxy(modelInstance, {
       get(target, prop: ProxyMethods, receiver: object) {
         if (proxyMethods.includes(prop)) {
           const value = Reflect.get(target, prop, receiver)
@@ -144,55 +173,14 @@ class RedoxImpl implements RedoxStore {
       },
     })
     this._hooks.map((hook) => {
-      hook.onModelInstanced?.(internalModelInstanceProxy)
+      hook.onModelInstanced?.(modelInstanceProxy)
     })
 
-    let $state: Model<AnyModel>['getState']
-    // $state function
-    if (process.env.NODE_ENV === 'development') {
-      let lastState = internalModelInstance.getState()
-      let $stateCache = readonlyDeepClone(lastState)
-      $state = (() => {
-        if (lastState === internalModelInstance.getState()) {
-          return $stateCache
-        }
-        lastState = internalModelInstance.getState()
-        $stateCache = readonlyDeepClone(lastState)
-        return $stateCache
-      }) as Model<AnyModel>['getState']
-    } else {
-      $state = () => internalModelInstance.getState()
-    }
-
     const getModels = this._getModelInstance.bind(this)
-    const $views = {} as Views<AnyModel['views']>
-    createViews($views, internalModelInstance, getModels)
+    createViews(modelInstance, getModels)
 
-    const $createSelector = <TReturn>(
-      selector: Selector<AnyModel, TReturn>
-    ) => {
-      return createSelector(internalModelInstance, getModels, selector)
-    }
-
-    const $actions = {} as Actions<AnyModel>
-    createReducers($actions, internalModelInstance)
-    createActions($actions, internalModelInstance, getModels)
-
-    const publicApi: ModelInstance<AnyModel> = getPublicApi(
-      internalModelInstance,
-      $state,
-      $actions,
-      $views,
-      $createSelector
-    )
-
-    const modelName = model.name
-    const redoxCacheValue = {
-      internalModelInstance,
-      publicApi,
-    }
-    this._models.set(modelName, redoxCacheValue)
-    return redoxCacheValue
+    this._modelManger.set(model, modelInstance)
+    return modelInstance
   }
 
   private _getInitialState(name: string): State | undefined {

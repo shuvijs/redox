@@ -1,6 +1,6 @@
 import type {
   RedoxStore,
-  ModelInstance,
+  ModelPublicInstance,
   AnyModel,
   Selector,
   SelectorParams,
@@ -10,11 +10,13 @@ function tuplify<T extends any[]>(...elements: T) {
   return elements
 }
 
-function updateProxy<IModel extends AnyModel>(store: ModelInstance<IModel>) {
+function updateProxy<IModel extends AnyModel>(
+  store: ModelPublicInstance<IModel>
+) {
   const tempProxy = { $state: store.$state } as SelectorParams<IModel>
   Object.assign(tempProxy, store.$state, store.$views)
   ;(
-    store as ModelInstance<IModel> & {
+    store as ModelPublicInstance<IModel> & {
       __proxy: SelectorParams<IModel>
     }
   ).__proxy = new Proxy(tempProxy, {

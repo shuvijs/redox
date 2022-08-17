@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { redox } from '@shuvi/redox'
 import type { AnyModel, Selector } from '@shuvi/redox'
 import { createBatchManager } from './batchManager'
@@ -17,19 +17,11 @@ const useModel: IUseModel = <
     return [redox(), createBatchManager()]
   }, [])
 
-  const contextValue = useRef({
-    redoxStore,
-    batchManager,
-  })
-
   return useMemo(
     function () {
-      return createUseModel(
-        contextValue.current.redoxStore,
-        contextValue.current.batchManager
-      )
+      return createUseModel(redoxStore, batchManager)
     },
-    [contextValue.current.redoxStore, contextValue.current.batchManager]
+    [redoxStore, batchManager]
   )(model, selector, depends)
 }
 
