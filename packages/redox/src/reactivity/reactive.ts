@@ -4,11 +4,6 @@ import {
   readonlyHandlers,
   shallowReadonlyHandlers,
 } from './baseHandlers'
-import {
-  mutableCollectionHandlers,
-  readonlyCollectionHandlers,
-  shallowReadonlyCollectionHandlers,
-} from './collectionHandlers'
 
 export declare const RawSymbol: unique symbol
 
@@ -100,7 +95,6 @@ export function reactive(target: any, getCompanion?: any) {
     target,
     false,
     mutableHandlers,
-    mutableCollectionHandlers,
     reactiveMap,
     getCompanion
   )
@@ -133,13 +127,7 @@ export type DeepReadonly<T> = T extends Builtin
  * made reactive, but `readonly` can be called on an already reactive object.
  */
 export function readonly<T extends object>(target: T): DeepReadonly<T> {
-  return createReactiveObject(
-    target,
-    true,
-    readonlyHandlers,
-    readonlyCollectionHandlers,
-    readonlyMap
-  )
+  return createReactiveObject(target, true, readonlyHandlers, readonlyMap)
 }
 
 /**
@@ -153,7 +141,6 @@ export function shallowReadonly<T extends object>(target: T): Readonly<T> {
     target,
     true,
     shallowReadonlyHandlers,
-    shallowReadonlyCollectionHandlers,
     shallowReadonlyMap
   )
 }
@@ -162,7 +149,6 @@ function createReactiveObject(
   target: Target,
   isReadonly: boolean,
   baseHandlers: ProxyHandler<any>,
-  collectionHandlers: ProxyHandler<any>,
   proxyMap: WeakMap<Target, any>,
   getCompanion?: () => Target
 ) {
@@ -190,10 +176,7 @@ function createReactiveObject(
   if (targetType === TargetType.INVALID) {
     return target
   }
-  const proxy = new Proxy(
-    target,
-    targetType === TargetType.COLLECTION ? collectionHandlers : baseHandlers
-  )
+  const proxy = new Proxy(target, baseHandlers)
 
   companionMap.set(target, getCompanion)
   proxyMap.set(target, proxy)

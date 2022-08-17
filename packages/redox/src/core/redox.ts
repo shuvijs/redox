@@ -123,7 +123,6 @@ class RedoxImpl implements RedoxStore {
   }
 
   destroy() {
-    // todo: destroy all views
     this._hooks.map((hook) => hook.onDestroy?.())
     this._modelManger.clear()
     this._initialState = emptyObject
@@ -149,12 +148,9 @@ class RedoxImpl implements RedoxStore {
     const depends = model._depends
     if (depends) {
       for (const [name, dep] of Object.entries(depends)) {
+        // todo: lazy init
         const depInstance = this._getModelInstance(dep)
-        modelInstance.deps.set(name, depInstance)
-        // collection beDepends, a depends b, when b update, call a need trigger listener
-        depInstance.subscribe(() => {
-          modelInstance.triggerListener()
-        })
+        modelInstance.depend(name, depInstance)
       }
     }
 

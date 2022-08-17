@@ -20,7 +20,6 @@ let redoxStore: ReturnType<typeof redox>
 let batchManager: ReturnType<typeof createBatchManager>
 let useTestModel: IUseModel
 let useTestStaticModel: IUseStaticModel
-let container: HTMLDivElement
 
 beforeEach(() => {
   jest.useFakeTimers()
@@ -46,14 +45,9 @@ beforeEach(() => {
       [redoxStore, batchManager]
     )(model, selector, depends)
   }
-  container = document.createElement('div')
-  document.body.appendChild(container)
 })
 
-afterEach(() => {
-  document.body.removeChild(container)
-  ;(container as unknown as null) = null
-})
+afterEach(() => {})
 
 describe('createUseModel', () => {
   test('could access state an view', async () => {

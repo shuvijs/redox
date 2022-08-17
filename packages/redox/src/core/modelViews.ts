@@ -25,9 +25,9 @@ export function createSelector<IModel extends AnyModel, TReturn>(
   }
   res.clearCache = function () {
     view.effect.stop()
-    const index = instance.effects.indexOf(view.effect)
+    const index = instance.effectScope.effects.indexOf(view.effect)
     if (index >= 0) {
-      instance.effects.splice(index, 1)
+      instance.effectScope.effects.splice(index, 1)
     }
   }
   return res
