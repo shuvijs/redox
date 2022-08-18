@@ -19,6 +19,7 @@ export const createUseModel =
 
     const cacheFn = useMemo(
       function () {
+        selectorRef.current?.clearCache()
         if (!selector) {
           return (selectorRef.current = undefined)
         }
@@ -36,18 +37,9 @@ export const createUseModel =
       [redoxStore, batchManager, ...(depends ? depends : [selector])]
     )
 
-    useEffect(
-      function () {
-        return function () {
-          cacheFn?.clearCache()
-        }
-      },
-      [cacheFn]
-    )
-
     const initialValue = useMemo(
       function () {
-        return getStateActions(model, redoxStore, selectorRef.current)
+        return getStateActions(model, redoxStore, cacheFn)
       },
       [redoxStore, batchManager]
     )
@@ -65,7 +57,7 @@ export const createUseModel =
           batchManager.triggerSubscribe(model)
         }
       },
-      [batchManager, selectorRef.current]
+      [cacheFn]
     )
 
     useEffect(
@@ -82,7 +74,6 @@ export const createUseModel =
           setModelValue(newValue as any)
           lastValueRef.current = newValue
         }
-
         const fn = function () {
           const newValue = getStateActions(
             model,
@@ -97,13 +88,20 @@ export const createUseModel =
 
         const unSubscribe = batchManager.addSubscribe(model, redoxStore, fn)
 
-        return function () {
+        return () => {
           unSubscribe()
           isInit.current = false
         }
       },
       [redoxStore, batchManager]
     )
+
+    // unmount clear cache
+    useEffect(function () {
+      return function () {
+        selectorRef.current?.clearCache()
+      }
+    }, [])
 
     return modelValue
   }
@@ -124,6 +122,7 @@ export const createUseStaticModel =
 
     const cacheFn = useMemo(
       function () {
+        selectorRef.current?.clearCache()
         if (!selector) {
           return (selectorRef.current = undefined)
         }
@@ -133,15 +132,6 @@ export const createUseStaticModel =
         return selectorRef.current
       },
       [redoxStore, batchManager, ...(depends ? depends : [selector])]
-    )
-
-    useEffect(
-      function () {
-        return function () {
-          cacheFn?.clearCache()
-        }
-      },
-      [cacheFn]
     )
 
     const initialValue = useMemo(() => {
@@ -161,7 +151,7 @@ export const createUseStaticModel =
           batchManager.triggerSubscribe(model)
         }
       },
-      [batchManager, selectorRef.current]
+      [cacheFn]
     )
 
     useEffect(() => {
@@ -176,7 +166,6 @@ export const createUseStaticModel =
         stateRef.current = newValue[0]
         value.current = [stateRef, newValue[1]]
       }
-
       const fn = () => {
         const newValue = getStateActions(model, redoxStore, selectorRef.current)
         if (stateRef.current !== newValue[0]) {
@@ -191,6 +180,13 @@ export const createUseStaticModel =
         isInit.current = false
       }
     }, [redoxStore, batchManager])
+
+    // unmount clear cache
+    useEffect(function () {
+      return function () {
+        selectorRef.current?.clearCache()
+      }
+    }, [])
 
     return value.current
   }
