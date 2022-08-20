@@ -9,7 +9,7 @@ import {
   redox,
   AnyModel,
   Selector,
-  SelectorParams,
+  ModelSnapshot,
 } from '@shuvi/redox'
 import { createBatchManager } from '../src/batchManager'
 import { IUseModel, IUseStaticModel } from '../src/types'
@@ -22,6 +22,7 @@ let useTestModel: IUseModel
 let useTestStaticModel: IUseStaticModel
 
 beforeEach(() => {
+  process.env.NODE_ENV === 'development'
   jest.useFakeTimers()
   redoxStore = redox()
   batchManager = createBatchManager()
@@ -36,21 +37,19 @@ beforeEach(() => {
     )(model, selector, depends)
   }
   useTestStaticModel = <IModel extends AnyModel, S extends Selector<IModel>>(
-    model: IModel,
-    selector?: S,
-    depends?: any[]
+    model: IModel
   ) => {
     return useMemo(
       () => createUseStaticModel(redoxStore, batchManager),
       [redoxStore, batchManager]
-    )(model, selector, depends)
+    )(model)
   }
 })
 
 afterEach(() => {})
 
 describe('createUseModel', () => {
-  test('could access state an view', async () => {
+  test('could access state and view', async () => {
     const model = defineModel({
       name: 'model',
       state: { value: 1 },
@@ -338,7 +337,7 @@ describe('createUseModel', () => {
     describe('no dependencies params', () => {
       test('global selector', () => {
         const fn = jest.fn()
-        const countSelector = (s: SelectorParams<typeof countModel>) => {
+        const countSelector = (s: ModelSnapshot<typeof countModel>) => {
           fn()
           return s.count
         }
@@ -412,8 +411,8 @@ describe('createUseModel', () => {
             .querySelector('#count')
             ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
         })
-        expect(fn).toHaveBeenCalledTimes(3)
-        expect(container.querySelector('#count')!.textContent).toEqual('3')
+        expect(fn).toHaveBeenCalledTimes(4)
+        expect(container.querySelector('#count')!.textContent).toEqual('2')
       })
     })
 
@@ -650,7 +649,7 @@ describe('createUseModel', () => {
 })
 
 describe('createUseStaticModel', () => {
-  test('could access state an view', async () => {
+  test('could access state and view', async () => {
     const model = defineModel({
       name: 'model',
       state: { value: 1 },
@@ -727,5 +726,23 @@ describe('createUseStaticModel', () => {
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(currentCount).toBe(2)
+  })
+
+  test('should render with newest state even update state during render', async () => {
+    let firstRender = true
+    const App = () => {
+      const [state, actions] = useTestStaticModel(countModel)
+
+      if (firstRender) {
+        firstRender = false
+        actions.add(1)
+      }
+
+      return <div id="value">{state.current.value}</div>
+    }
+
+    const { container } = render(<App />)
+
+    expect(container.querySelector('#value')!.textContent).toEqual('2')
   })
 })

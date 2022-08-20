@@ -11,21 +11,35 @@ export interface View<T = any> {
 
 export type ViewGetter<T> = (...args: any[]) => T
 
+export type onViewInvalidate = (fn: () => void) => () => void
+
 export class ViewImpl<T> {
-  private _value!: T
-
-  private _dirty = true
-
   public readonly effect: ReactiveEffect<T>
 
   public readonly [ReactiveFlags.IS_READONLY]: boolean = true
 
-  public _cacheable: boolean
+  private _value!: T
 
-  constructor(getter: ViewGetter<T>, disableCache: boolean) {
+  private _cacheable: boolean
+
+  private _dirty = true
+
+  constructor(
+    getter: ViewGetter<T>,
+    onInvalidate?: onViewInvalidate,
+    disableCache?: boolean
+  ) {
     this.effect = new ReactiveEffect(getter)
     this.effect.view = this
     this.effect.active = this._cacheable = !disableCache
+    if (onInvalidate) {
+      const unSubscribe = onInvalidate(() => {
+        this._dirty = true
+      })
+      this.effect.onStop = () => {
+        unSubscribe()
+      }
+    }
   }
 
   get value() {
@@ -36,7 +50,7 @@ export class ViewImpl<T> {
     } else {
       // validate cache
       if (self._dirty || !self._validateCache()) {
-        this._dirty = false
+        self._dirty = false
         self._value = self.effect.run()!
       }
     }
@@ -92,10 +106,11 @@ export class ViewImpl<T> {
 
 export function view<T>(
   getter: ViewGetter<T>,
+  onInvalidate?: onViewInvalidate,
   disableCache: boolean = false,
   debugOptions?: DebuggerOptions
 ): View<T> {
-  const cRef = new ViewImpl<T>(getter, disableCache)
+  const cRef = new ViewImpl<T>(getter, onInvalidate, disableCache)
 
   if (process.env.NODE_ENV === 'development' && debugOptions && !disableCache) {
     cRef.effect.onTrack = debugOptions.onTrack
