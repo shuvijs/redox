@@ -75,13 +75,8 @@ const createContainer = function (options?: RedoxOptions) {
     )(model, selector, depends)
   }
 
-  const useStaticModel: IUseStaticModel = <
-    IModel extends AnyModel,
-    S extends Selector<IModel>
-  >(
-    model: IModel,
-    selector?: S,
-    depends?: any[]
+  const useStaticModel: IUseStaticModel = <IModel extends AnyModel>(
+    model: IModel
   ) => {
     const context = useContext(Context)
 
@@ -96,7 +91,7 @@ const createContainer = function (options?: RedoxOptions) {
     return useMemo(
       () => createUseStaticModel(redoxStore, batchManager),
       [redoxStore, batchManager]
-    )(model, selector, depends)
+    )(model)
   }
 
   return {

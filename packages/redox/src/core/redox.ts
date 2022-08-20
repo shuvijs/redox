@@ -1,12 +1,6 @@
 import { State, Action } from './modelOptions'
 import { AnyModel } from './defineModel'
-import {
-  createModelInstnace,
-  Model,
-  ModelInternal,
-  Store,
-  UnSubscribe,
-} from './model'
+import { createModelInstnace, ModelInternal, Store, UnSubscribe } from './model'
 import { ModelPublicInstance } from './modelPublicInstance'
 import { emptyObject } from '../utils'
 
@@ -25,7 +19,7 @@ export const proxyMethods = [
 
 export type ProxyMethods = typeof proxyMethods[number]
 
-type InternalModelProxy = Pick<Model<AnyModel>, ProxyMethods>
+type InternalModelProxy = Pick<ModelInternal<AnyModel>, ProxyMethods>
 
 export interface RedoxStore extends Omit<Store, 'subscribe'> {
   getModel<IModel extends AnyModel>(model: IModel): ModelPublicInstance<IModel>

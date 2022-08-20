@@ -1,24 +1,29 @@
 import { hasOwn, extend } from '../utils'
 import { warn } from '../warning'
-import { PublicPropertiesMap, ProxyContext, AccessContext } from './model'
+import {
+  PublicPropertiesMap,
+  ProxyContext,
+  AccessContext,
+  onViewInvalidate,
+} from './model'
 import { AnyModel } from './defineModel'
-import { State, StateObject, Actions, Views } from './modelOptions'
-import { createSelector, Selector } from './modelViews'
+import { State, Actions, Views } from './modelOptions'
+import { createView, Selector, ModelView, ModelSnapshot } from './modelViews'
 
-export type ModelPublicInstance<Model extends AnyModel> = {
-  $state: Model['state']
-  $set: (state: State) => void
-  $modify: (modifier: (state: Model['state']) => void) => void
-  $patch: (partState: StateObject) => void
-
-  $actions: Actions<Model>
-  $views: Views<Model['views']>
-
+export type ModelPublicInstance<IModel extends AnyModel> = {
+  $state: IModel['state']
+  $set(newState: State): void
+  $patch(newState: State): void
+  $modify(fn: (state: IModel['state']) => void): void
+  $actions: Actions<IModel>
+  $views: Views<IModel['views']>
+  $getSnapshot(): ModelSnapshot<IModel>
   $createSelector: <R>(
-    selector: Selector<Model, R>
-  ) => (() => R) & { clearCache: () => void }
-} & Views<Model['views']> &
-  Actions<Model>
+    selector: Selector<IModel, R>,
+    onInvalidate?: onViewInvalidate
+  ) => ModelView<Selector<IModel, R>>
+} & Views<IModel['views']> &
+  Actions<IModel>
 
 const enum AccessTypes {
   STATE,
@@ -34,12 +39,13 @@ export const publicPropertiesMap: PublicPropertiesMap =
     (Object.create(null),
     {
       $state: (i) => i.stateWrapper.value,
-      $set: (i) => i.$set.bind(i),
-      $patch: (i) => i.$patch.bind(i),
-      $modify: (i) => i.$modify.bind(i),
+      $set: (i) => i.set,
+      $patch: (i) => i.patch,
+      $modify: (i) => i.modify,
       $actions: (i) => i.actions,
       $views: (i) => i.views,
-      $createSelector: (i) => createSelector.bind(null, i),
+      $getSnapshot: (i) => i.getSnapshot,
+      $createSelector: (i) => createView.bind(null, i),
     } as PublicPropertiesMap)
   )
 
@@ -55,8 +61,6 @@ export const PublicInstanceProxyHandlers = {
       state,
     } = instance
 
-    // console.log('111', key, hasOwn(views, key))
-    // console.log('222', views[key])
     if (key[0] !== '$') {
       const n = accessCache[key]
       if (n !== undefined) {

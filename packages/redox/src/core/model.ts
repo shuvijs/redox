@@ -8,6 +8,7 @@ import {
   View,
   effectScope,
   EffectScope,
+  onViewInvalidate,
 } from '../reactivity'
 import {
   Deps,
@@ -24,6 +25,8 @@ import {
   PublicInstanceProxyHandlers,
 } from './modelPublicInstance'
 
+export { onViewInvalidate }
+
 setAutoFreeze(false)
 
 const randomString = () =>
@@ -36,12 +39,6 @@ const ActionTypes = {
   PATCH: '@@redox/PATCH',
 }
 
-export interface HelperActions {
-  $set(newState: State): void
-  $patch(newState: State): void
-  $modify(fn: (state: State) => void): void
-}
-
 export type UnSubscribe = () => void
 
 export interface Store {
@@ -52,13 +49,6 @@ export interface Store {
 }
 
 export type Dispatch = Store['dispatch']
-
-export type Model<IModel extends AnyModel = AnyModel> = {
-  readonly name: string
-  readonly options: Readonly<IModel>
-  reducer: Reducer<IModel['state']>
-} & Store &
-  HelperActions
 
 export type PublicPropertiesMap = Record<string, (i: ModelInternal) => any>
 
@@ -82,9 +72,7 @@ export const enum AccessContext {
   VIEW,
 }
 
-export class ModelInternal<IModel extends AnyModel = AnyModel>
-  implements Model<IModel>
-{
+export class ModelInternal<IModel extends AnyModel = AnyModel> {
   name: string
   options: IModel
   reducer: Reducer<IModel['state']>
@@ -113,11 +101,18 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
   }
   effectScope: EffectScope
 
+  private _snapshot: State | null
   private _currentState: IModel['state']
   private _listeners: Set<() => void> = new Set()
   private _isDispatching: boolean
 
   constructor(model: IModel, initState: State) {
+    this.set = this.set.bind(this)
+    this.patch = this.patch.bind(this)
+    this.modify = this.modify.bind(this)
+    this.getSnapshot = this.getSnapshot.bind(this)
+    this.subscribe = this.subscribe.bind(this)
+
     this.options = model
     this.name = this.options.name || ''
     this.reducer = createModelReducer(model)
@@ -148,7 +143,7 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
     this.dispatch({ type: ActionTypes.INIT })
   }
 
-  $set(newState: State) {
+  set(newState: State) {
     invariant(
       typeof newState !== 'bigint' && typeof newState !== 'symbol',
       "'BigInt' and 'Symbol' are not assignable to the State"
@@ -160,7 +155,7 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
     })
   }
 
-  $patch(partState: StateObject) {
+  patch(partState: StateObject) {
     this.dispatch({
       type: ActionTypes.PATCH,
       payload: function patch(state: State) {
@@ -185,7 +180,7 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
     })
   }
 
-  $modify(modifier: (state: State) => void) {
+  modify(modifier: (state: State) => void) {
     this.dispatch({
       type: ActionTypes.MODIFY,
       payload: function modify(state: State) {
@@ -196,6 +191,18 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
 
   getState() {
     return this.state
+  }
+
+  getSnapshot() {
+    if (this._snapshot === null) {
+      this._snapshot = {
+        $state: this._currentState,
+        ...this.state,
+        ...this.views,
+      }
+    }
+
+    return this._snapshot
   }
 
   dispatch(action: Action) {
@@ -265,7 +272,7 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
     }
   }
 
-  createView(viewFn: () => any) {
+  createView(viewFn: () => any, onInvalidate?: onViewInvalidate) {
     let view: View
     this.effectScope.run(() => {
       view = reactiveView(() => {
@@ -276,13 +283,14 @@ export class ModelInternal<IModel extends AnyModel = AnyModel>
         } finally {
           this.accessContext = oldCtx
         }
-      })
+      }, onInvalidate)
     })
 
     return view!
   }
 
   private _afterStateUpdate() {
+    this._snapshot = null
     if (isPlainObject(this._currentState)) {
       this.state = readonly(
         reactive({ ...this._currentState }, () => this._currentState)
