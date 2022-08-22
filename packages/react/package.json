@@ -1,9 +1,20 @@
 {
   "name": "@shuvi/redox-react",
   "version": "0.0.2",
-  "sideEffects": false,
   "description": "Rematch core with react hooks",
-  "homepage": "https://rematchjs.org",
+  "homepage": "https://shuvijs.github.io/shuvijs.org",
+  "keywords": [
+    "@shuvi/redox",
+    "redox",
+    "react",
+    "redux"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shuvijs/redox.git"
+  },
+  "sideEffects": false,
   "main": "lib/index.js",
   "module": "esm/index.js",
   "browser": "esm/index.js",
@@ -33,6 +44,7 @@
     "@testing-library/react": "^13.3.0",
     "@types/react": "^18.0.5",
     "@types/react-dom": "^18.0.5",
+    "@types/use-sync-external-store": "0.0.3",
     "dts-cli": "^1.5.1",
     "react": "18.1.0",
     "react-dom": "18.1.0"
@@ -42,15 +54,7 @@
     "react": ">=16.8",
     "react-dom": ">=16.8"
   },
-  "keywords": [
-    "@shuvi/redox",
-    "redox",
-    "react",
-    "redux"
-  ],
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/shuvijs/redox.git"
+  "dependencies": {
+    "use-sync-external-store": "1.2.0"
   }
 }

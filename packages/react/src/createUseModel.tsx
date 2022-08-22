@@ -1,7 +1,105 @@
-import { useEffect, useState, useMemo, useRef } from 'react'
-import type { RedoxStore, AnyModel, Selector } from '@shuvi/redox'
+import { useDebugValue, useMemo, useRef } from 'react'
+import {
+  RedoxStore,
+  AnyModel,
+  Selector,
+  ModelView,
+  ModelPublicInstance,
+  hasOwn,
+} from '@shuvi/redox'
+import { useSyncExternalStore } from 'use-sync-external-store/shim'
 import { createBatchManager } from './batchManager'
-import { getStateActions } from './getStateActions'
+
+function readonlyModel(model: ModelPublicInstance<AnyModel>) {
+  return new Proxy(model, {
+    get(target: ModelPublicInstance<AnyModel>, key: string | symbol): any {
+      if (key === '$state') {
+        return target.$state
+      } else if (hasOwn(target.$state, key)) {
+        return target.$state[key]
+      } else if (hasOwn(target.$views, key)) {
+        return target.$views[key]
+      }
+
+      return undefined
+    },
+    set() {
+      console.warn(`try to change state which is not allowed!`)
+      return false
+    },
+  })
+}
+
+function useModel<IModel extends AnyModel, S extends Selector<IModel>>(
+  redoxStore: RedoxStore,
+  batchManager: ReturnType<typeof createBatchManager>,
+  model: IModel
+) {
+  const { modelInstance, subscribe } = useMemo(
+    () => {
+      return {
+        modelInstance: redoxStore.getModel(model),
+        subscribe: (onModelChange: () => void) =>
+          batchManager.addSubscribe(model, redoxStore, onModelChange),
+      }
+    },
+    // ignore model's change
+    [redoxStore]
+  )
+
+  const view = useMemo(
+    () => () => modelInstance.$getSnapshot(),
+    [modelInstance]
+  )
+
+  const state = useSyncExternalStore<ReturnType<S>>(subscribe, view, view)
+
+  useDebugValue(state)
+
+  return [state, modelInstance.$actions] as [any, any]
+}
+
+function useModelWithSelector<
+  IModel extends AnyModel,
+  S extends Selector<IModel>
+>(
+  redoxStore: RedoxStore,
+  batchManager: ReturnType<typeof createBatchManager>,
+  model: IModel,
+  selector: S,
+  depends?: any[]
+) {
+  const { modelInstance, subscribe } = useMemo(
+    () => {
+      return {
+        modelInstance: redoxStore.getModel(model),
+        subscribe: (onModelChange: () => void) =>
+          batchManager.addSubscribe(model, redoxStore, onModelChange),
+      }
+    },
+    // ignore model's change
+    [redoxStore]
+  )
+  const selectorRef = useRef<undefined | ModelView>(undefined)
+
+  const view = useMemo(() => {
+    let preMv: ModelView | undefined = selectorRef.current
+    let mv: ModelView
+    if (preMv) {
+      preMv.destory()
+    }
+
+    mv = selectorRef.current = modelInstance.$createSelector(selector)
+
+    return mv
+  }, [modelInstance, ...(depends ? depends : [selector])])
+
+  const state = useSyncExternalStore<ReturnType<S>>(subscribe, view, view)
+
+  useDebugValue(state)
+
+  return [state, modelInstance.$actions] as [any, any]
+}
 
 export const createUseModel =
   (
@@ -13,195 +111,49 @@ export const createUseModel =
     selector?: S,
     depends?: any[]
   ) => {
-    const selectorRef = useRef<
-      undefined | ((() => ReturnType<S>) & { clearCache: () => void })
-    >(undefined)
+    const hasSelector = useRef(selector)
 
-    const cacheFn = useMemo(
-      function () {
-        if (!selector) {
-          return (selectorRef.current = undefined)
-        }
-        selectorRef.current = redoxStore
-          .getModel(model)
-          .$createSelector(selector)
-        return selectorRef.current
-      },
-      /**
-       * think about below case
-       */
-      // useModel(model, selector) => useCallback(selector)
-      // useModel(model, selector, []) => useCallback(selector, [])
-      // useModel(model, selector, [a,b]) => useCallback(selector, [a,b])
-      [redoxStore, batchManager, ...(depends ? depends : [selector])]
-    )
-
-    useEffect(
-      function () {
-        return function () {
-          cacheFn?.clearCache()
-        }
-      },
-      [cacheFn]
-    )
-
-    const initialValue = useMemo(
-      function () {
-        return getStateActions(model, redoxStore, selectorRef.current)
-      },
-      [redoxStore, batchManager]
-    )
-
-    const [modelValue, setModelValue] = useState(initialValue)
-
-    const lastValueRef = useRef<any>(initialValue)
-
-    const isInit = useRef<boolean>(false)
-
-    useEffect(
-      function () {
-        // useEffect is async, there's maybe some async update state before store subscribe
-        // check state and actions once, need update if it changed
-        isInit.current = true
-        const newValue = getStateActions(model, redoxStore, selectorRef.current)
-        if (
-          // selector maybe return new object each time, compare value with shadowEqual
-          lastValueRef.current[0] !== newValue[0] ||
-          lastValueRef.current[1] !== newValue[1]
-        ) {
-          setModelValue(newValue as any)
-          lastValueRef.current = newValue
-        }
-        return function () {
-          isInit.current = false
-        }
-      },
-      [redoxStore, batchManager]
-    )
-
-    useEffect(
-      function () {
-        const fn = function () {
-          const newValue = getStateActions(
-            model,
-            redoxStore,
-            selectorRef.current
-          )
-          if (lastValueRef.current[0] !== newValue[0]) {
-            setModelValue(newValue as any)
-            lastValueRef.current = newValue
-          }
-        }
-
-        const unSubscribe = batchManager.addSubscribe(model, redoxStore, fn)
-
-        return () => {
-          unSubscribe()
-        }
-      },
-      [redoxStore, batchManager]
-    )
-
-    // selector change, need updated once
-    useEffect(
-      function () {
-        if (isInit.current) {
-          batchManager.triggerSubscribe(model)
-        }
-      },
-      [batchManager, selectorRef.current]
-    )
-
-    return modelValue
+    // todo: warn when hasSelector changes
+    if (hasSelector.current) {
+      return useModelWithSelector(
+        redoxStore,
+        batchManager,
+        model,
+        selector!,
+        depends
+      )
+    } else {
+      return useModel(redoxStore, batchManager, model)
+    }
   }
 
 export const createUseStaticModel =
   (
     redoxStore: RedoxStore,
-    batchManager: ReturnType<typeof createBatchManager>
+    _batchManager: ReturnType<typeof createBatchManager>
   ) =>
-  <IModel extends AnyModel, S extends Selector<IModel>>(
-    model: IModel,
-    selector?: S,
-    depends?: any[]
-  ) => {
-    const selectorRef = useRef<
-      undefined | ((() => ReturnType<S>) & { clearCache: () => void })
-    >(undefined)
-
-    const cacheFn = useMemo(
-      function () {
-        if (!selector) {
-          return (selectorRef.current = undefined)
-        }
-        selectorRef.current = redoxStore
-          .getModel(model)
-          .$createSelector(selector)
-        return selectorRef.current
-      },
-      [redoxStore, batchManager, ...(depends ? depends : [selector])]
+  <IModel extends AnyModel>(model: IModel) => {
+    const modelInstance = useMemo(
+      () => redoxStore.getModel(model),
+      // ignore model's change
+      [redoxStore]
     )
+    const value = useRef<any>()
 
-    useEffect(
-      function () {
-        return function () {
-          cacheFn?.clearCache()
-        }
-      },
-      [cacheFn]
-    )
-
-    const initialValue = useMemo(() => {
-      return getStateActions(model, redoxStore, selectorRef.current)
-    }, [redoxStore, batchManager])
-
-    const stateRef = useRef<any>(initialValue[0])
-
-    const value = useRef<[any, any]>([stateRef, initialValue[1]])
-
-    const isInit = useRef<boolean>(false)
-
-    useEffect(() => {
-      // useEffect is async, there's maybe some async update state before store subscribe
-      // check state and actions once, need update if it changed
-      isInit.current = true
-      const newValue = getStateActions(model, redoxStore, selectorRef.current)
-      if (
-        stateRef.current !== newValue[0] ||
-        value.current[1] !== newValue[1]
-      ) {
-        stateRef.current = newValue[0]
-        value.current = [stateRef, newValue[1]]
+    // only run this once against a model
+    const stateRef = useMemo(() => {
+      return {
+        get current() {
+          if (process.env.NODE_ENV === 'development') {
+            return readonlyModel(modelInstance)
+          } else {
+            return modelInstance
+          }
+        },
       }
-      return () => {
-        isInit.current = false
-      }
-    }, [redoxStore, batchManager])
+    }, [modelInstance])
 
-    useEffect(() => {
-      const fn = () => {
-        const newValue = getStateActions(model, redoxStore, selectorRef.current)
-        if (stateRef.current !== newValue[0]) {
-          stateRef.current = newValue[0]
-        }
-      }
+    value.current = stateRef
 
-      const unSubscribe = batchManager.addSubscribe(model, redoxStore, fn)
-
-      return () => {
-        unSubscribe()
-      }
-    }, [redoxStore, batchManager])
-
-    // selector change, need updated once
-    useEffect(
-      function () {
-        if (isInit.current) {
-          batchManager.triggerSubscribe(model)
-        }
-      },
-      [batchManager, selectorRef.current]
-    )
-
-    return value.current
+    return [value.current, modelInstance.$actions] as [any, any]
   }

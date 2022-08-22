@@ -162,14 +162,19 @@ importers:
       '@testing-library/react': ^13.3.0
       '@types/react': ^18.0.5
       '@types/react-dom': ^18.0.5
+      '@types/use-sync-external-store': 0.0.3
       dts-cli: ^1.5.1
       react: 18.1.0
       react-dom: 18.1.0
+      use-sync-external-store: 1.2.0
+    dependencies:
+      use-sync-external-store: 1.2.0_react@18.1.0
     devDependencies:
       '@shuvi/redox': link:../redox
       '@testing-library/react': 13.3.0_ef5jwxihqo6n7gxfmzogljlgcm
       '@types/react': 18.0.14
       '@types/react-dom': 18.0.5
+      '@types/use-sync-external-store': 0.0.3
       dts-cli: 1.5.1_ne2pw6sj4oqsxoym2tnqxm4ig4
       react: 18.1.0
       react-dom: 18.1.0_react@18.1.0
@@ -5184,6 +5189,10 @@ packages:
   /@types/trusted-types/2.0.2:
     resolution: {integrity: sha512-F5DIZ36YVLE+PN+Zwws4kJogq47hNgX3Nx6WyDJ3kcplxyke3XIzB8uK5n/Lpm1HBsbGzd6nmGehL8cPekP+Tg==}
     dev: false
+
+  /@types/use-sync-external-store/0.0.3:
+    resolution: {integrity: sha512-EwmlvuaxPNej9+T4v5AuBPJa2x2UOJVdjCtDHgcDqitUeOtjnJKJ+apYjVcAoBEMjKW1VVFGZLUb5+qqa09XFA==}
+    dev: true
 
   /@types/ws/8.5.3:
     resolution: {integrity: sha512-6YOoWjruKj1uLf3INHH7D3qTXwFfEsg1kf3c0uDdSBJwfa/llkwIjrAGV7j7mVgGNbzTQ3HiHKKDXl6bJPD97w==}
@@ -21635,6 +21644,14 @@ packages:
     dependencies:
       punycode: 1.3.2
       querystring: 0.2.0
+    dev: false
+
+  /use-sync-external-store/1.2.0_react@18.1.0:
+    resolution: {integrity: sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      react: 18.1.0
     dev: false
 
   /use/3.1.1:

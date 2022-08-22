@@ -2,14 +2,14 @@ import {
   AnyModel,
   Selector,
   ModelPublicInstance,
-  SelectorParams,
+  ModelSnapshot,
 } from '@shuvi/redox'
 
 type IActions<IModel extends AnyModel> = ModelPublicInstance<IModel>['$actions']
 
 export interface IUseModel {
   <IModel extends AnyModel>(model: IModel): [
-    SelectorParams<IModel>,
+    ModelSnapshot<IModel>,
     IActions<IModel>
   ]
 
@@ -22,13 +22,7 @@ export interface IUseModel {
 
 export interface IUseStaticModel {
   <IModel extends AnyModel>(model: IModel): [
-    { current: SelectorParams<IModel> },
+    { current: ModelSnapshot<IModel> },
     IActions<IModel>
   ]
-
-  <IModel extends AnyModel, S extends Selector<IModel>>(
-    model: IModel,
-    selectors: S,
-    depends?: any[]
-  ): [{ current: ReturnType<S> }, IActions<IModel>]
 }

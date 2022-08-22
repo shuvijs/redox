@@ -5,7 +5,8 @@ import {
   ModelPublicInstance,
   Action,
   Selector,
-  SelectorParams,
+  ModelSnapshot,
+  ModelView,
   AnyModel,
   RedoxStore,
   Plugin,
@@ -35,7 +36,9 @@ export {
   AnyModel,
   Action,
   Selector,
-  SelectorParams,
+  ModelSnapshot,
+  ModelView,
 }
 
 export * from './types'
+export * from './utils'
