@@ -292,13 +292,12 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
   private _afterStateUpdate() {
     this._snapshot = null
     if (isPlainObject(this._currentState)) {
-      this.state = readonly(
-        reactive({ ...this._currentState }, () => this._currentState)
-      )
+      this.state = reactive({ ...this._currentState }, () => this._currentState)
     } else {
       this.state = this._currentState
     }
 
+    // state ref should be readonly
     this.stateWrapper = readonly(
       reactive(() => ({
         value: this._currentState,

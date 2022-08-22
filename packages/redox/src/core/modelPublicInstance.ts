@@ -22,7 +22,8 @@ export type ModelPublicInstance<IModel extends AnyModel> = {
     selector: Selector<IModel, R>,
     onInvalidate?: onViewInvalidate
   ) => ModelView<Selector<IModel, R>>
-} & Views<IModel['views']> &
+} & IModel['state'] &
+  Views<IModel['views']> &
   Actions<IModel>
 
 const enum AccessTypes {
