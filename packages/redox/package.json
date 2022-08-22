@@ -3,6 +3,19 @@
   "version": "0.0.2",
   "description": "A Redux Framework",
   "homepage": "https://shuvijs.github.io/shuvijs.org",
+  "keywords": [
+    "@shuvi/redox",
+    "redox",
+    "redux",
+    "state management",
+    "javascript",
+    "typescript"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shuvijs/redox.git"
+  },
   "sideEffects": false,
   "main": "lib/index.js",
   "module": "esm/index.js",
@@ -36,22 +49,5 @@
   },
   "devDependencies": {
     "dts-cli": "^1.5.1"
-  },
-  "authors": [],
-  "bugs": {
-    "url": "https://github.com/shuvijs/redox/issues"
-  },
-  "keywords": [
-    "@shuvi/redox",
-    "redox",
-    "redux",
-    "state management",
-    "javascript",
-    "typescript"
-  ],
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/shuvijs/redox.git"
   }
 }

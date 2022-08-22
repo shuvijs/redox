@@ -251,7 +251,6 @@ describe('redox', () => {
     })
     const depend = redoxStore.getModel(first)
     redoxStore.subscribe(first, () => {
-      console.log('dependCount: ', dependCount)
       dependCount++
     })
     const second = defineModel(

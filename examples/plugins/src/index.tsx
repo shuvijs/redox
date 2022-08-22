@@ -18,8 +18,6 @@ const redoxStore = redox({
         // whitelist: ['b'],
         blacklist: ['b'],
         migrate: function (storageState: any, version: number) {
-          console.log('migrate version: ', version)
-          console.log('migrate storageState: ', storageState)
           const count = storageState.count
           if (count && count.value >= 3) {
             count.value = 2

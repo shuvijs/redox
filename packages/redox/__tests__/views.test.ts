@@ -1,4 +1,4 @@
-import { defineModel, redox, SelectorParams } from '../src'
+import { defineModel, redox, ModelSnapshot } from '../src'
 
 let redoxStore: ReturnType<typeof redox>
 beforeEach(() => {
@@ -707,7 +707,7 @@ describe('createSelector', () => {
 
     const store = redoxStore.getModel(model)
 
-    const selector = function (stateAndViews: SelectorParams<typeof model>) {
+    const selector = function (stateAndViews: ModelSnapshot<typeof model>) {
       return stateAndViews
     }
 
@@ -741,7 +741,7 @@ describe('createSelector', () => {
       },
     })
 
-    const selector = function (stateAndViews: SelectorParams<typeof sample>) {
+    const selector = function (stateAndViews: ModelSnapshot<typeof sample>) {
       return stateAndViews.viewA
     }
 
@@ -776,7 +776,7 @@ describe('createSelector', () => {
       },
     })
 
-    const selector = function (stateAndViews: SelectorParams<typeof sample>) {
+    const selector = function (stateAndViews: ModelSnapshot<typeof sample>) {
       return {}
     }
 
@@ -803,7 +803,7 @@ describe('createSelector', () => {
       },
     })
 
-    const selector = function (stateAndViews: SelectorParams<typeof model>) {
+    const selector = function (stateAndViews: ModelSnapshot<typeof model>) {
       calltime++
       return stateAndViews.$state.foo
     }
@@ -844,7 +844,7 @@ describe('createSelector', () => {
       },
     })
 
-    const selector = function (stateAndViews: SelectorParams<typeof model>) {
+    const selector = function (stateAndViews: ModelSnapshot<typeof model>) {
       calltime++
       return stateAndViews.getFoo
     }
@@ -878,7 +878,7 @@ describe('createSelector', () => {
       })
 
       const selector = function (
-        stateAndViews: SelectorParams<typeof numberModel>
+        stateAndViews: ModelSnapshot<typeof numberModel>
       ) {
         numberOfCalls++
         return stateAndViews.$state
@@ -913,7 +913,7 @@ describe('createSelector', () => {
       })
 
       const selector = function (
-        stateAndViews: SelectorParams<typeof numberModel>
+        stateAndViews: ModelSnapshot<typeof numberModel>
       ) {
         numberOfCalls++
         return stateAndViews.$state
@@ -950,7 +950,7 @@ describe('createSelector', () => {
       })
 
       const selector = function (
-        stateAndViews: SelectorParams<typeof arrayModel>
+        stateAndViews: ModelSnapshot<typeof arrayModel>
       ) {
         numberOfCalls++
         return stateAndViews.$state[0]
@@ -991,7 +991,7 @@ describe('createSelector', () => {
       })
 
       const selector = function (
-        stateAndViews: SelectorParams<typeof arrayModel>
+        stateAndViews: ModelSnapshot<typeof arrayModel>
       ) {
         numberOfCalls++
         return stateAndViews.$state
