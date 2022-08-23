@@ -8,7 +8,7 @@ import { redoxStore } from './redoxStore'
 const rootElement = document.getElementById('root')
 const root = ReactDOM.createRoot(rootElement)
 root.render(
-  <RedoxRoot redoxStore={redoxStore}>
+  <RedoxRoot store={redoxStore}>
     <App />
   </RedoxRoot>
 )
