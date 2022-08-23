@@ -146,19 +146,19 @@ importers:
 
   packages/plugins/log:
     specifiers:
-      '@shuvi/redox': 0.0.4
+      '@shuvi/redox': 0.0.5
     devDependencies:
       '@shuvi/redox': link:../../redox
 
   packages/plugins/persist:
     specifiers:
-      '@shuvi/redox': 0.0.4
+      '@shuvi/redox': 0.0.5
     devDependencies:
       '@shuvi/redox': link:../../redox
 
   packages/react:
     specifiers:
-      '@shuvi/redox': 0.0.4
+      '@shuvi/redox': 0.0.5
       '@testing-library/react': ^13.3.0
       '@types/react': ^18.0.5
       '@types/react-dom': ^18.0.5
