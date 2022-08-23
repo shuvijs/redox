@@ -16,8 +16,8 @@ function Shared() {
       >
         toggleredoxStore {data}
       </button>
-      <LocalProviderA redoxStore={data ? redoxStore0 : redoxStore1}>
-        <LocalProviderB redoxStore={data ? redoxStore0 : redoxStore1}>
+      <LocalProviderA store={data ? redoxStore0 : redoxStore1}>
+        <LocalProviderB store={data ? redoxStore0 : redoxStore1}>
           <A></A>
           <B></B>
         </LocalProviderB>

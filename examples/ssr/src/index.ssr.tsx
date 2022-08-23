@@ -47,7 +47,7 @@ router.use(
 
     const [head, tail] = template.split('%ROOT%')
     let didError = false
-    const stream = renderToPipeableStream(<App redoxStore={redoxStore} />, {
+    const stream = renderToPipeableStream(<App store={redoxStore} />, {
       onShellReady() {
         // The content above all Suspense boundaries is ready.
         // If something errored before we started streaming, we set the error code appropriately.

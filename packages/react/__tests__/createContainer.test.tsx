@@ -267,8 +267,8 @@ describe('createContainer', () => {
     }
 
     const { container } = render(
-      <LocalProviderA redoxStore={redoxStore}>
-        <LocalProviderB redoxStore={redoxStore}>
+      <LocalProviderA store={redoxStore}>
+        <LocalProviderB store={redoxStore}>
           <A></A>
           <B></B>
         </LocalProviderB>
@@ -316,7 +316,7 @@ describe('createContainer', () => {
             add
           </button>
           {toggle ? (
-            <LocalProvider redoxStore={redoxStore}>
+            <LocalProvider store={redoxStore}>
               <SubApp />
             </LocalProvider>
           ) : null}
@@ -367,7 +367,7 @@ describe('createContainer', () => {
           <button id="toggle" type="button" onClick={() => setToggle(!toggle)}>
             toggle
           </button>
-          <LocalProvider redoxStore={toggle ? redoxStore0 : redoxStore1}>
+          <LocalProvider store={toggle ? redoxStore0 : redoxStore1}>
             <SubApp />
           </LocalProvider>
         </>
@@ -446,7 +446,7 @@ describe('createContainer/RedoxRoot', () => {
     })
 
     const { container } = render(
-      <RedoxRoot redoxStore={redoxStore}>
+      <RedoxRoot store={redoxStore}>
         <App />
       </RedoxRoot>
     )
