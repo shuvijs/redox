@@ -18,14 +18,14 @@ const createContainer = function (options?: RedoxOptions) {
     redoxStore: RedoxStore
     batchManager: ReturnType<typeof createBatchManager>
   }>(null as any)
-  function Provider(props: PropsWithChildren<{ redoxStore?: RedoxStore }>) {
-    const { children, redoxStore: propsRedoxStore } = props
+  function Provider(props: PropsWithChildren<{ store?: RedoxStore }>) {
+    const { children, store: propsStore } = props
 
     const memoContext = useMemo(
       function () {
         let redoxStore: RedoxStore
-        if (propsRedoxStore) {
-          redoxStore = propsRedoxStore
+        if (propsStore) {
+          redoxStore = propsStore
         } else {
           redoxStore = redox(options)
         }
@@ -36,7 +36,7 @@ const createContainer = function (options?: RedoxOptions) {
           batchManager,
         }
       },
-      [propsRedoxStore]
+      [propsStore]
     )
 
     const [contextValue, setContextValue] = useState(memoContext) // for hmr keep contextValue
@@ -45,7 +45,7 @@ const createContainer = function (options?: RedoxOptions) {
       function () {
         setContextValue(memoContext)
       },
-      [propsRedoxStore]
+      [propsStore]
     )
 
     return <Context.Provider value={contextValue}>{children}</Context.Provider>

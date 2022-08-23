@@ -1,11 +1,11 @@
 import * as React from 'react'
-import { ISelectorParams } from '@shuvi/redox'
+import { ModelSnapshot } from '@shuvi/redox'
 import { useModel } from '@shuvi/redox-react'
 
 import { fetchA, fetchB } from '../models/fetchData'
 
-export type fetchASelectorParams = ISelectorParams<typeof fetchA>
-export type fetchBSelectorParams = ISelectorParams<typeof fetchB>
+export type fetchASelectorParams = ModelSnapshot<typeof fetchA>
+export type fetchBSelectorParams = ModelSnapshot<typeof fetchB>
 
 const fetchASelector = function (stateAndViews: fetchASelectorParams) {
   return {
