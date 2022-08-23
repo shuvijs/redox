@@ -1,6 +1,6 @@
 {
   "name": "@shuvi/redox-persist",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "A Redux Framework",
   "homepage": "https://shuvijs.github.io/shuvijs.org",
   "sideEffects": false,
@@ -31,7 +31,7 @@
   "dependencies": {
   },
 	"devDependencies": {
-    "@shuvi/redox": "0.0.2"
+    "@shuvi/redox": "0.0.4"
   },
   "authors": [],
   "bugs": {
