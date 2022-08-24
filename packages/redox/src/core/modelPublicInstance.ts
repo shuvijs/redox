@@ -108,6 +108,10 @@ export const PublicInstanceProxyHandlers = {
       accessCache[key] = AccessTypes.CONTEXT
       return ctx[key]
     }
+    // fallback to state, the key may not exist at first
+    else {
+      return state[key]
+    }
   },
   set({ _: instance }: ProxyContext, key: string, value: any): boolean {
     const { ctx, actions, views, accessContext } = instance
