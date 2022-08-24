@@ -141,24 +141,24 @@ importers:
       '@craco/craco': 6.4.3_5jme4ri3fmqyoymld5nudtzsgq
       '@shuvi/redox': link:../../packages/redox
       '@shuvi/redox-react': link:../../packages/react
-      react: 18.3.0-next-19e9a4c68-20220818
-      react-dom: 18.3.0-next-19e9a4c68-20220818_vrkd73j32azzolco4mwdrrvdoi
+      react: 18.3.0-next-9e67e7a31-20220823
+      react-dom: 18.3.0-next-9e67e7a31-20220823_gqofsi2s4iueppr43xzi3t67qu
 
   packages/plugins/log:
     specifiers:
-      '@shuvi/redox': 0.0.5
+      '@shuvi/redox': 0.0.6
     devDependencies:
       '@shuvi/redox': link:../../redox
 
   packages/plugins/persist:
     specifiers:
-      '@shuvi/redox': 0.0.5
+      '@shuvi/redox': 0.0.6
     devDependencies:
       '@shuvi/redox': link:../../redox
 
   packages/react:
     specifiers:
-      '@shuvi/redox': 0.0.5
+      '@shuvi/redox': 0.0.6
       '@testing-library/react': ^13.3.0
       '@types/react': ^18.0.5
       '@types/react-dom': ^18.0.5
@@ -7970,7 +7970,7 @@ packages:
       minipass-pipeline: 1.2.4
       mkdirp: 1.0.4
       p-map: 4.0.0
-      promise-inflight: 1.0.1
+      promise-inflight: 1.0.1_bluebird@3.7.2
       rimraf: 3.0.2
       ssri: 8.0.1
       tar: 6.1.11
@@ -11977,6 +11977,16 @@ packages:
       readable-stream: 2.3.7
     dev: false
 
+  /follow-redirects/1.15.1:
+    resolution: {integrity: sha512-yLAMQs+k0b2m7cVxpS1VKJVvoz7SS9Td1zss3XRwXj+ZDH00RJgnuLx7E44wx02kQLrdM3aOOy+FpzS7+8OizA==}
+    engines: {node: '>=4.0'}
+    peerDependencies:
+      debug: '*'
+    peerDependenciesMeta:
+      debug:
+        optional: true
+    dev: false
+
   /follow-redirects/1.15.1_debug@3.2.7:
     resolution: {integrity: sha512-yLAMQs+k0b2m7cVxpS1VKJVvoz7SS9Td1zss3XRwXj+ZDH00RJgnuLx7E44wx02kQLrdM3aOOy+FpzS7+8OizA==}
     engines: {node: '>=4.0'}
@@ -13004,7 +13014,7 @@ packages:
     engines: {node: '>=8.0.0'}
     dependencies:
       eventemitter3: 4.0.7
-      follow-redirects: 1.15.1_debug@3.2.7
+      follow-redirects: 1.15.1
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
@@ -19604,15 +19614,6 @@ packages:
     resolution: {integrity: sha512-7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA==}
     engines: {node: '>=0.4.0'}
 
-  /promise-inflight/1.0.1:
-    resolution: {integrity: sha512-6zWPyEOFaQBJYcGMHBKTKJ3u6TBsnMFOIZSa6ce1e/ZrrsOlnHRHbabMjLiBYKp+n44X9eUI6VUPaukCXHuG4g==}
-    peerDependencies:
-      bluebird: '*'
-    peerDependenciesMeta:
-      bluebird:
-        optional: true
-    dev: false
-
   /promise-inflight/1.0.1_bluebird@3.7.2:
     resolution: {integrity: sha512-6zWPyEOFaQBJYcGMHBKTKJ3u6TBsnMFOIZSa6ce1e/ZrrsOlnHRHbabMjLiBYKp+n44X9eUI6VUPaukCXHuG4g==}
     peerDependencies:
@@ -19978,14 +19979,14 @@ packages:
       scheduler: 0.22.0
     dev: true
 
-  /react-dom/18.3.0-next-19e9a4c68-20220818_vrkd73j32azzolco4mwdrrvdoi:
-    resolution: {integrity: sha512-LzNNVmgg4qj02kgoR8uu6xzgqqZ08Tdk3qHrdaDqgqjwK2VUlgPDPRBs4TBvNuSj9wcXWNZn6c25WqstKKBmGw==}
+  /react-dom/18.3.0-next-9e67e7a31-20220823_gqofsi2s4iueppr43xzi3t67qu:
+    resolution: {integrity: sha512-JRac3jXKwqd08l/7TBun66LlObEPx9Ou5XrO/RXkJOQTgCis5kGWBjxHPxNoYHTcF4mZeAFB65iEIbS7N8GttQ==}
     peerDependencies:
-      react: 18.3.0-next-19e9a4c68-20220818
+      react: 18.3.0-next-9e67e7a31-20220823
     dependencies:
       loose-envify: 1.4.0
-      react: 18.3.0-next-19e9a4c68-20220818
-      scheduler: 0.24.0-next-19e9a4c68-20220818
+      react: 18.3.0-next-9e67e7a31-20220823
+      scheduler: 0.24.0-next-9e67e7a31-20220823
     dev: false
 
   /react-error-overlay/5.1.6:
@@ -20388,8 +20389,8 @@ packages:
     dependencies:
       loose-envify: 1.4.0
 
-  /react/18.3.0-next-19e9a4c68-20220818:
-    resolution: {integrity: sha512-kx/HPR30s9MTCyCvz0bllYMkH4Lyqi/Zvyn0tERXByG4mnlWrM5bo1dbK2L3eNdPTk/T3ZKAsipIwn7LYoI+4Q==}
+  /react/18.3.0-next-9e67e7a31-20220823:
+    resolution: {integrity: sha512-6ItROfMHEH6Zx0JsOI0DhOd/iXpZo5o3DxULqAiHMaJoeizZep4o6lgDeqigXGZHySyd3TA9Yymrv/9LDKbPwQ==}
     engines: {node: '>=0.10.0'}
     dependencies:
       loose-envify: 1.4.0
@@ -21225,8 +21226,8 @@ packages:
       loose-envify: 1.4.0
     dev: true
 
-  /scheduler/0.24.0-next-19e9a4c68-20220818:
-    resolution: {integrity: sha512-VeBqq4Q4SsRoc7EgKeTTeFzpHFQBZCSk7N1xIcAY7ltn9nEVe1yojGFscVPwOsrVrqbsZjx9g+Y7HMeMVUeOEw==}
+  /scheduler/0.24.0-next-9e67e7a31-20220823:
+    resolution: {integrity: sha512-cor6y0g+hRtZHKXTxhL43B5e/SBuDt4XqZ4FkgU8Yjye56OaIq+7tzZw2J2JiUgmMW9SBtsWNLPvZOZAolUEPQ==}
     dependencies:
       loose-envify: 1.4.0
     dev: false
