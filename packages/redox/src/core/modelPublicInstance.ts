@@ -1,4 +1,4 @@
-import { hasOwn, extend } from '../utils'
+import { hasOwn, extend, isPlainObject } from '../utils'
 import { warn } from '../warning'
 import {
   PublicPropertiesMap,
@@ -109,7 +109,7 @@ export const PublicInstanceProxyHandlers = {
       return ctx[key]
     }
     // fallback to state, the key may not exist at first
-    else {
+    else if (isPlainObject(state)) {
       return state[key]
     }
   },
