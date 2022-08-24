@@ -110,6 +110,7 @@ export const PublicInstanceProxyHandlers = {
     }
     // fallback to state, the key may not exist at first
     else if (isPlainObject(state)) {
+      // @ts-ignore
       return state[key]
     }
   },
