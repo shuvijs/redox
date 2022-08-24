@@ -179,6 +179,9 @@ class RedoxImpl implements RedoxStore {
   }
 }
 
-export function redox({ initialState, plugins }: RedoxOptions): RedoxStore {
+export function redox({
+  initialState,
+  plugins,
+}: RedoxOptions = {}): RedoxStore {
   return new RedoxImpl(initialState, plugins)
 }

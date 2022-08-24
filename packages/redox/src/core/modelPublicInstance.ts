@@ -1,4 +1,4 @@
-import { hasOwn, extend } from '../utils'
+import { hasOwn, extend, isPlainObject } from '../utils'
 import { warn } from '../warning'
 import {
   PublicPropertiesMap,
@@ -107,6 +107,11 @@ export const PublicInstanceProxyHandlers = {
     } else if (hasOwn(ctx, key)) {
       accessCache[key] = AccessTypes.CONTEXT
       return ctx[key]
+    }
+    // fallback to state, the key may not exist at first
+    else if (isPlainObject(state)) {
+      // @ts-ignore
+      return state[key]
     }
   },
   set({ _: instance }: ProxyContext, key: string, value: any): boolean {
