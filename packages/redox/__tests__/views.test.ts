@@ -88,6 +88,27 @@ describe('defineModel/views', () => {
     expect(store.viewA).toBe(value)
   })
 
+  it('should support lazy property', () => {
+    redoxStore = redox()
+    interface IErrorState {
+      error?: string
+    }
+    const error = defineModel({
+      name: 'error',
+      state: {} as IErrorState,
+      views: {
+        hasError() {
+          return typeof this.error !== 'undefined'
+        },
+      },
+    })
+
+    const store = redoxStore.getModel(error)
+    expect(store.hasError).toBeFalsy()
+    store.$set({ error: 'e' })
+    expect(store.hasError).toBeTruthy()
+  })
+
   it('should always return same reference if no depends', () => {
     const sample = defineModel({
       name: 'sample',
