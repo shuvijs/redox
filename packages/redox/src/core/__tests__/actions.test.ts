@@ -1,4 +1,4 @@
-import { defineModel, redox } from '../src'
+import { defineModel, redox } from '../'
 
 let redoxStore: ReturnType<typeof redox>
 beforeEach(() => {
