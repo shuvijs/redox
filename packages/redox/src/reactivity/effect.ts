@@ -1,17 +1,23 @@
 import { TrackOpTypes, TriggerOpTypes } from './operations'
-import { extend } from '../utils'
+import { warn } from '../warning'
+import { extend, isObject } from '../utils'
 import { ViewImpl, View } from './view'
 import { EffectScope, recordEffectScope } from './effectScope'
 
 export declare const RawSymbol: unique symbol
 
 export interface AccessRecord {
-  type: TrackOpTypes
+  type: TrackOpTypes | TriggerOpTypes
   value: any
 }
 
-export type KeyAccessRecord = Map<unknown, AccessRecord>
-export type TargetMap = Map<any, KeyAccessRecord>
+export type KeyAccessNode = {
+  parent: any | null
+  record: Map<any, AccessRecord>
+  modified: boolean
+  target: any
+}
+export type TargetMap = Map<any, KeyAccessNode>
 
 export type EffectScheduler = (...args: any[]) => any
 
@@ -36,6 +42,10 @@ export const ITERATE_KEY = Symbol(
 export const MAP_KEY_ITERATE_KEY = Symbol(
   process.env.NODE_ENV === 'development' ? 'Map key iterate' : ''
 )
+
+export const NODE_ROOT = Symbol('root')
+
+export const NODE_DELETE = Symbol('delete')
 
 export class ReactiveEffect<T = any> {
   targetMap: TargetMap = new Map()
@@ -120,6 +130,9 @@ export class ReactiveEffect<T = any> {
 
 function cleanupEffect(effect: ReactiveEffect) {
   const { targetMap, views } = effect
+  for (const { record } of targetMap.values()) {
+    record.clear()
+  }
   targetMap.clear()
   views.clear()
 }
@@ -191,17 +204,43 @@ export function track(
   key: unknown,
   value: any
 ) {
+  // console.log(`track: `, { target, type, key, value })
   if (shouldTrack && activeEffect) {
     const debuggerEventExtraInfo: DebuggerEventExtraInfo | undefined =
       process.env.NODE_ENV === 'development' ? { target, type, key } : undefined
-    let recordsMap = activeEffect!.targetMap.get(target)
-    if (!recordsMap) {
-      activeEffect!.targetMap.set(target, (recordsMap = new Map()))
+    let parent = activeEffect!.targetMap.get(target)
+    if (!parent) {
+      activeEffect!.targetMap.set(
+        target,
+        (parent = {
+          parent: NODE_ROOT,
+          record: new Map(),
+          modified: false,
+          target: target,
+        })
+      )
     }
-    recordsMap.set(key, {
+    parent.record.set(key, {
       type,
       value,
     })
+    // process child
+    if (isObject(value)) {
+      let child = activeEffect!.targetMap.get(value)
+      if (!child) {
+        activeEffect!.targetMap.set(
+          value,
+          (child = {
+            parent,
+            record: new Map(),
+            modified: false,
+            target: value,
+          })
+        )
+      } else if (child.parent !== parent) {
+        child.parent = parent
+      }
+    }
     if (process.env.NODE_ENV === 'development' && activeEffect!.onTrack) {
       activeEffect!.onTrack({
         effect: activeEffect!,
@@ -225,5 +264,64 @@ export function trigger(
   oldValue?: unknown,
   oldTarget?: Map<unknown, unknown> | Set<unknown>
 ) {
-  // do nothing
+  if (shouldTrack && activeEffect) {
+    console.log('target: ', target)
+    console.log('type: ', type)
+    console.log('key: ', key)
+    console.log('newValue: ', newValue)
+    console.log('oldValue: ', oldValue)
+    console.log('oldTarget: ', oldTarget)
+    const targetMap = activeEffect!.targetMap
+    let modifiedTarget = targetMap.get(target)
+    if (!modifiedTarget) {
+      if (targetMap.size === 0) {
+        targetMap.set(
+          target,
+          (modifiedTarget = {
+            parent: NODE_ROOT,
+            record: new Map(),
+            modified: false,
+            target: target,
+          })
+        )
+      } else {
+        console.log('activeEffect!.targetMap1111: ', activeEffect!.targetMap)
+        warn(`should access target first`)
+        return
+      }
+    }
+    if (type === TriggerOpTypes.SET) {
+      if (isObject(newValue)) {
+        const newValueTarget = targetMap.get(newValue)
+        if (newValueTarget?.parent) {
+          newValueTarget.parent = modifiedTarget
+        }
+      }
+      if (isObject(oldValue)) {
+        const oldValueTarget = targetMap.get(oldValue)
+        if (oldValueTarget?.parent) {
+          oldValueTarget.parent = NODE_DELETE
+        }
+      }
+    }
+
+    if (type === TriggerOpTypes.DELETE) {
+      if (isObject(oldValue)) {
+        const oldValueTarget = targetMap.get(oldValue)
+        if (oldValueTarget?.parent) {
+          oldValueTarget.parent = NODE_DELETE
+        }
+      }
+    }
+    modifiedTarget.record.set(key, {
+      type,
+      value: newValue,
+    })
+    modifiedTarget.modified = true
+    let parent = modifiedTarget.parent
+    while (parent && parent.modified === false) {
+      parent.modified = true
+      parent = parent.parent
+    }
+  }
 }

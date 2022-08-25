@@ -85,7 +85,7 @@ export class ViewImpl<T> {
       }
 
       const compaion = toCompanion(target) || {}
-      for (let [key, { type, value }] of accessRecord.entries()) {
+      for (let [key, { type, value }] of accessRecord.record.entries()) {
         if (type === TrackOpTypes.HAS) {
           if (hasOwn(compaion, key as any) !== value) {
             return false
@@ -95,7 +95,7 @@ export class ViewImpl<T> {
         }
 
         if (isObject(value)) {
-          queue.push(accessRecord.get(value))
+          queue.push(accessRecord.record.get(value))
         }
       }
     }
