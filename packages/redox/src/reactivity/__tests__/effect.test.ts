@@ -22,7 +22,7 @@ describe('reactivity/effect', () => {
 
     expect(dummy).toBe(0)
     expect(dummy1).toBe(false)
-    const records = runner.effect.targetMap.get(object)
+    const records = runner.effect.targetMap.get(object)?.record
     expect(records).toBeDefined()
     expect(records!.get('num')).toEqual({
       type: TrackOpTypes.GET,
@@ -51,7 +51,7 @@ describe('reactivity/effect', () => {
 
     expect(dummy1).toBe(1)
     expect(dummy2).toBe(2)
-    const reactiveRecords = runner.effect.targetMap.get(store.state)
+    const reactiveRecords = runner.effect.targetMap.get(store.state)?.record
     expect(reactiveRecords).toBeDefined()
     expect(reactiveRecords!.get('num')).toEqual({
       type: TrackOpTypes.GET,

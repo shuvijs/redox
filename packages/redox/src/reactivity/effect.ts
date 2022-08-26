@@ -265,12 +265,12 @@ export function trigger(
   oldTarget?: Map<unknown, unknown> | Set<unknown>
 ) {
   if (shouldTrack && activeEffect) {
-    console.log('target: ', target)
-    console.log('type: ', type)
-    console.log('key: ', key)
-    console.log('newValue: ', newValue)
-    console.log('oldValue: ', oldValue)
-    console.log('oldTarget: ', oldTarget)
+    // console.log('target: ', target)
+    // console.log('type: ', type)
+    // console.log('key: ', key)
+    // console.log('newValue: ', newValue)
+    // console.log('oldValue: ', oldValue)
+    // console.log('oldTarget: ', oldTarget)
     const targetMap = activeEffect!.targetMap
     let modifiedTarget = targetMap.get(target)
     if (!modifiedTarget) {
@@ -313,10 +313,12 @@ export function trigger(
         }
       }
     }
-    modifiedTarget.record.set(key, {
-      type,
-      value: newValue,
-    })
+    if (type !== TriggerOpTypes.MODIFIED) {
+      modifiedTarget.record.set(key, {
+        type,
+        value: newValue,
+      })
+    }
     modifiedTarget.modified = true
     let parent = modifiedTarget.parent
     while (parent && parent.modified === false) {

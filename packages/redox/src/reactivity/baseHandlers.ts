@@ -79,8 +79,10 @@ function createArrayInstrumentations() {
   ;(['push', 'pop', 'shift', 'unshift', 'splice'] as const).forEach((key) => {
     instrumentations[key] = function (this: unknown[], ...args: unknown[]) {
       pauseTracking()
-      const res = (toRaw(this) as any)[key].apply(this, args)
+      const target = toRaw(this) as any
+      const res = target[key].apply(this, args)
       resetTracking()
+      trigger(target, TriggerOpTypes.MODIFIED, key, args, null)
       return res
     }
   })
@@ -207,12 +209,17 @@ function ownKeys(target: object): (string | symbol)[] {
   return Reflect.ownKeys(target)
 }
 
+function setPrototypeOf(_target: object, _v: object | null): boolean {
+  throw new Error(`not allow setPrototypeOf to set prototype`)
+}
+
 export const mutableHandlers: ProxyHandler<object> = {
   get,
   set,
   deleteProperty,
   has,
   ownKeys,
+  setPrototypeOf,
 }
 
 export const readonlyHandlers: ProxyHandler<object> = {

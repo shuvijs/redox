@@ -1,5 +1,6 @@
 import { warn } from '../warning'
 import {
+  isFunction,
   // hasChanged,
   isObject,
   // hasOwn
@@ -31,8 +32,11 @@ export class ProduceImpl<T extends {}> {
 
     const fn = function () {
       const draft = reactive(base)
+      if (!recipe) {
+        return base
+      }
       //@ts-ignore
-      return recipe.call(null, draft)
+      return recipe(draft)
     }
     this.effect = new ReactiveEffect(fn)
   }
@@ -40,13 +44,48 @@ export class ProduceImpl<T extends {}> {
   get value() {
     // the view may get wrapped by other proxies e.g. readonly() #3376
     const self = toRaw(this)
-    let value = self.effect.run()! as T
-    if (value) {
-      value = toRaw(value)
-    } else {
-      value = this._getDuplication()
+    let value: any
+    try {
+      value = self.effect.run()! as T
+      value = this._processResult(value)
+    } catch (error) {
+      console.log('error: ', error)
+      throw error
     }
+
+    // if (typeof Promise !== 'undefined' && value instanceof Promise) {
+    //   //@ts-ignore
+    //   return value.then(
+    //     (data) => {
+    //       self.effect.stop()
+    //       return this._processResult(data)
+    //     },
+    //     (e) => {
+    //       throw e
+    //     }
+    //   )
+    // }
     self.effect.stop()
+    return value
+  }
+
+  private _processResult(value: any) {
+    if (value === undefined) {
+      return this._getDuplication()
+    }
+    if (isObject(value) && value[ReactiveFlags.RAW]) {
+      value = toRaw(value)
+      if (value === this._base) {
+        return this._getDuplication()
+      }
+      return value
+    }
+
+    const rootNode = this.effect.targetMap.values().next().value
+    if (rootNode && rootNode.modified) {
+      throw new Error(`draft is modified and another object is returned`)
+    }
+
     return value
   }
 
@@ -58,7 +97,6 @@ export class ProduceImpl<T extends {}> {
 
   private _getDuplication(): T {
     const { targetMap } = this.effect
-    console.log('targetMap: ', targetMap)
     if (targetMap.size <= 0) {
       return this._base
     }
@@ -80,7 +118,9 @@ export class ProduceImpl<T extends {}> {
     if (!isObject(rootNode.target)) {
       return rootNode.target
     }
+    const cache = new WeakMap<any, any>()
     const rootDuplication = shallowCopy(rootNode.target)
+    cache.set(rootNode.target, rootDuplication)
     const queue: {
       parent: any
       key: string | symbol
@@ -101,7 +141,13 @@ export class ProduceImpl<T extends {}> {
       const queueItem = queue.pop()!
       const node = targetMap.get(queueItem.value)
       if (node?.modified) {
+        const cacheValue = cache.get(node.target)
+        if (cacheValue) {
+          queueItem.parent[queueItem.key] = cacheValue
+          continue
+        }
         const valueDuplication = shallowCopy(node.target)
+        cache.set(node.target, valueDuplication)
         queueItem.parent[queueItem.key] = valueDuplication
         Reflect.ownKeys(valueDuplication).forEach((key) => {
           const value = valueDuplication[key]
@@ -125,6 +171,12 @@ export function produce<T extends {}>(
   recipe: (draft: T) => any,
   debugOptions?: DebuggerOptions
 ) {
+  if (process.env.NODE_ENV === 'development') {
+    if (!isFunction(recipe)) {
+      warn(`recipe should be function, now is ${typeof recipe}`)
+    }
+  }
+
   const pRef = new ProduceImpl<T>(base, recipe)
 
   if (process.env.NODE_ENV === 'development' && debugOptions) {
