@@ -12,4 +12,5 @@ export const enum TriggerOpTypes {
   ADD = 'add',
   DELETE = 'delete',
   CLEAR = 'clear',
+  MODIFIED = 'modified',
 }
