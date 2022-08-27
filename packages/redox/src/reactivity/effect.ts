@@ -208,11 +208,11 @@ export function track(
   if (shouldTrack && activeEffect) {
     const debuggerEventExtraInfo: DebuggerEventExtraInfo | undefined =
       process.env.NODE_ENV === 'development' ? { target, type, key } : undefined
-    let parent = activeEffect!.targetMap.get(target)
-    if (!parent) {
+    let current = activeEffect!.targetMap.get(target)
+    if (!current) {
       activeEffect!.targetMap.set(
         target,
-        (parent = {
+        (current = {
           parent: NODE_ROOT,
           record: new Map(),
           modified: false,
@@ -220,7 +220,7 @@ export function track(
         })
       )
     }
-    parent.record.set(key, {
+    current.record.set(key, {
       type,
       value,
     })
@@ -231,14 +231,14 @@ export function track(
         activeEffect!.targetMap.set(
           value,
           (child = {
-            parent,
+            parent: current,
             record: new Map(),
             modified: false,
             target: value,
           })
         )
-      } else if (child.parent !== parent) {
-        child.parent = parent
+      } else if (child.parent !== current) {
+        child.parent = current
       }
     }
     if (process.env.NODE_ENV === 'development' && activeEffect!.onTrack) {
