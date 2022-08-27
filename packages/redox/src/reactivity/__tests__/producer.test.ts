@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { ReactiveFlags, toRaw } from '../reactive'
-import { shallowCopy, produce } from '../producer'
+import { ReactiveFlags, toRaw, reactive } from '../reactive'
+import { shallowCopy, produce as originProduce } from '../producer'
 import { isObject } from '../../utils'
 
 import cloneDeep from 'lodash.clonedeep'
@@ -27,6 +27,13 @@ const isProd = process.env.NODE_ENV === 'production'
 
 const useProxies = true
 const autoFreeze = false
+
+// const produce = function(base, recipe){
+//   const reactiveBase = reactive(base)
+//   return originProduce(reactiveBase, recipe)
+// }
+
+const produce = originProduce
 
 describe(`reactivity/producer`, () => {
   describe(`base functionality`, () => {
