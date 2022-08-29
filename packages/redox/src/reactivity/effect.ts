@@ -130,9 +130,6 @@ export class ReactiveEffect<T = any> {
 
 function cleanupEffect(effect: ReactiveEffect) {
   const { targetMap, views } = effect
-  for (const { record } of targetMap.values()) {
-    record.clear()
-  }
   targetMap.clear()
   views.clear()
 }
@@ -225,7 +222,7 @@ export function track(
       value,
     })
     // process child
-    if (isObject(value)) {
+    if (!activeEffect.view && isObject(value)) {
       let child = activeEffect!.targetMap.get(value)
       if (!child) {
         activeEffect!.targetMap.set(
@@ -285,33 +282,17 @@ export function trigger(
           })
         )
       } else {
-        console.log('activeEffect!.targetMap1111: ', activeEffect!.targetMap)
         warn(`should access target first`)
         return
       }
     }
     if (type === TriggerOpTypes.SET) {
-      if (isObject(newValue)) {
-        const newValueTarget = targetMap.get(newValue)
-        if (newValueTarget?.parent) {
-          newValueTarget.parent = modifiedTarget
-        }
-      }
-      if (isObject(oldValue)) {
-        const oldValueTarget = targetMap.get(oldValue)
-        if (oldValueTarget?.parent) {
-          oldValueTarget.parent = NODE_DELETE
-        }
-      }
+      setTargetParentValue(targetMap, newValue, modifiedTarget)
+      setTargetParentValue(targetMap, oldValue, NODE_DELETE)
     }
 
     if (type === TriggerOpTypes.DELETE) {
-      if (isObject(oldValue)) {
-        const oldValueTarget = targetMap.get(oldValue)
-        if (oldValueTarget?.parent) {
-          oldValueTarget.parent = NODE_DELETE
-        }
-      }
+      setTargetParentValue(targetMap, oldValue, NODE_DELETE)
     }
     if (type !== TriggerOpTypes.MODIFIED) {
       modifiedTarget.record.set(key, {
@@ -324,6 +305,15 @@ export function trigger(
     while (parent && parent.modified === false) {
       parent.modified = true
       parent = parent.parent
+    }
+  }
+}
+
+function setTargetParentValue(targetMap: TargetMap, target: any, value: any) {
+  if (isObject(target)) {
+    const currentTarget = targetMap.get(target)
+    if (currentTarget?.parent) {
+      currentTarget.parent = value
     }
   }
 }
