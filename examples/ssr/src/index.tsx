@@ -18,6 +18,6 @@ const container = document.getElementById('root')
 hydrateRoot(
   container!,
   <React.StrictMode>
-    <App redoxStore={redoxStore}></App>
+    <App store={redoxStore}></App>
   </React.StrictMode>
 )

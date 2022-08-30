@@ -4,8 +4,8 @@ import { useModel } from '@shuvi/redox-react'
 
 import { fetchA, fetchB } from '../models/fetchData'
 
-export type fetchAModelSnapshot = ModelSnapshot<typeof fetchA>
-export type fetchBModelSnapshot = ModelSnapshot<typeof fetchB>
+export type fetchASelectorParams = ModelSnapshot<typeof fetchA>
+export type fetchBSelectorParams = ModelSnapshot<typeof fetchB>
 
 const fetchASelector = function (stateAndViews: fetchAModelSnapshot) {
   return {

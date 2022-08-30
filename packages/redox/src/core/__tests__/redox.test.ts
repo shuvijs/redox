@@ -1,4 +1,4 @@
-import { defineModel, redox, Plugin } from '../src/index'
+import { defineModel, redox, Plugin } from '../'
 let redoxStore: ReturnType<typeof redox>
 
 describe('redox', () => {

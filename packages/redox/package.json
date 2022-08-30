@@ -1,6 +1,6 @@
 {
   "name": "@shuvi/redox",
-  "version": "0.0.2",
+  "version": "0.0.6",
   "description": "A Redux Framework",
   "homepage": "https://shuvijs.github.io/shuvijs.org",
   "keywords": [

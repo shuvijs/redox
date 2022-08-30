@@ -7,7 +7,7 @@ import Repeat from './components/Repeat'
 import type { RedoxStore } from '@shuvi/redox'
 import { RedoxRoot } from '@shuvi/redox-react'
 
-function App(props: { redoxStore?: RedoxStore }) {
+function App(props: { store?: RedoxStore }) {
   return (
     <>
       <RedoxRoot {...props}>
