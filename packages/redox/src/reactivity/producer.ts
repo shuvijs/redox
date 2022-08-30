@@ -31,9 +31,6 @@ export class ProduceImpl<T extends {}> {
 
     const fn = function () {
       const draft = reactive(base)
-      if (!recipe) {
-        return base
-      }
       //@ts-ignore
       return recipe.call(context, draft)
     }
@@ -156,10 +153,11 @@ export function produce<T extends {}>(this: any, base: any, recipe?: any): any {
     }
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    if (!isFunction(recipe)) {
+  if (!isFunction(recipe)) {
+    if (process.env.NODE_ENV === 'development') {
       warn(`recipe should be function, now is ${typeof recipe}`)
     }
+    return toRaw(base)
   }
   const context = this
 
