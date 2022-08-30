@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { ReactiveFlags, toRaw, reactive } from '../reactive'
-import { shallowCopy, produce as originProduce } from '../producer'
+import { shallowCopy, produce } from '../producer'
 import { isObject } from '../../utils'
 
 import cloneDeep from 'lodash.clonedeep'
@@ -27,13 +27,6 @@ const isProd = process.env.NODE_ENV === 'production'
 
 const useProxies = true
 const autoFreeze = false
-
-// const produce = function(base, recipe){
-//   const reactiveBase = reactive(base)
-//   return originProduce(reactiveBase, recipe)
-// }
-
-const produce = originProduce
 
 describe(`reactivity/producer`, () => {
   describe(`base functionality`, () => {
@@ -75,13 +68,13 @@ describe(`reactivity/producer`, () => {
     it('second argument should be a function', () => {
       const originNodeEnv = process.env.NODE_ENV
       process.env.NODE_ENV = 'development'
-      produce(baseState, undefined)
+      produce(reactive(baseState), undefined)
       expect(`recipe should be function`).toHaveBeenWarned()
       process.env.NODE_ENV = originNodeEnv
     })
 
     it('returns the original state when no changes are made', () => {
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         expect(s.aProp).toBe('hi')
         expect(s.anObject.nested).toMatchObject({ yummie: true })
       })
@@ -90,7 +83,7 @@ describe(`reactivity/producer`, () => {
 
     it('does structural sharing', () => {
       const random = Math.random()
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         s.aProp = random
       })
       expect(nextState).not.toBe(baseState)
@@ -99,7 +92,7 @@ describe(`reactivity/producer`, () => {
     })
 
     it('deep change bubbles up', () => {
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         s.anObject.nested.yummie = false
       })
       expect(nextState).not.toBe(baseState)
@@ -110,7 +103,7 @@ describe(`reactivity/producer`, () => {
     })
 
     it('can add props', () => {
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         s.anObject.cookie = { tasty: true }
       })
       expect(nextState).not.toBe(baseState)
@@ -120,7 +113,7 @@ describe(`reactivity/producer`, () => {
     })
 
     it('can delete props', () => {
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         delete s.anObject.nested
       })
       expect(nextState).not.toBe(baseState)
@@ -130,7 +123,7 @@ describe(`reactivity/producer`, () => {
 
     // Found by: https://github.com/mweststrate/immer/pull/267
     it('can delete props added in the producer', () => {
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         s.anObject.test = true
         delete s.anObject.test
       })
@@ -146,7 +139,7 @@ describe(`reactivity/producer`, () => {
     // Found by: https://github.com/mweststrate/immer/issues/328
     it('can set a property that was just deleted', () => {
       const baseState = { a: 1 }
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         delete s.a
         s.a = 2
       })
@@ -155,7 +148,7 @@ describe(`reactivity/producer`, () => {
 
     it('can set a property to its original value after deleting it', () => {
       const baseState = { a: { b: 1 } }
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         const a = s.a
         delete s.a
         s.a = a
@@ -172,7 +165,7 @@ describe(`reactivity/producer`, () => {
     it('can get property descriptors', () => {
       const getDescriptor = Object.getOwnPropertyDescriptor
       const baseState = [{ a: 1 }]
-      produce(baseState, (arr) => {
+      produce(reactive(baseState), (arr) => {
         const obj = arr[0]
         const desc = {
           configurable: true,
@@ -204,7 +197,7 @@ describe(`reactivity/producer`, () => {
 
     describe('array drafts', () => {
       it('supports Array.isArray()', () => {
-        const nextState = produce(baseState, (s) => {
+        const nextState = produce(reactive(baseState), (s) => {
           expect(Array.isArray(s.anArray)).toBeTruthy()
           s.anArray.push(1)
         })
@@ -213,7 +206,7 @@ describe(`reactivity/producer`, () => {
 
       it('supports index access', () => {
         const value = baseState.anArray[0]
-        const nextState = produce(baseState, (s) => {
+        const nextState = produce(reactive(baseState), (s) => {
           expect(s.anArray[0]).toBe(value)
         })
         expect(nextState).toBe(baseState)
@@ -241,7 +234,7 @@ describe(`reactivity/producer`, () => {
       })
 
       it('can assign an index via bracket notation', () => {
-        const nextState = produce(baseState, (s) => {
+        const nextState = produce(reactive(baseState), (s) => {
           s.anArray[3] = true
         })
         expect(nextState).not.toBe(baseState)
@@ -250,7 +243,7 @@ describe(`reactivity/producer`, () => {
       })
 
       it('can use splice() to both add and remove items', () => {
-        const nextState = produce(baseState, (s) => {
+        const nextState = produce(reactive(baseState), (s) => {
           s.anArray.splice(1, 1, 'a', 'b')
         })
         expect(nextState.anArray).not.toBe(baseState.anArray)
@@ -260,7 +253,7 @@ describe(`reactivity/producer`, () => {
 
       it('can truncate via the length property', () => {
         const baseLength = baseState.anArray.length
-        const nextState = produce(baseState, (s) => {
+        const nextState = produce(reactive(baseState), (s) => {
           s.anArray.length = baseLength - 1
         })
         expect(nextState.anArray).not.toBe(baseState.anArray)
@@ -269,7 +262,7 @@ describe(`reactivity/producer`, () => {
 
       it('can extend via the length property', () => {
         const baseLength = baseState.anArray.length
-        const nextState = produce(baseState, (s) => {
+        const nextState = produce(reactive(baseState), (s) => {
           s.anArray.length = baseLength + 1
         })
         expect(nextState.anArray).not.toBe(baseState.anArray)
@@ -287,7 +280,7 @@ describe(`reactivity/producer`, () => {
 
       it('can be sorted', () => {
         const baseState = [3, 1, 2]
-        const nextState = produce(baseState, (s) => {
+        const nextState = produce(reactive(baseState), (s) => {
           s.sort()
         })
         expect(nextState).not.toBe(baseState)
@@ -296,7 +289,7 @@ describe(`reactivity/producer`, () => {
 
       it('supports modifying nested objects', () => {
         const baseState = [{ a: 1 }, {}]
-        const nextState = produce(baseState, (s) => {
+        const nextState = produce(reactive(baseState), (s) => {
           s[0].a++
           s[1].a = 0
         })
@@ -308,7 +301,7 @@ describe(`reactivity/producer`, () => {
       it('never preserves non-numeric properties', () => {
         const baseState = []
         baseState.x = 7
-        const nextState = produce(baseState, (s) => {
+        const nextState = produce(reactive(baseState), (s) => {
           s.push(3)
         })
         expect('x' in nextState).toBeFalsy()
@@ -326,7 +319,7 @@ describe(`reactivity/producer`, () => {
         expect(() => {
           const baseState = []
           baseState.x = 7
-          produce(baseState, (d) => {
+          produce(reactive(baseState), (d) => {
             delete d.x
           })
         }).not.toThrow()
@@ -336,7 +329,7 @@ describe(`reactivity/producer`, () => {
     // describe('map drafts', () => {
     //   it('supports key access', () => {
     //     const value = baseState.aMap.get('jedi')
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       expect(s.aMap.get('jedi')).toEqual(value)
     //     })
     //     expect(nextState).toBe(baseState)
@@ -482,7 +475,7 @@ describe(`reactivity/producer`, () => {
     //   })
 
     //   it('can assign by key', () => {
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       // Map.prototype.set should return the Map itself
     //       const res = s.aMap.set('force', true)
     //       // if (!global.USES_BUILD) expect(res).toBe(s.aMap[DRAFT_STATE].draft_)
@@ -505,7 +498,7 @@ describe(`reactivity/producer`, () => {
     //   })
 
     //   it('state stays the same if the the same item is assigned by key', () => {
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       s.aMap.set('jediTotal', 42)
     //     })
     //     expect(nextState).toBe(baseState)
@@ -513,7 +506,7 @@ describe(`reactivity/producer`, () => {
     //   })
 
     //   it("returns 'size'", () => {
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       s.aMap.set('newKey', true)
     //       expect(s.aMap.size).toBe(baseState.aMap.size + 1)
     //     })
@@ -524,7 +517,7 @@ describe(`reactivity/producer`, () => {
     //   })
 
     //   it("can use 'delete' to remove items", () => {
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       expect(s.aMap.has('jedi')).toBe(true)
     //       expect(s.aMap.delete('jedi')).toBe(true)
     //       expect(s.aMap.has('jedi')).toBe(false)
@@ -536,7 +529,7 @@ describe(`reactivity/producer`, () => {
     //   })
 
     //   it("can use 'clear' to remove items", () => {
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       expect(s.aMap.size).not.toBe(0)
     //       s.aMap.clear()
     //       expect(s.aMap.size).toBe(0)
@@ -547,7 +540,7 @@ describe(`reactivity/producer`, () => {
     //   })
 
     //   it("support 'has'", () => {
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       expect(s.aMap.has('newKey')).toBe(false)
     //       s.aMap.set('newKey', true)
     //       expect(s.aMap.has('newKey')).toBe(true)
@@ -584,7 +577,7 @@ describe(`reactivity/producer`, () => {
 
     //   it('revokes map proxies', () => {
     //     let m
-    //     produce(baseState, (s) => {
+    //     produce(reactive(baseState), (s) => {
     //       m = s.aMap
     //     })
     //     expect(() => m.get('x')).toThrowErrorMatchingSnapshot()
@@ -797,7 +790,7 @@ describe(`reactivity/producer`, () => {
     //   })
 
     //   it('state stays the same if the same item is added', () => {
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       s.aSet.add('Luke')
     //     })
     //     expect(nextState).toBe(baseState)
@@ -805,7 +798,7 @@ describe(`reactivity/producer`, () => {
     //   })
 
     //   it('can add new items', () => {
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       // Set.prototype.set should return the Set itself
     //       const res = s.aSet.add('force')
     //       // if (!global.USES_BUILD) expect(res).toBe(s.aSet[DRAFT_STATE].draft_)
@@ -817,7 +810,7 @@ describe(`reactivity/producer`, () => {
     //   })
 
     //   it("returns 'size'", () => {
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       s.aSet.add('newKey')
     //       expect(s.aSet.size).toBe(baseState.aSet.size + 1)
     //     })
@@ -828,7 +821,7 @@ describe(`reactivity/producer`, () => {
     //   })
 
     //   it("can use 'delete' to remove items", () => {
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       expect(s.aSet.has('Luke')).toBe(true)
     //       expect(s.aSet.delete('Luke')).toBe(true)
     //       expect(s.aSet.delete('Luke')).toBe(false)
@@ -841,7 +834,7 @@ describe(`reactivity/producer`, () => {
     //   })
 
     //   it("can use 'clear' to remove items", () => {
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       expect(s.aSet.size).not.toBe(0)
     //       s.aSet.clear()
     //       expect(s.aSet.size).toBe(0)
@@ -852,7 +845,7 @@ describe(`reactivity/producer`, () => {
     //   })
 
     //   it("supports 'has'", () => {
-    //     const nextState = produce(baseState, (s) => {
+    //     const nextState = produce(reactive(baseState), (s) => {
     //       expect(s.aSet.has('newKey')).toBe(false)
     //       s.aSet.add('newKey')
     //       expect(s.aSet.has('newKey')).toBe(true)
@@ -888,7 +881,7 @@ describe(`reactivity/producer`, () => {
 
     //   it('revokes sets', () => {
     //     let m
-    //     produce(baseState, (s) => {
+    //     produce(reactive(baseState), (s) => {
     //       m = s.aSet
     //     })
     //     expect(() => m.has('x')).toThrowErrorMatchingSnapshot()
@@ -907,7 +900,7 @@ describe(`reactivity/producer`, () => {
       class One {}
       One[immerable] = true
       const baseState = new One()
-      const nextState = produce(baseState, (draft) => {
+      const nextState = produce(reactive(baseState), (draft) => {
         expect(draft).not.toBe(baseState)
         draft.foo = true
       })
@@ -918,7 +911,7 @@ describe(`reactivity/producer`, () => {
     it('preserves symbol properties', () => {
       const test = Symbol('test')
       const baseState = { [test]: true }
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         expect(s[test]).toBeTruthy()
         s.foo = true
       })
@@ -944,7 +937,7 @@ describe(`reactivity/producer`, () => {
         configurable: true,
         writable: true,
       })
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         expect(s.foo).toBeTruthy()
         expect(isEnumerable(s, 'foo')).toBeFalsy()
         s.bar++
@@ -967,7 +960,7 @@ describe(`reactivity/producer`, () => {
         },
       }
 
-      const nextState = produce(baseState, (d) => {
+      const nextState = produce(reactive(baseState), (d) => {
         expect(d.y).toBe(1)
         d.x = 2
         expect(d.x).toBe(2)
@@ -1005,7 +998,7 @@ describe(`reactivity/producer`, () => {
 
       const baseState = new State()
 
-      const nextState = produce(baseState, (d) => {
+      const nextState = produce(reactive(baseState), (d) => {
         expect(d.y).toBe(1)
         d.y = 2
         expect(d.x).toBe(2)
@@ -1032,7 +1025,7 @@ describe(`reactivity/producer`, () => {
       })
       proto[immerable] = true
       const baseState = Object.create(proto)
-      produce(baseState, (s) => {
+      produce(reactive(baseState), (s) => {
         expect(s.bar).toBeUndefined()
         s.foo = {}
         expect(s.bar).toBeDefined()
@@ -1128,7 +1121,7 @@ describe(`reactivity/producer`, () => {
     it('can nest a draft in a new object', () => {
       const baseState = { obj: {} }
       const obj = baseState.obj
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         s.foo = { bar: s.obj }
         delete s.obj
       })
@@ -1148,7 +1141,7 @@ describe(`reactivity/producer`, () => {
     })
 
     it('supports assigning undefined to an existing property', () => {
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         s.aProp = undefined
       })
       expect(nextState).not.toBe(baseState)
@@ -1157,7 +1150,7 @@ describe(`reactivity/producer`, () => {
 
     it('supports assigning undefined to a new property', () => {
       const baseState = {}
-      const nextState = produce(baseState, (s) => {
+      const nextState = produce(reactive(baseState), (s) => {
         s.aProp = undefined
       })
       expect(nextState).not.toBe(baseState)
@@ -1173,7 +1166,7 @@ describe(`reactivity/producer`, () => {
     })
 
     it('should reflect all changes made in the draft immediately', () => {
-      produce(baseState, (draft) => {
+      produce(reactive(baseState), (draft) => {
         draft.anArray[0] = 5
         draft.anArray.unshift('test')
         if (!global.USES_BUILD)
@@ -1191,7 +1184,7 @@ describe(`reactivity/producer`, () => {
 
     it('support Object.defineProperty()', () => {
       const baseState = {}
-      const nextState = produce(baseState, (draft) => {
+      const nextState = produce(reactive(baseState), (draft) => {
         Object.defineProperty(draft, 'xx', {
           enumerable: true,
           writeable: true,
@@ -1206,7 +1199,7 @@ describe(`reactivity/producer`, () => {
         arr: new Array(),
         obj: new Object(),
       }
-      const result = produce(baseState, (draft) => {
+      const result = produce(reactive(baseState), (draft) => {
         draft.arrConstructed = draft.arr.constructor(1)
         draft.objConstructed = draft.obj.constructor(1)
       })
@@ -1219,7 +1212,7 @@ describe(`reactivity/producer`, () => {
         y: 3 / 0,
         z: NaN,
       }
-      const nextState = produce(baseState, (draft) => {
+      const nextState = produce(reactive(baseState), (draft) => {
         draft.y = 4 / 0
         draft.z = NaN
       })
@@ -1230,7 +1223,7 @@ describe(`reactivity/producer`, () => {
       const baseState = {
         x: -0,
       }
-      const nextState = produce(baseState, (draft) => {
+      const nextState = produce(reactive(baseState), (draft) => {
         draft.x = +0
       })
       expect(nextState).not.toBe(baseState)
@@ -1379,13 +1372,13 @@ describe(`reactivity/producer`, () => {
     // })
 
     it('throws when Object.setPrototypeOf() is used on a draft', () => {
-      produce({}, (draft) => {
+      produce(reactive({}), (draft) => {
         expect(() => Object.setPrototypeOf(draft, Array)).toThrow()
       })
     })
 
     it("supports the 'in' operator", () => {
-      produce(baseState, (draft) => {
+      produce(reactive(baseState), (draft) => {
         // Known property
         expect('anArray' in draft).toBe(true)
         expect(Reflect.has(draft, 'anArray')).toBe(true)
@@ -1482,7 +1475,7 @@ describe(`reactivity/producer`, () => {
 
     it('does not create new state unnecessary, #491', () => {
       const a = { highlight: true }
-      const next1 = produce(a, (draft) => {
+      const next1 = produce(reactive(a), (draft) => {
         draft.highlight = false
         draft.highlight = true
       })
@@ -1507,7 +1500,7 @@ describe(`reactivity/producer`, () => {
 
       it('can return the draft', () => {
         const base = { x: 3 }
-        const res = produce(base, (d) => {
+        const res = produce(reactive(base), (d) => {
           d.x = 4
           return d
         })
@@ -1614,7 +1607,7 @@ describe(`reactivity/producer`, () => {
     it('throws when the draft is modified and another object is returned', () => {
       const base = { x: 3 }
       expect(() => {
-        produce(base, (draft) => {
+        produce(reactive(base), (draft) => {
           draft.x = 4
           return { x: 5 }
         })
@@ -1670,7 +1663,7 @@ describe(`reactivity/producer`, () => {
 
     it('cannot always detect noop assignments - 0', () => {
       const baseState = { x: { y: 3 } }
-      const nextState = produce(baseState, (d) => {
+      const nextState = produce(reactive(baseState), (d) => {
         const a = d.x
         d.x = a
       })
@@ -1679,7 +1672,7 @@ describe(`reactivity/producer`, () => {
 
     it('cannot always detect noop assignments - 1', () => {
       const baseState = { x: { y: 3 } }
-      const nextState = produce(baseState, (d) => {
+      const nextState = produce(reactive(baseState), (d) => {
         const a = d.x
         d.x = 4
         d.x = a
@@ -1692,7 +1685,7 @@ describe(`reactivity/producer`, () => {
 
     it('cannot always detect noop assignments - 2', () => {
       const baseState = { x: { y: 3 } }
-      const nextState = produce(baseState, (d) => {
+      const nextState = produce(reactive(baseState), (d) => {
         const a = d.x
         const stuff = a.y + 3
         d.x = 4
@@ -1706,7 +1699,7 @@ describe(`reactivity/producer`, () => {
 
     it('cannot always detect noop assignments - 3', () => {
       const baseState = { x: 3 }
-      const nextState = produce(baseState, (d) => {
+      const nextState = produce(reactive(baseState), (d) => {
         d.x = 3
       })
       expect(nextState).toBe(baseState)
@@ -1714,7 +1707,7 @@ describe(`reactivity/producer`, () => {
 
     it('cannot always detect noop assignments - 4', () => {
       const baseState = { x: 3 }
-      const nextState = produce(baseState, (d) => {
+      const nextState = produce(reactive(baseState), (d) => {
         d.x = 4
         d.x = 3
       })
@@ -1853,29 +1846,29 @@ describe(`reactivity/producer`, () => {
 
   describe(`isDraft`, () => {
     it('returns true for object drafts', () => {
-      produce({}, (state) => {
+      produce(reactive({}), (state) => {
         expect(isDraft(state)).toBeTruthy()
       })
     })
     it('returns true for array drafts', () => {
-      produce([], (state) => {
+      produce(reactive([]), (state) => {
         expect(isDraft(state)).toBeTruthy()
       })
     })
     it('returns true for objects nested in object drafts', () => {
-      produce({ a: { b: {} } }, (state) => {
+      produce(reactive({ a: { b: {} } }), (state) => {
         expect(isDraft(state.a)).toBeTruthy()
         expect(isDraft(state.a.b)).toBeTruthy()
       })
     })
     it('returns false for new objects added to a draft', () => {
-      produce({}, (state) => {
+      produce(reactive({}), (state) => {
         state.a = {}
         expect(isDraft(state.a)).toBeTruthy()
       })
     })
     it('returns false for objects returned by the producer', () => {
-      const object = produce([], () => Object.create(null))
+      const object = produce(reactive([]), () => Object.create(null))
       expect(isDraft(object)).toBeFalsy()
     })
     it('returns false for arrays returned by the producer', () => {
@@ -1883,11 +1876,11 @@ describe(`reactivity/producer`, () => {
       expect(isDraft(array)).toBeFalsy()
     })
     it('returns false for object drafts returned by the producer', () => {
-      const object = produce({}, (state) => state)
+      const object = produce(reactive({}), (state) => state)
       expect(isDraft(object)).toBeFalsy()
     })
     it('returns false for array drafts returned by the producer', () => {
-      const array = produce([], (state) => state)
+      const array = produce(reactive([]), (state) => state)
       expect(isDraft(array)).toBeFalsy()
     })
   })
@@ -1978,7 +1971,7 @@ function testObjectTypes(produce) {
   function testObjectType(name, base) {
     describe(name, () => {
       it('creates a draft', () => {
-        produce(base, (draft) => {
+        produce(reactive(base), (draft) => {
           expect(draft).not.toBe(base)
           expect(shallowCopy(draft, true)).toEqual(base)
         })
@@ -1986,18 +1979,18 @@ function testObjectTypes(produce) {
 
       it('preserves the prototype', () => {
         const proto = Object.getPrototypeOf(base)
-        produce(base, (draft) => {
+        produce(reactive(base), (draft) => {
           expect(Object.getPrototypeOf(draft)).toBe(proto)
         })
       })
 
       it('returns the base state when no changes are made', () => {
-        expect(produce(base, () => {})).toBe(base)
+        expect(produce(reactive(base), () => {})).toBe(base)
       })
 
       it('returns a copy when changes are made', () => {
         const random = Math.random()
-        const result = produce(base, (draft) => {
+        const result = produce(reactive(base), (draft) => {
           draft[0] = random
         })
         expect(result).not.toBe(base)

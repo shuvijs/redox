@@ -10,7 +10,7 @@ import {
   // KeyAccessNode,
   // NODE_ROOT,
 } from './effect'
-import { ReactiveFlags, toRaw, reactive } from './reactive'
+import { ReactiveFlags, toRaw } from './reactive'
 
 export interface View<T = any> {
   readonly value: T
@@ -27,14 +27,8 @@ export class ProduceImpl<T extends {}> {
   private _base: T
 
   constructor(base: T, recipe: Recipe<T>, context: any) {
-    this._base = base
-
-    const fn = function () {
-      const draft = reactive(base)
-      //@ts-ignore
-      return recipe.call(context, draft)
-    }
-    this.effect = new ReactiveEffect(fn)
+    this._base = toRaw(base)
+    this.effect = new ReactiveEffect(recipe.bind(context, base))
   }
 
   get value() {
