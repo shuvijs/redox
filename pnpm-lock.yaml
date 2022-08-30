@@ -141,24 +141,29 @@ importers:
       '@craco/craco': 6.4.3_5jme4ri3fmqyoymld5nudtzsgq
       '@shuvi/redox': link:../../packages/redox
       '@shuvi/redox-react': link:../../packages/react
+<<<<<<< HEAD
       react: 18.3.0-next-3d443cad7-20220823
       react-dom: 18.3.0-next-3d443cad7-20220823_bxgftgb7hgpztug6hb6nouexla
+=======
+      react: 18.3.0-next-9e67e7a31-20220823
+      react-dom: 18.3.0-next-9e67e7a31-20220823_gqofsi2s4iueppr43xzi3t67qu
+>>>>>>> upstream/main
 
   packages/plugins/log:
     specifiers:
-      '@shuvi/redox': 0.0.2
+      '@shuvi/redox': 0.0.6
     devDependencies:
       '@shuvi/redox': link:../../redox
 
   packages/plugins/persist:
     specifiers:
-      '@shuvi/redox': 0.0.2
+      '@shuvi/redox': 0.0.6
     devDependencies:
       '@shuvi/redox': link:../../redox
 
   packages/react:
     specifiers:
-      '@shuvi/redox': 0.0.2
+      '@shuvi/redox': 0.0.6
       '@testing-library/react': ^13.3.0
       '@types/react': ^18.0.5
       '@types/react-dom': ^18.0.5
@@ -5468,6 +5473,7 @@ packages:
 
   /@types/webpack/4.41.32:
     resolution: {integrity: sha512-cb+0ioil/7oz5//7tZUSwbrSAN/NWHrQylz5cW8G0dWTcF/g+/dSdMlKVZspBYuMAN1+WnwHrkxiRrLcwd0Heg==}
+<<<<<<< HEAD
     dependencies:
       '@types/node': 18.0.0
       '@types/tapable': 1.0.8
@@ -5489,6 +5495,29 @@ packages:
   /@types/yargs/15.0.14:
     resolution: {integrity: sha512-yEJzHoxf6SyQGhBhIYGXQDSCkJjB6HohDShto7m8vaKg9Yp0Yn8+71J9eakh2bnPg6BfsH9PRMhiRTZnd4eXGQ==}
     dependencies:
+=======
+    dependencies:
+      '@types/node': 18.0.0
+      '@types/tapable': 1.0.8
+      '@types/uglify-js': 3.17.0
+      '@types/webpack-sources': 3.2.0
+      anymatch: 3.1.2
+      source-map: 0.6.1
+    dev: false
+
+  /@types/ws/8.5.3:
+    resolution: {integrity: sha512-6YOoWjruKj1uLf3INHH7D3qTXwFfEsg1kf3c0uDdSBJwfa/llkwIjrAGV7j7mVgGNbzTQ3HiHKKDXl6bJPD97w==}
+    dependencies:
+      '@types/node': 18.0.0
+    dev: false
+
+  /@types/yargs-parser/21.0.0:
+    resolution: {integrity: sha512-iO9ZQHkZxHn4mSakYV0vFHAVDyEOIJQrV2uZ06HxEPcx+mt8swXoZHIbaaJ2crJYFfErySgktuTZ3BeLz+XmFA==}
+
+  /@types/yargs/15.0.14:
+    resolution: {integrity: sha512-yEJzHoxf6SyQGhBhIYGXQDSCkJjB6HohDShto7m8vaKg9Yp0Yn8+71J9eakh2bnPg6BfsH9PRMhiRTZnd4eXGQ==}
+    dependencies:
+>>>>>>> upstream/main
       '@types/yargs-parser': 21.0.0
 
   /@types/yargs/16.0.4:
@@ -11991,6 +12020,18 @@ packages:
         optional: true
     dependencies:
       debug: 3.2.7_supports-color@5.5.0
+    dev: false
+
+  /follow-redirects/1.15.1_debug@4.3.4:
+    resolution: {integrity: sha512-yLAMQs+k0b2m7cVxpS1VKJVvoz7SS9Td1zss3XRwXj+ZDH00RJgnuLx7E44wx02kQLrdM3aOOy+FpzS7+8OizA==}
+    engines: {node: '>=4.0'}
+    peerDependencies:
+      debug: '*'
+    peerDependenciesMeta:
+      debug:
+        optional: true
+    dependencies:
+      debug: 4.3.4_supports-color@6.1.0
     dev: false
 
   /follow-redirects/1.15.1_debug@4.3.4:
@@ -19973,6 +20014,7 @@ packages:
       scheduler: 0.22.0
     dev: true
 
+<<<<<<< HEAD
   /react-dom/18.3.0-next-3d443cad7-20220823_bxgftgb7hgpztug6hb6nouexla:
     resolution: {integrity: sha512-dDkOY3qBtwZ63LhhmVf+kAd0RufMDlSqiolQ5VLp1UL3VCXxbul0BTyTMV68zCCUn1EHXOpS2tBxqdkzcrJ5kg==}
     peerDependencies:
@@ -19981,6 +20023,16 @@ packages:
       loose-envify: 1.4.0
       react: 18.3.0-next-3d443cad7-20220823
       scheduler: 0.24.0-next-3d443cad7-20220823
+=======
+  /react-dom/18.3.0-next-9e67e7a31-20220823_gqofsi2s4iueppr43xzi3t67qu:
+    resolution: {integrity: sha512-JRac3jXKwqd08l/7TBun66LlObEPx9Ou5XrO/RXkJOQTgCis5kGWBjxHPxNoYHTcF4mZeAFB65iEIbS7N8GttQ==}
+    peerDependencies:
+      react: 18.3.0-next-9e67e7a31-20220823
+    dependencies:
+      loose-envify: 1.4.0
+      react: 18.3.0-next-9e67e7a31-20220823
+      scheduler: 0.24.0-next-9e67e7a31-20220823
+>>>>>>> upstream/main
     dev: false
 
   /react-error-overlay/5.1.6:
@@ -20383,8 +20435,13 @@ packages:
     dependencies:
       loose-envify: 1.4.0
 
+<<<<<<< HEAD
   /react/18.3.0-next-3d443cad7-20220823:
     resolution: {integrity: sha512-+N7CzQP5K8oP7iyvLDw88pOc5LvY5LUAF9+bDZFDs39mkaJCs+44NhNATRkxLI5cbkjL6lISRxhFCYi555PS7w==}
+=======
+  /react/18.3.0-next-9e67e7a31-20220823:
+    resolution: {integrity: sha512-6ItROfMHEH6Zx0JsOI0DhOd/iXpZo5o3DxULqAiHMaJoeizZep4o6lgDeqigXGZHySyd3TA9Yymrv/9LDKbPwQ==}
+>>>>>>> upstream/main
     engines: {node: '>=0.10.0'}
     dependencies:
       loose-envify: 1.4.0
@@ -21220,8 +21277,13 @@ packages:
       loose-envify: 1.4.0
     dev: true
 
+<<<<<<< HEAD
   /scheduler/0.24.0-next-3d443cad7-20220823:
     resolution: {integrity: sha512-wTEwlZMzfqnl9tkAFWZv3EjpX9JFdHlzFAmB/9/BuxbXzoXrIQu0ILsaq0O9t+sWs6j/VTMWwWIV9y46ODAa1g==}
+=======
+  /scheduler/0.24.0-next-9e67e7a31-20220823:
+    resolution: {integrity: sha512-cor6y0g+hRtZHKXTxhL43B5e/SBuDt4XqZ4FkgU8Yjye56OaIq+7tzZw2J2JiUgmMW9SBtsWNLPvZOZAolUEPQ==}
+>>>>>>> upstream/main
     dependencies:
       loose-envify: 1.4.0
     dev: false

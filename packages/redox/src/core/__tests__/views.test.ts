@@ -1,4 +1,4 @@
-import { defineModel, redox, ModelSnapshot } from '../src'
+import { defineModel, redox, ModelSnapshot } from '../'
 
 let redoxStore: ReturnType<typeof redox>
 beforeEach(() => {
@@ -362,6 +362,33 @@ describe('defineModel/views', () => {
     const newState = {}
     store.replaceState(newState)
     expect(store.view).toStrictEqual(newState)
+  })
+
+  it('should return last value (non-existed property)', () => {
+    const fn = jest.fn()
+    let initState = {}
+    const model = defineModel({
+      name: 'model',
+      state: initState as { a: number },
+      views: {
+        view() {
+          fn()
+          return this.a
+        },
+      },
+    })
+    const store = redoxStore.getModel(model)
+    expect(fn).toHaveBeenCalledTimes(0)
+
+    expect(store.view).toBeUndefined()
+    expect(fn).toHaveBeenCalledTimes(1)
+
+    store.$patch({ a: 1 })
+    // re-run view
+    expect(store.view).toStrictEqual(1)
+    // cache view
+    expect(store.view).toStrictEqual(1)
+    expect(fn).toHaveBeenCalledTimes(2)
   })
 
   it('should return last value (using this.$state() in view)', () => {

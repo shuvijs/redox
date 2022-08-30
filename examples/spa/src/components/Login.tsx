@@ -4,9 +4,11 @@ import { useRootModel } from '@shuvi/redox-react'
 
 import { login, currentUser } from '../models/login'
 
-type currentUserModelSnapshot = ModelSnapshot<typeof currentUser>
+type currentUserSelectorParams = ModelSnapshot<typeof currentUser>
 
-const currentUserSelector = function (stateAndViews: currentUserModelSnapshot) {
+const currentUserSelector = function (
+  stateAndViews: currentUserSelectorParams
+) {
   return {
     userInfo: stateAndViews.userInfo,
   }

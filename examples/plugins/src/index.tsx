@@ -30,7 +30,7 @@ const redoxStore = redox({
 })
 
 ReactDOM.render(
-  <RedoxRoot redoxStore={redoxStore}>
+  <RedoxRoot store={redoxStore}>
     <App></App>
   </RedoxRoot>,
   document.getElementById('root')

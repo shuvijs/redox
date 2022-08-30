@@ -2,38 +2,39 @@ import React, { useState } from 'react'
 import { defineModel, ModelSnapshot } from '@shuvi/redox'
 import { useRootModel } from '@shuvi/redox-react'
 
-class Foo {}
-
-const data = {
-  value: 1,
-  value1: 1,
-  anInstance: new Foo(),
-  anArray: [3, 2, { c: 3 }, 1],
-  // aMap: new Map([
-  //   ['jedi', { name: 'Luke', skill: 10 }],
-  //   ['jediTotal', 42],
-  //   ['force', "these aren't the droids you're looking for"],
-  // ]),
-  // aSet: new Set([
-  //   'Luke',
-  //   42,
-  //   {
-  //     jedi: 'Yoda',
-  //   },
-  // ]),
-  aProp: 'hi',
-  anObject: {
-    nested: {
-      yummie: true,
-    },
-    coffee: false,
+const otherDep = defineModel({
+  name: 'otherDep',
+  state: {
+    other: ['other'],
   },
-}
+  reducers: {
+    add: (state, step: string = 'other') => {
+      return {
+        other: [...state.other, step],
+      }
+    },
+  },
+})
+
+const domeDep = defineModel({
+  name: 'domeDep',
+  state: {
+    dome: 0,
+  },
+  reducers: {
+    add: (state, step: number = 1) => {
+      state.dome += step
+    },
+  },
+})
 
 const user = defineModel(
   {
     name: 'user',
-    state: data,
+    state: {
+      value: 1,
+      value1: 1,
+    },
     reducers: {
       add: (state, step: number = 1) => {
         state.value += step
@@ -45,35 +46,32 @@ const user = defineModel(
     views: {
       viewValue1() {
         console.log('viewValue1 computed')
-        this.anObject.nested.yummie = false
-        // @ts-ignore
-        delete this.anObject.nested
-        // @ts-ignore
-        // this.anArray[2]['c'] = 6666
-        // @ts-ignore
-        // this.anArray[2] = {
-        //   // @ts-ignore
-        //   b: 1,
-        // }
-        // @ts-ignore
-        // this.anObject.coffee1 = 'false'
         return this.value1
       },
       viewDome() {
         console.log('viewDome computed')
-        // return this.$dep.domeDep.dome
+        return this.$dep.domeDep.dome
       },
     },
   },
-  []
+  [otherDep, domeDep]
 )
 
 export type userSelectorParameters = ModelSnapshot<typeof user>
 
+const selector = function (stateAndViews: userSelectorParameters) {
+  return {
+    v: stateAndViews.viewValue1,
+    d: stateAndViews.viewDome,
+  }
+}
+
 export default function Views() {
-  // const [index, setIndex] = useState(0)
-  const [views, actions] = useRootModel(user)
-  console.log(`render`)
+  const [index, setIndex] = useState(0)
+  const [stateOther, actionsOther] = useRootModel(otherDep)
+  const [stateDome, actionsDome] = useRootModel(domeDep)
+  const [views, actions] = useRootModel(user, selector)
+
   return (
     <div>
       <h1>Views</h1>
@@ -83,8 +81,11 @@ export default function Views() {
       </div>
       <div>
         <div>
-          computed by 'state.value1',{' '}
-          <strong>views.v: {views.viewValue1}</strong>
+          computed by 'state.value1', <strong>views.v: {views.v}</strong>
+        </div>
+        <div>
+          computed by 'dependsState.domeDep.dome',{' '}
+          <strong>views.d: {views.d}</strong>
         </div>
         <hr />
       </div>
@@ -103,14 +104,33 @@ export default function Views() {
         changed user value1
       </button>
       <hr />
-      {/* <div id="index">useState index: {index}</div>
+      {JSON.stringify(stateDome)}
+      <hr />
+      <button
+        onClick={() => {
+          actionsDome.add(1)
+        }}
+      >
+        trigger dome actions
+      </button>
+      <hr />
+      {JSON.stringify(stateOther)}
+      <hr />
+      <button
+        onClick={() => {
+          actionsOther.add()
+        }}
+      >
+        trigger other actions
+      </button>
+      <div id="index">useState index: {index}</div>
       <button
         onClick={() => {
           setIndex(index + 1)
         }}
       >
         trigger useState
-      </button> */}
+      </button>
       <hr />
     </div>
   )

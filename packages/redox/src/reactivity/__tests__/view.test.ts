@@ -108,6 +108,29 @@ describe('reactivity/view', () => {
     expect(fn).toHaveBeenCalledTimes(2)
   })
 
+  it('should return the last value for none existed property', () => {
+    const fn = jest.fn()
+    const store: any = {
+      state: {},
+    }
+    store.$state = reactive(() => store.state)
+    const num = view(() => {
+      fn()
+      return store.$state.num
+    })
+    expect(num.value).toBeUndefined()
+    expect(fn).toHaveBeenCalledTimes(1)
+
+    store.state = { num: 1 }
+    store.$state = reactive(store.state)
+
+    // re-calculate
+    expect(num.value).toBe(1)
+    // cache
+    expect(num.value).toBe(1)
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
+
   it('should reactive to other view', () => {
     const fn1 = jest.fn()
     const fn2 = jest.fn()
