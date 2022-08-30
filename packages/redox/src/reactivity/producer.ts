@@ -6,7 +6,6 @@ import {
   // hasOwn
 } from '../utils'
 import {
-  DebuggerOptions,
   ReactiveEffect,
   // KeyAccessNode,
   // NODE_ROOT,
@@ -27,7 +26,7 @@ export class ProduceImpl<T extends {}> {
 
   private _base: T
 
-  constructor(base: T, recipe: Recipe<T>) {
+  constructor(base: T, recipe: Recipe<T>, context: any) {
     this._base = base
 
     const fn = function () {
@@ -36,7 +35,7 @@ export class ProduceImpl<T extends {}> {
         return base
       }
       //@ts-ignore
-      return recipe(draft)
+      return recipe.call(context, draft)
     }
     this.effect = new ReactiveEffect(fn)
   }
@@ -45,26 +44,8 @@ export class ProduceImpl<T extends {}> {
     // the view may get wrapped by other proxies e.g. readonly() #3376
     const self = toRaw(this)
     let value: any
-    try {
-      value = self.effect.run()! as T
-      value = this._processResult(value)
-    } catch (error) {
-      console.log('error: ', error)
-      throw error
-    }
-
-    // if (typeof Promise !== 'undefined' && value instanceof Promise) {
-    //   //@ts-ignore
-    //   return value.then(
-    //     (data) => {
-    //       self.effect.stop()
-    //       return this._processResult(data)
-    //     },
-    //     (e) => {
-    //       throw e
-    //     }
-    //   )
-    // }
+    value = self.effect.run()! as T
+    value = this._processResult(value)
     self.effect.stop()
     return value
   }
@@ -165,24 +146,24 @@ export class ProduceImpl<T extends {}> {
     return rootDuplication
   }
 }
+export function produce<T extends {}>(recipe: (draft: T) => any): any
+export function produce<T extends {}>(base: T, recipe: (draft: T) => any): any
+export function produce<T extends {}>(this: any, base: any, recipe?: any): any {
+  if (arguments.length <= 1) {
+    return function (this: any, ...args: any[]) {
+      args.splice(1, 0, base)
+      return produce.apply(this, args as any)
+    }
+  }
 
-export function produce<T extends {}>(
-  base: T,
-  recipe: (draft: T) => any,
-  debugOptions?: DebuggerOptions
-) {
   if (process.env.NODE_ENV === 'development') {
     if (!isFunction(recipe)) {
       warn(`recipe should be function, now is ${typeof recipe}`)
     }
   }
+  const context = this
 
-  const pRef = new ProduceImpl<T>(base, recipe)
-
-  if (process.env.NODE_ENV === 'development' && debugOptions) {
-    pRef.effect.onTrack = debugOptions.onTrack
-    pRef.effect.onTrigger = debugOptions.onTrigger
-  }
+  const pRef = new ProduceImpl<T>(base, recipe, context)
 
   return pRef.value
 }
