@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { ReactiveFlags, toRaw, reactive } from '../reactive'
-import { shallowCopy, produce } from '../producer'
-import { isObject } from '../../utils'
+import { produce } from '../producer'
+import { isObject, shallowCopy } from '../../utils'
 
 import cloneDeep from 'lodash.clonedeep'
 import * as lodash from 'lodash'
@@ -97,7 +97,7 @@ describe(`reactivity/producer`, () => {
       })
       expect(nextState).not.toBe(baseState)
       expect(nextState.anObject).not.toBe(baseState.anObject)
-      // expect(baseState.anObject.nested.yummie).toBe(true)
+      expect(baseState.anObject.nested.yummie).toBe(true)
       expect(nextState.anObject.nested.yummie).toBe(false)
       expect(nextState.anArray).toBe(baseState.anArray)
     })
@@ -223,7 +223,7 @@ describe(`reactivity/producer`, () => {
           }
           return null
         }
-        const result = produce(base, (draft) => {
+        const result = produce(reactive(base), (draft) => {
           const obj1 = findById(draft, 1)
           const obj2 = findById(draft, 2)
           obj1.a = 2
@@ -271,10 +271,13 @@ describe(`reactivity/producer`, () => {
 
       // Reported here: https://github.com/mweststrate/immer/issues/116
       it('can pop then push', () => {
-        const nextState = produce([1, 2, 3], (s) => {
+        const base = [1, 2, 3]
+        const origin = base
+        const nextState = produce(reactive(base), (s) => {
           s.pop()
           s.push(100)
         })
+        expect(base).toEqual(origin)
         expect(nextState).toEqual([1, 2, 100])
       })
 
@@ -309,7 +312,7 @@ describe(`reactivity/producer`, () => {
 
       it('throws when a non-numeric property is added', () => {
         expect(() => {
-          produce([], (d) => {
+          produce(reactive([]), (d) => {
             d.x = 3
           })
         }).not.toThrow()
@@ -964,19 +967,19 @@ describe(`reactivity/producer`, () => {
         expect(d.y).toBe(1)
         d.x = 2
         expect(d.x).toBe(2)
-        expect(d.y).toBe(2) // this has been copied!
+        expect(d.y).toBe(1) // this has been copied!
         d.y = 3
-        expect(d.x).toBe(3)
+        expect(d.x).toBe(2)
       })
-      expect(baseState.x).toBe(3)
-      expect(baseState.y).toBe(3)
+      expect(baseState.x).toBe(1)
+      expect(baseState.y).toBe(1)
 
-      expect(nextState.x).toBe(3)
+      expect(nextState.x).toBe(2)
       expect(nextState.y).toBe(3)
       if (!autoFreeze) {
         nextState.y = 4 // decoupled now!
         expect(nextState.y).toBe(4)
-        expect(nextState.x).toBe(3)
+        expect(nextState.x).toBe(2)
         expect(Object.getOwnPropertyDescriptor(nextState, 'y').value).toBe(4)
       }
     })
@@ -1005,8 +1008,8 @@ describe(`reactivity/producer`, () => {
         expect(d.y).toBe(2)
         expect(Object.getOwnPropertyDescriptor(d, 'y')).toBeUndefined()
       })
-      expect(baseState.x).toBe(2)
-      expect(baseState.y).toBe(2)
+      expect(baseState.x).toBe(1)
+      expect(baseState.y).toBe(1)
 
       expect(nextState.x).toBe(2)
       expect(nextState.y).toBe(2)
@@ -1043,14 +1046,10 @@ describe(`reactivity/producer`, () => {
       })
 
       const run = () =>
-        produce({}, (d) => {
+        produce(reactive({}), (d) => {
           d.data = newData
         })
-      if (autoFreeze) {
-        expect(run).toThrow('visited!')
-      } else {
-        expect(run).not.toThrow('visited!')
-      }
+      expect(run).toThrow()
     })
 
     it("same optimization doesn't cause draft from nested producers to be unfinished", () => {
@@ -1060,9 +1059,9 @@ describe(`reactivity/producer`, () => {
           x: 1,
         },
       }
-      const res = produce(base, (draft) => {
+      const res = produce(reactive(base), (draft) => {
         draft.y++
-        draft.child = produce(draft.child, (draft) => {
+        draft.child = produce(reactive(draft.child), (draft) => {
           return {
             wrapped: draft,
           }
@@ -1083,13 +1082,35 @@ describe(`reactivity/producer`, () => {
         d.a.z = true
         expect(d.b.z).toBeTruthy()
       })
-      expect(res.a).toBe(res.b)
       expect(res.a.z).toBeTruthy()
+      expect(res.a).toBe(res.b)
+    })
+
+    it('supports a base state with deep level multiple references to an object', () => {
+      const obj = { 1: 1 }
+      const base = { a: obj, b: { c: obj, 2: 2 } }
+      const res = produce(reactive(base), (d) => {
+        expect(d.a).toBe(d.b.c)
+        d.a.z = true
+        expect(d.b.c.z).toBeTruthy()
+      })
+      expect(res.a.z).toBeTruthy()
+      expect(res.a).toBe(res.b.c)
+    })
+
+    it('supports a base state with deep level multiple references to an object No access same references', () => {
+      const obj = {}
+      const base = { a: obj, b: { c: obj } }
+      const res = produce(reactive(base), (d) => {
+        d.a.z = true
+      })
+      expect(res.a.z).toBeTruthy()
+      expect(res.a).toBe(res.b.c)
     })
 
     // NOTE: Except the root draft.
     it('supports multiple references to any modified draft', () => {
-      const next = produce({ a: { b: 1 } }, (d) => {
+      const next = produce(reactive({ a: { b: 1 } }), (d) => {
         d.a.b++
         d.b = d.a
       })
@@ -1097,7 +1118,7 @@ describe(`reactivity/producer`, () => {
     })
 
     it('can rename nested objects (no changes)', () => {
-      const nextState = produce({ obj: {} }, (s) => {
+      const nextState = produce(reactive({ obj: {} }), (s) => {
         s.foo = s.obj
         delete s.obj
       })
@@ -1107,7 +1128,7 @@ describe(`reactivity/producer`, () => {
     // Very similar to the test before, but the reused object has one
     // property changed, one added, and one removed.
     it('can rename nested objects (with changes)', () => {
-      const nextState = produce({ obj: { a: 1, b: 1 } }, (s) => {
+      const nextState = produce(reactive({ obj: { a: 1, b: 1 } }), (s) => {
         s.obj.a = true // change
         delete s.obj.b // delete
         s.obj.c = true // add
@@ -1158,7 +1179,7 @@ describe(`reactivity/producer`, () => {
     })
 
     it('can access a child draft that was created before the draft was modified', () => {
-      produce({ a: {} }, (s) => {
+      produce(reactive({ a: {} }), (s) => {
         const before = s.a
         s.b = 1
         expect(s.a).toBe(before)
@@ -1233,143 +1254,125 @@ describe(`reactivity/producer`, () => {
     })
 
     // AKA: recursive produce calls
-    // describe('nested producers', () => {
-    //   describe('when base state is not a draft', () => {
-    //     // This test ensures the global state used to manage proxies is
-    //     // never left in a corrupted state by a nested `produce` call.
-    //     it('never affects its parent producer implicitly', () => {
-    //       const base = { obj: { a: 1 } }
-    //       const next = produce(base, (draft) => {
-    //         // Notice how `base.obj` is passed, not `draft.obj`
-    //         const obj2 = produce(base.obj, (draft2) => {
-    //           draft2.a = 0
-    //         })
-    //         expect(obj2.a).toBe(0)
-    //         expect(draft.obj.a).toBe(1) // effects should not be visible outside
-    //       })
-    //       expect(next).toBe(base)
-    //     })
-    //   })
+    describe('nested producers', () => {
+      describe('when base state is not a draft', () => {
+        // This test ensures the global state used to manage proxies is
+        // never left in a corrupted state by a nested `produce` call.
+        it('never affects its parent producer implicitly', () => {
+          const base = { obj: { a: 1 } }
+          const next = produce(reactive(base), (draft) => {
+            // Notice how `base.obj` is passed, not `draft.obj`
+            const obj2 = produce(reactive(base.obj), (draft2) => {
+              draft2.a = 0
+            })
+            expect(obj2.a).toBe(0)
+            expect(draft.obj.a).toBe(1) // effects should not be visible outside
+          })
+          expect(next).toBe(base)
+        })
+      })
 
-    //   describe('when base state is a draft', () => {
-    //     it('always wraps the draft in a new draft', () => {
-    //       produce({}, (parent) => {
-    //         produce(parent, (child) => {
-    //           expect(child).not.toBe(parent)
-    //           // expect(isDraft(child)).toBeTruthy()
-    //           expect(original(child)).toBe(parent)
-    //         })
-    //       })
-    //     })
+      describe('when base state is a draft', () => {
+        it('always wraps the draft in a new draft', () => {
+          produce(reactive({}), (parent) => {
+            produce(reactive(parent), (child) => {
+              expect(child).toBe(parent)
+              expect(isDraft(child)).toBeTruthy()
+              expect(original(child)).toBe(original(parent))
+            })
+          })
+        })
 
-    //     // Reported by: https://github.com/mweststrate/immer/issues/343
-    //     it('ensures each property is drafted', () => {
-    //       produce({ a: {}, b: {} }, (parent) => {
-    //         parent.a // Access "a" but not "b"
-    //         produce(parent, (child) => {
-    //           child.c = 1
-    //           // expect(isDraft(child.a)).toBeTruthy()
-    //           // expect(isDraft(child.b)).toBeTruthy()
-    //         })
-    //       })
-    //     })
+        // Reported by: https://github.com/mweststrate/immer/issues/343
+        it('ensures each property is drafted', () => {
+          produce(reactive({ a: {}, b: {} }), (parent) => {
+            parent.a // Access "a" but not "b"
+            produce(reactive(parent), (child) => {
+              child.c = 1
+              expect(isDraft(child.a)).toBeTruthy()
+              expect(isDraft(child.b)).toBeTruthy()
+            })
+          })
+        })
 
-    //     it('preserves any pending changes', () => {
-    //       produce({ a: 1, b: 1, d: 1 }, (parent) => {
-    //         parent.b = 2
-    //         parent.c = 2
-    //         delete parent.d
-    //         produce(parent, (child) => {
-    //           expect(child.a).toBe(1) // unchanged
-    //           expect(child.b).toBe(2) // changed
-    //           expect(child.c).toBe(2) // added
-    //           expect(child.d).toBeUndefined() // deleted
-    //         })
-    //       })
-    //     })
-    //   })
+        it('preserves any pending changes', () => {
+          produce(reactive({ a: 1, b: 1, d: 1 }), (parent) => {
+            parent.b = 2
+            parent.c = 2
+            delete parent.d
+            produce(reactive(parent), (child) => {
+              expect(child.a).toBe(1) // unchanged
+              expect(child.b).toBe(2) // changed
+              expect(child.c).toBe(2) // added
+              expect(child.d).toBeUndefined() // deleted
+            })
+          })
+        })
+      })
 
-    //   describe('when base state contains a draft', () => {
-    //     it('wraps unowned draft with its own draft', () => {
-    //       produce({ a: {} }, (parent) => {
-    //         produce({ a: parent.a }, (child) => {
-    //           expect(child.a).not.toBe(parent.a)
-    //           // expect(isDraft(child.a)).toBeTruthy()
-    //           expect(original(child.a)).toBe(parent.a)
-    //         })
-    //       })
-    //     })
+      describe('when base state contains a draft', () => {
+        it('wraps unowned draft with its own draft', () => {
+          produce(reactive({ a: {} }), (parent) => {
+            parent.a.b = 'b'
+            const res = produce(reactive({ a: parent.a }), (child) => {
+              expect(child.a).toBe(parent.a)
+              expect(isDraft(child.a)).toBeTruthy()
+              expect(original(child.a)).not.toBe(parent.a)
+            })
+          })
+        })
 
-    //     it('returns unowned draft if no changes were made', () => {
-    //       produce({ a: {} }, (parent) => {
-    //         const result = produce({ a: parent.a }, () => {})
-    //         expect(result.a).toBe(parent.a)
-    //       })
-    //     })
+        it('returns unowned draft if no changes were made', () => {
+          produce(reactive({ a: {} }), (parent) => {
+            const result = produce({ a: parent.a }, () => {})
+            expect(result.a).toBe(parent.a)
+          })
+        })
 
-    //     it('clones the unowned draft when changes are made', () => {
-    //       produce({ a: {} }, (parent) => {
-    //         const result = produce({ a: parent.a }, (child) => {
-    //           child.a.b = 1
-    //         })
-    //         expect(result.a).not.toBe(parent.a)
-    //         expect(result.a.b).toBe(1)
-    //         expect('b' in parent.a).toBeFalsy()
-    //       })
-    //     })
+        it('clones the unowned draft when changes are made', () => {
+          const res = produce(reactive({ a: {} }), (parent) => {
+            const result = produce(reactive({ a: parent.a }), (child) => {
+              child.a.b = 1
+            })
+            expect(result.a).not.toBe(parent.a)
+            expect(result.a.b).toBe(1)
+            expect('b' in parent.a).toBeFalsy()
+          })
+        })
 
-    //     // We cannot auto-freeze the result of a nested producer,
-    //     // because it may contain a draft from a parent producer.
-    //     it('never auto-freezes the result', () => {
-    //       produce({ a: {} }, (parent) => {
-    //         const r = produce({ a: parent.a }, (child) => {
-    //           child.b = 1 // Ensure a copy is returned.
-    //         })
-    //         expect(Object.isFrozen(r)).toBeFalsy()
-    //       })
-    //     })
-    //   })
+        // We cannot auto-freeze the result of a nested producer,
+        // because it may contain a draft from a parent producer.
+        it('never auto-freezes the result', () => {
+          produce(reactive({ a: {} }), (parent) => {
+            const r = produce(reactive({ a: parent.a }), (child) => {
+              child.b = 1 // Ensure a copy is returned.
+            })
+            expect(Object.isFrozen(r)).toBeFalsy()
+          })
+        })
+      })
 
-    //   // "Upvalues" are variables from a parent scope.
-    //   it('does not finalize upvalue drafts', () => {
-    //     produce({ a: {}, b: {} }, (parent) => {
-    //       expect(produce({}, () => parent)).toEqual(parent)
-    //       parent.x // Ensure proxy not revoked.
+      // "Upvalues" are variables from a parent scope.
+      it('does not finalize upvalue drafts', () => {
+        produce(reactive({ a: {}, b: {} }), (parent) => {
+          expect(produce(reactive({}), () => parent)).toBe(original(parent))
+          parent.x // Ensure proxy not revoked.
 
-    //       expect(produce({}, () => [parent])[0]).toBe(parent)
-    //       parent.x // Ensure proxy not revoked.
+          expect(produce(reactive({}), () => [parent])[0]).toBe(parent)
+          parent.x // Ensure proxy not revoked.
 
-    //       expect(produce({}, () => parent.a)).toEqual(parent.a)
-    //       parent.a.x // Ensure proxy not revoked.
+          expect(produce(reactive({}), () => parent.a)).toBe(original(parent.a))
+          parent.a.x // Ensure proxy not revoked.
 
-    //       // Modified parent test
-    //       parent.c = 1
-    //       expect(produce({}, () => [parent.b])[0]).toBe(parent.b)
-    //       parent.b.x // Ensure proxy not revoked.
-    //     })
-    //   })
-
-    //   it('works with interweaved Immer instances', () => {
-    //     const options = { useProxies, autoFreeze }
-    //     const one = createPatchedImmer(options)
-    //     const two = createPatchedImmer(options)
-
-    //     const base = {}
-    //     const result = one.produce(base, (s1) =>
-    //       two.produce({ s1 }, (s2) => {
-    //         expect(original(s2.s1)).toBe(s1)
-    //         s2.n = 1
-    //         s2.s1 = one.produce({ s2 }, (s3) => {
-    //           expect(original(s3.s2)).toBe(s2)
-    //           expect(original(s3.s2.s1)).toBe(s2.s1)
-    //           return s3.s2.s1
-    //         })
-    //       })
-    //     )
-    //     expect(result.n).toBe(1)
-    //     expect(result.s1).toBe(base)
-    //   })
-    // })
+          // Modified parent test
+          parent.c = 1
+          expect(produce(reactive({}), () => [parent.b])[0]).toBe(
+            original(parent.b)
+          )
+          parent.b.x // Ensure proxy not revoked.
+        })
+      })
+    })
 
     it('throws when Object.setPrototypeOf() is used on a draft', () => {
       produce(reactive({}), (draft) => {
@@ -1403,7 +1406,7 @@ describe(`reactivity/producer`, () => {
 
     it("'this' should not be bound anymore - 1", () => {
       const base = { x: 3 }
-      const next1 = produce(base, function () {
+      const next1 = produce(reactive(base), function () {
         expect(this).toBe(undefined)
       })
     })
@@ -1424,13 +1427,13 @@ describe(`reactivity/producer`, () => {
         }),
       }
 
-      expect(world.inc(world).counter.count).toBe(2)
+      expect(world.inc(reactive(world)).counter.count).toBe(2)
     })
 
     // See here: https://github.com/mweststrate/immer/issues/89
     it('supports the spread operator', () => {
       const base = { foo: { x: 0, y: 0 }, bar: [0, 0] }
-      const result = produce(base, (draft) => {
+      const result = produce(reactive(base), (draft) => {
         draft.foo = { x: 1, ...draft.foo, y: 1 }
         draft.bar = [1, ...draft.bar, 1]
       })
@@ -1442,35 +1445,35 @@ describe(`reactivity/producer`, () => {
 
     it('processes with lodash.set', () => {
       const base = [{ id: 1, a: 1 }]
-      const result = produce(base, (draft) => {
+      const result = produce(reactive(base), (draft) => {
         lodash.set(draft, '[0].a', 2)
       })
-      // expect(base[0].a).toEqual(1)
+      expect(base[0].a).toEqual(1)
       expect(result[0].a).toEqual(2)
     })
 
     it('processes with lodash.find', () => {
       const base = [{ id: 1, a: 1 }]
-      const result = produce(base, (draft) => {
+      const result = produce(reactive(base), (draft) => {
         const obj1 = lodash.find(draft, { id: 1 })
         lodash.set(obj1, 'a', 2)
       })
-      // expect(base[0].a).toEqual(1)
+      expect(base[0].a).toEqual(1)
       expect(result[0].a).toEqual(2)
     })
 
     it('does not draft external data', () => {
       const externalData = { x: 3 }
       const base = {}
-      const next = produce(base, (draft) => {
+      const next = produce(reactive(base), (draft) => {
         // potentially, we *could* draft external data automatically, but only if those statements are not switched...
         draft.y = externalData
         draft.y.x += 1
-        externalData.x += 1
+        externalData.x += 2
       })
-      expect(next).toEqual({ y: { x: 5 } })
-      expect(externalData.x).toBe(5)
-      // expect(next.y).toBe(externalData)
+      expect(next).toEqual({ y: { x: 6 } })
+      expect(externalData.x).toBe(6)
+      expect(next.y).toBe(externalData)
     })
 
     it('does not create new state unnecessary, #491', () => {
@@ -1482,7 +1485,7 @@ describe(`reactivity/producer`, () => {
       // See explanation in issue
       expect(next1).not.toBe(a)
 
-      const next2 = produce(a, (draft) => {
+      const next2 = produce(reactive(a), (draft) => {
         draft.highlight = true
       })
       expect(next2).toBe(a)
@@ -1491,7 +1494,7 @@ describe(`reactivity/producer`, () => {
     describe('recipe functions', () => {
       it('can return a new object', () => {
         const base = { x: 3 }
-        const res = produce(base, (d) => {
+        const res = produce(reactive(base), (d) => {
           return { x: d.x + 1 }
         })
         expect(res).not.toBe(base)
@@ -1508,25 +1511,39 @@ describe(`reactivity/producer`, () => {
         expect(res).toEqual({ x: 4 })
       })
 
+      it('can return an new object with unmodified child draft', () => {
+        const base = { a: {}, b: 1 }
+        const res = produce(reactive(base), (d) => {
+          return {
+            ...d,
+            b: d.b + 1,
+          }
+        })
+        expect(res).not.toBe(base)
+        expect(res.a).toBe(base.a)
+      })
+
       it('can return an unmodified child draft', () => {
         const base = { a: {} }
-        const res = produce(base, (d) => {
+        const res = produce(reactive(base), (d) => {
           return d.a
         })
         expect(res).toBe(base.a)
       })
 
-      it('can return a modified child draft', () => {
+      // TODO: Avoid throwing if only the child draft was modified.
+      it('cannot return a modified child draft', () => {
         const base = { a: {} }
-        const next = produce(base, (d) => {
-          d.a.b = 1
-          return d.a
-        })
-        expect(next).toEqual({ b: 1 })
+        expect(() => {
+          produce(reactive(base), (d) => {
+            d.a.b = 1
+            return d.a
+          })
+        }).toThrow()
       })
 
       it('can return an object with two references to another object', () => {
-        const next = produce({}, (d) => {
+        const next = produce(reactive({}), (d) => {
           const obj = {}
           return { obj, arr: [obj] }
         })
@@ -1535,10 +1552,10 @@ describe(`reactivity/producer`, () => {
 
       it('can return an object with two references to an unmodified draft', () => {
         const base = { a: {} }
-        const next = produce(base, (d) => {
+        const next = produce(reactive(base), (d) => {
           return [d.a, d.a]
         })
-        expect(next[0]).toEqual(base.a)
+        expect(next[0]).toBe(base.a)
         expect(next[0]).toBe(next[1])
       })
 
@@ -1546,8 +1563,8 @@ describe(`reactivity/producer`, () => {
         const res = {}
         res.self = res
         expect(() => {
-          produce(res, () => res.self)
-        }).not.toThrow()
+          produce(reactive(res), () => res.self)
+        }).toThrow()
       })
     })
 
@@ -1616,7 +1633,7 @@ describe(`reactivity/producer`, () => {
 
     it('should fix #117 - 1', () => {
       const reducer = (state, action) =>
-        produce(state, (draft) => {
+        produce(reactive(state), (draft) => {
           switch (action.type) {
             case 'SET_STARTING_DOTS':
               return draft.availableStartingDots.map((a) => a)
@@ -1639,7 +1656,7 @@ describe(`reactivity/producer`, () => {
 
     it('should fix #117 - 2', () => {
       const reducer = (state, action) =>
-        produce(state, (draft) => {
+        produce(reactive(state), (draft) => {
           switch (action.type) {
             case 'SET_STARTING_DOTS':
               return {
@@ -1719,17 +1736,13 @@ describe(`reactivity/producer`, () => {
 
     it('cannot produce undefined by returning undefined', () => {
       const base = 3
-      expect(produce(base, () => 4)).toBe(4)
-      expect(produce(base, () => null)).toBe(null)
-      expect(produce(base, () => undefined)).toBe(3)
-      expect(produce(base, () => {})).toBe(3)
-      expect(produce(undefined, () => {})).toBe(undefined)
+      expect(produce(reactive(base), () => 4)).toBe(4)
+      expect(produce(reactive(base), () => null)).toBe(null)
+      expect(produce(reactive(base), () => undefined)).toBe(3)
+      expect(produce(reactive(base), () => {})).toBe(3)
+      expect(produce(reactive(undefined), () => {})).toBe(undefined)
 
-      expect(produce({}, () => undefined)).toEqual({})
-    })
-
-    describe('base state type', () => {
-      testObjectTypes(produce)
+      expect(produce(reactive({}), () => undefined)).toEqual({})
     })
 
     afterEach(() => {
@@ -1747,18 +1760,18 @@ describe(`reactivity/producer`, () => {
         },
       }
 
-      const nextState = produce(state, (draft) => {
+      const nextState = produce(reactive(state), (draft) => {
         return { ...draft }
       })
-      const nextState1 = produce(state, (draft) => {
-        const newLevel1 = produce(draft.level1, (level1Draft) => {
+      const nextState1 = produce(reactive(state), (draft) => {
+        const newLevel1 = produce(reactive(draft.level1), (level1Draft) => {
           return { ...level1Draft }
         })
         draft.level1 = newLevel1
       })
 
-      const nextState2 = produce(state, (draft) => {
-        const newLevel1 = produce(draft.level1, (level1Draft) => {
+      const nextState2 = produce(reactive(state), (draft) => {
+        const newLevel1 = produce(reactive(draft.level1), (level1Draft) => {
           return { ...level1Draft }
         })
         return {
@@ -1766,8 +1779,8 @@ describe(`reactivity/producer`, () => {
         }
       })
 
-      const nextState3 = produce(state, (draft) => {
-        const newLevel1 = produce(draft.level1, (level1Draft) => {
+      const nextState3 = produce(reactive(state), (draft) => {
+        const newLevel1 = produce(reactive(draft.level1), (level1Draft) => {
           return Object.assign({}, level1Draft)
         })
         return Object.assign(draft, {
@@ -1781,61 +1794,61 @@ describe(`reactivity/producer`, () => {
       expect(nextState3).toEqual(expected)
     })
 
-    // it(`Something with nested producers #522`, () => {
-    //   function initialStateFactory() {
-    //     return {
-    //       substate: {
-    //         array: [
-    //           { id: 'id1', value: 0 },
-    //           { id: 'id2', value: 0 },
-    //         ],
-    //       },
-    //       array: [
-    //         { id: 'id1', value: 0 },
-    //         { id: 'id2', value: 0 },
-    //       ],
-    //     }
-    //   }
+    //   // it(`Something with nested producers #522`, () => {
+    //   //   function initialStateFactory() {
+    //   //     return {
+    //   //       substate: {
+    //   //         array: [
+    //   //           { id: 'id1', value: 0 },
+    //   //           { id: 'id2', value: 0 },
+    //   //         ],
+    //   //       },
+    //   //       array: [
+    //   //         { id: 'id1', value: 0 },
+    //   //         { id: 'id2', value: 0 },
+    //   //       ],
+    //   //     }
+    //   //   }
 
-    //   const arrayProducer = produce((draftArray) => {
-    //     draftArray[0].value += 5
-    //   })
+    //   //   const arrayProducer = produce((draftArray) => {
+    //   //     draftArray[0].value += 5
+    //   //   })
 
-    //   const subProducer = produce((draftSubState) => {
-    //     draftSubState.array = arrayProducer(draftSubState.array)
-    //   })
+    //   //   const subProducer = produce((draftSubState) => {
+    //   //     draftSubState.array = arrayProducer(draftSubState.array)
+    //   //   })
 
-    //   const globalProducer = produce((draft) => {
-    //     draft.substate = subProducer(draft.substate)
-    //     draft.array = arrayProducer(draft.array)
-    //   }, initialStateFactory())
+    //   //   const globalProducer = produce((draft) => {
+    //   //     draft.substate = subProducer(draft.substate)
+    //   //     draft.array = arrayProducer(draft.array)
+    //   //   }, initialStateFactory())
 
-    //   {
-    //     const state = globalProducer(undefined)
-    //     expect(state.array[0].value).toBe(5)
-    //     expect(state.array.length).toBe(2)
-    //     expect(state.array[1]).toMatchObject({
-    //       id: 'id2',
-    //       value: 0,
-    //     })
-    //   }
+    //   //   {
+    //   //     const state = globalProducer(undefined)
+    //   //     expect(state.array[0].value).toBe(5)
+    //   //     expect(state.array.length).toBe(2)
+    //   //     expect(state.array[1]).toMatchObject({
+    //   //       id: 'id2',
+    //   //       value: 0,
+    //   //     })
+    //   //   }
 
-    //   {
-    //     const state = globalProducer(undefined)
-    //     expect(state.substate.array[0].value).toBe(5)
-    //     expect(state.substate.array.length).toBe(2)
-    //     expect(state.substate.array[1]).toMatchObject({
-    //       id: 'id2',
-    //       value: 0,
-    //     })
-    //     expect(state.substate.array).toMatchObject(state.array)
-    //   }
-    // })
+    //   //   {
+    //   //     const state = globalProducer(undefined)
+    //   //     expect(state.substate.array[0].value).toBe(5)
+    //   //     expect(state.substate.array.length).toBe(2)
+    //   //     expect(state.substate.array[1]).toMatchObject({
+    //   //       id: 'id2',
+    //   //       value: 0,
+    //   //     })
+    //   //     expect(state.substate.array).toMatchObject(state.array)
+    //   //   }
+    //   // })
 
     it('#613', () => {
       const x1 = {}
-      const y1 = produce(x1, (draft) => {
-        draft.foo = produce({ bar: 'baz' }, (draft1) => {
+      const y1 = produce(reactive(x1), (draft) => {
+        draft.foo = produce(reactive({ bar: 'baz' }), (draft1) => {
           draft1.bar = 'baa'
         })
         draft.foo.bar = 'a'
@@ -1864,7 +1877,7 @@ describe(`reactivity/producer`, () => {
     it('returns false for new objects added to a draft', () => {
       produce(reactive({}), (state) => {
         state.a = {}
-        expect(isDraft(state.a)).toBeTruthy()
+        expect(isDraft(state.a)).toBeFalsy()
       })
     })
     it('returns false for objects returned by the producer', () => {
@@ -1872,7 +1885,7 @@ describe(`reactivity/producer`, () => {
       expect(isDraft(object)).toBeFalsy()
     })
     it('returns false for arrays returned by the producer', () => {
-      const array = produce({}, (_) => [])
+      const array = produce(reactive({}), (_) => [])
       expect(isDraft(array)).toBeFalsy()
     })
     it('returns false for object drafts returned by the producer', () => {
@@ -1948,6 +1961,10 @@ describe(`reactivity/producer`, () => {
   // })
 })
 
+describe('base state type', () => {
+  // testObjectTypes(produce)
+})
+
 function testObjectTypes(produce) {
   class Foo {
     constructor(foo) {
@@ -2017,12 +2034,12 @@ function testObjectTypes(produce) {
     const state = new State()
 
     it('should use a method to assing a field using a getter that return a non primitive object', () => {
-      const newState = produce(state, (draft) => {
+      const newState = produce(reactive(state), (draft) => {
         draft.syncFoo()
       })
       expect(newState.foo).toEqual(1)
       expect(newState.bar).toEqual({ baz: 2 })
-      expect(state.bar).toEqual({ baz: 2 })
+      expect(state.bar).toEqual({ baz: 1 })
     })
   })
 
@@ -2046,7 +2063,7 @@ function testObjectTypes(produce) {
     const state = new State()
 
     it('should use a method to assing a field using a getter that return a non primitive object', () => {
-      const newState = produce(state, (draft) => {
+      const newState = produce(reactive(state), (draft) => {
         draft.syncFoo()
       })
       expect(newState.foo).toEqual(1)
@@ -2069,14 +2086,14 @@ function testObjectTypes(produce) {
     const state = new State()
 
     it('should define a field with a setter', () => {
-      const newState3 = produce(state, (d) => {
+      const newState3 = produce(reactive(state), (d) => {
         d.bar = 1
         expect(d._bar).toEqual(1)
       })
       expect(newState3._bar).toEqual(1)
       expect(newState3.bar).toEqual(1)
-      expect(state._bar).toEqual(1)
-      expect(state.bar).toEqual(1)
+      expect(state._bar).toEqual(0)
+      expect(state.bar).toEqual(0)
     })
   })
 
@@ -2092,14 +2109,14 @@ function testObjectTypes(produce) {
     }
 
     const state = new State()
-    const next = produce(state, (draft) => {
+    const next = produce(reactive(state), (draft) => {
       expect(draft.y).toBeUndefined()
       draft.y = 2 // setter is inherited, so works
       expect(draft.x).toBe(2)
     })
     expect(setterCalled).toBe(1)
     expect(next.x).toBe(2)
-    expect(state.x).toBe(2)
+    expect(state.x).toBe(0)
   })
 
   describe('getter only', () => {
@@ -2114,7 +2131,7 @@ function testObjectTypes(produce) {
     }
 
     const state = new State()
-    const next = produce(state, (draft) => {
+    const next = produce(reactive(state), (draft) => {
       expect(draft.y).toBe(0)
       // expect(() => {
       //   draft.y = 2
@@ -2124,7 +2141,7 @@ function testObjectTypes(produce) {
     })
     expect(next.x).toBe(2)
     expect(next.y).toBe(2)
-    expect(state.x).toBe(2)
+    expect(state.x).toBe(0)
   })
 
   describe('own setter only', () => {
@@ -2137,41 +2154,41 @@ function testObjectTypes(produce) {
       },
     }
 
-    const next = produce(state, (draft) => {
+    const next = produce(reactive(state), (draft) => {
       expect(draft.y).toBeUndefined()
       // setter is not preserved, so we can write
       draft.y = 2
-      expect(draft.x).toBe(2)
-      expect(draft.y).toBe(undefined)
+      expect(draft.x).toBe(0)
+      expect(draft.y).toBe(2)
     })
-    expect(setterCalled).toBe(1)
-    expect(next.x).toBe(2)
-    expect(next.y).toBe(undefined)
-    expect(state.x).toBe(2)
+    expect(setterCalled).toBe(0)
+    expect(next.x).toBe(0)
+    expect(next.y).toBe(2)
+    expect(state.x).toBe(0)
   })
 
-  // describe('own getter only', () => {
-  //   let getterCalled = 0
-  //   const state = {
-  //     x: 0,
-  //     get y() {
-  //       getterCalled++
-  //       return this.x
-  //     },
-  //   }
+  describe('own getter only', () => {
+    let getterCalled = 0
+    const state = {
+      x: 0,
+      get y() {
+        getterCalled++
+        return this.x
+      },
+    }
 
-  //   const next = produce(state, (draft) => {
-  //     expect(draft.y).toBe(0)
-  //     // de-referenced, so stores it locally
-  //     draft.y = 2
-  //     expect(draft.y).toBe(2)
-  //     expect(draft.x).toBe(0)
-  //   })
-  //   expect(getterCalled).not.toBe(1)
-  //   expect(next.x).toBe(0)
-  //   expect(next.y).toBe(2)
-  //   expect(state.x).toBe(0)
-  // })
+    const next = produce(reactive(state), (draft) => {
+      expect(draft.y).toBe(0)
+      // de-referenced, so stores it locally
+      draft.y = 2
+      expect(draft.y).toBe(2)
+      expect(draft.x).toBe(0)
+    })
+    expect(getterCalled).toBe(1)
+    expect(next.x).toBe(0)
+    expect(next.y).toBe(2)
+    expect(state.x).toBe(0)
+  })
 
   describe('#620', () => {
     const customSymbol = Symbol('customSymbol')
@@ -2185,7 +2202,7 @@ function testObjectTypes(produce) {
     let test0 = new TestClass()
 
     /* First produce. This works */
-    let test1 = produce(test0, (draft) => {
+    let test1 = produce(reactive(test0), (draft) => {
       expect(draft[customSymbol]).toBe(1)
       draft[customSymbol] = 2
     })
@@ -2196,7 +2213,7 @@ function testObjectTypes(produce) {
 
     /* Second produce. This does NOT work. See console error */
     /* With version 6.0.9, this works though */
-    let test2 = produce(test1, (draft) => {
+    let test2 = produce(reactive(test1), (draft) => {
       expect(draft[customSymbol]).toBe(2)
       draft[customSymbol] = 3
     })

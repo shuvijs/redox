@@ -89,3 +89,30 @@ export function invariant(condition: any, message?: string): asserts condition {
   // *This block will be removed in production builds*
   throw new Error(`[Redox] ${message || ''}`)
 }
+
+const slice = Array.prototype.slice
+/*#__PURE__*/
+export function shallowCopy(base: any) {
+  if (Array.isArray(base)) return slice.call(base)
+  const descriptors = Object.getOwnPropertyDescriptors(base)
+  let keys = Reflect.ownKeys(descriptors)
+  for (let i = 0; i < keys.length; i++) {
+    const key: any = keys[i]
+    const desc = descriptors[key]
+    if (desc.writable === false) {
+      desc.writable = true
+      desc.configurable = true
+    }
+    // like object.assign, we will read any _own_, get/set accessors. This helps in dealing
+    // with libraries that trap values, like mobx or vue
+    // unlike object.assign, non-enumerables will be copied as well
+    if (desc.get || desc.set)
+      descriptors[key] = {
+        configurable: true,
+        writable: true, // could live with !!desc.set as well here...
+        enumerable: desc.enumerable,
+        value: base[key],
+      }
+  }
+  return Object.create(Object.getPrototypeOf(base), descriptors)
+}

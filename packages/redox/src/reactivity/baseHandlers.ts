@@ -18,6 +18,9 @@ import {
   ITERATE_KEY,
   pauseTracking,
   resetTracking,
+  getProducerCopy,
+  getProducerCopyBase,
+  activeEffect,
 } from './effect'
 import {
   isObject,
@@ -27,6 +30,7 @@ import {
   isArray,
   isIntegerKey,
   extend,
+  shallowCopy,
 } from '../utils'
 import { warn } from '../warning'
 
@@ -60,7 +64,7 @@ function createArrayInstrumentations() {
   // values
   ;(['includes', 'indexOf', 'lastIndexOf'] as const).forEach((key) => {
     instrumentations[key] = function (this: unknown[], ...args: unknown[]) {
-      const arr = toRaw(this) as any
+      let arr = toRaw(this) as any
       for (let i = 0, l = this.length; i < l; i++) {
         track(arr, TrackOpTypes.GET, i + '', Reflect.get(arr, i))
       }
@@ -79,7 +83,11 @@ function createArrayInstrumentations() {
   ;(['push', 'pop', 'shift', 'unshift', 'splice'] as const).forEach((key) => {
     instrumentations[key] = function (this: unknown[], ...args: unknown[]) {
       pauseTracking()
-      const target = toRaw(this) as any
+      let target = toRaw(this) as any
+      const copyMap = getProducerCopy()
+      if (copyMap) {
+        target = getCopyValue(copyMap, target)
+      }
       const res = target[key].apply(this, args)
       resetTracking()
       trigger(target, TriggerOpTypes.MODIFIED, key, args, null)
@@ -112,13 +120,43 @@ function createGetter(isReadonly = false, shallow = false): ProxyGetter {
       return target
     }
 
+    const copyMap = getProducerCopy()
+
+    if (copyMap) {
+      if (activeEffect?.parent) {
+        target = getCopyValue(activeEffect.parent.copyMap!, target)
+      }
+      const copyTarget = getCopyValue(copyMap, target)
+      target = copyTarget
+      receiver = copyTarget
+    }
+
     const targetIsArray = isArray(target)
 
     if (!isReadonly && targetIsArray && hasOwn(arrayInstrumentations, key)) {
       return Reflect.get(arrayInstrumentations, key, receiver)
     }
 
-    const res = Reflect.get(target, key, receiver)
+    let res = Reflect.get(target, key, receiver)
+
+    const isResObj = isObject(res)
+
+    let isOriginValue = true
+
+    if (copyMap && isResObj) {
+      const baseTarget = activeEffect?.copyBase?.get(target)
+      isOriginValue = !hasChanged(baseTarget[key], res)
+      res = toRaw(res) // res may be proxy
+      if (isOriginValue) {
+        let copyRes = copyMap.get(res)
+        if (!copyRes) {
+          copyRes = getCopyValue(copyMap, res)
+        }
+        // target[(key) as keyof typeof target] = copyRes
+        Reflect.set(target, key, copyRes, receiver)
+        res = copyRes
+      }
+    }
 
     if (isSymbol(key) ? builtInSymbols.has(key) : isNonTrackableKeys.has(key)) {
       return res
@@ -126,11 +164,16 @@ function createGetter(isReadonly = false, shallow = false): ProxyGetter {
 
     track(target, TrackOpTypes.GET, key, res)
 
+    if (copyMap && !isOriginValue) {
+      // copyres may has reactive return it, or return res, res should be a new object to added.
+      return reactiveMap.get(res) || res
+    }
+
     if (shallow) {
       return res
     }
 
-    if (isObject(res)) {
+    if (isResObj) {
       // Convert returned value into a proxy as well. we do the isObject check
       // here to avoid invalid value warning. Also need to lazy access readonly
       // and reactive here to avoid circular dependency.
@@ -151,6 +194,14 @@ function createSetter(shallow = false) {
     value: unknown,
     receiver: object
   ): boolean {
+    const copyMap = getProducerCopy()
+
+    if (copyMap) {
+      const copyTarget = getCopyValue(copyMap, target)
+      target = copyTarget
+      receiver = copyTarget
+    }
+
     let oldValue = (target as any)[key]
     if (isReadonly(oldValue)) {
       return false
@@ -168,7 +219,9 @@ function createSetter(shallow = false) {
       isArray(target) && isIntegerKey(key)
         ? Number(key) < target.length
         : hasOwn(target, key)
+
     const result = Reflect.set(target, key, value, receiver)
+
     // don't trigger if target is something up in the prototype chain of original
     if (target === toRaw(receiver)) {
       if (!hadKey) {
@@ -182,6 +235,10 @@ function createSetter(shallow = false) {
 }
 
 function deleteProperty(target: object, key: string | symbol): boolean {
+  const copyMap = getProducerCopy()
+  if (copyMap) {
+    target = getCopyValue(copyMap, target)
+  }
   const hadKey = hasOwn(target, key)
   const oldValue = (target as any)[key]
   const result = Reflect.deleteProperty(target, key)
@@ -192,6 +249,10 @@ function deleteProperty(target: object, key: string | symbol): boolean {
 }
 
 function has(target: object, key: string | symbol): boolean {
+  const copyMap = getProducerCopy()
+  if (copyMap) {
+    target = getCopyValue(copyMap, target)
+  }
   const result = Reflect.has(target, key)
   if (!isSymbol(key) || !builtInSymbols.has(key)) {
     track(target, TrackOpTypes.HAS, key, result)
@@ -200,6 +261,10 @@ function has(target: object, key: string | symbol): boolean {
 }
 
 function ownKeys(target: object): (string | symbol)[] {
+  const copyMap = getProducerCopy()
+  if (copyMap) {
+    target = getCopyValue(copyMap, target)
+  }
   track(
     target,
     TrackOpTypes.ITERATE,
@@ -207,6 +272,22 @@ function ownKeys(target: object): (string | symbol)[] {
     null
   )
   return Reflect.ownKeys(target)
+}
+
+function getOwnPropertyDescriptor(target: object, key: keyof typeof target) {
+  const copyMap = getProducerCopy()
+
+  if (copyMap) {
+    target = getCopyValue(copyMap, target)
+  }
+  const desc = Reflect.getOwnPropertyDescriptor(target, key)
+  if (!desc) return desc
+  return {
+    writable: true,
+    configurable: !isArray(target) || key !== 'length',
+    enumerable: desc.enumerable,
+    value: target[key],
+  }
 }
 
 function setPrototypeOf(_target: object, _v: object | null): boolean {
@@ -220,6 +301,7 @@ export const mutableHandlers: ProxyHandler<object> = {
   has,
   ownKeys,
   setPrototypeOf,
+  getOwnPropertyDescriptor,
 }
 
 export const readonlyHandlers: ProxyHandler<object> = {
@@ -263,3 +345,18 @@ export const shallowReadonlyHandlers = /*#__PURE__*/ extend(
     get: shallowReadonlyGet,
   }
 )
+
+// if producer effect, get copy state that is corresponding origin state
+function getCopyValue(copyMap: Map<any, any>, target: any) {
+  let copyTarget = copyMap.get(target)
+  if (!copyTarget) {
+    copyTarget = shallowCopy(target)
+    // don't delete for debug
+    // copyTarget.__copy = Math.random().toFixed(3)
+    copyMap.set(target, copyTarget)
+    copyMap.set(copyTarget, copyTarget)
+    const copyBase = getProducerCopyBase()
+    copyBase!.set(copyTarget, target)
+  }
+  return copyTarget
+}

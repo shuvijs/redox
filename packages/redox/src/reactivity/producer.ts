@@ -3,7 +3,7 @@ import {
   isFunction,
   // hasChanged,
   isObject,
-  // hasOwn
+  // hasOwn,
 } from '../utils'
 import {
   ReactiveEffect,
@@ -12,14 +12,9 @@ import {
 } from './effect'
 import { ReactiveFlags, toRaw } from './reactive'
 
-export interface View<T = any> {
-  readonly value: T
-  readonly effect: ReactiveEffect<T>
-}
-
 export type Recipe<T> = (...args: any[]) => T
 
-export class ProduceImpl<T extends {}> {
+class ProduceImpl<T extends {}> {
   public readonly effect: ReactiveEffect<T>
 
   public readonly [ReactiveFlags.IS_READONLY]: boolean = true
@@ -29,6 +24,8 @@ export class ProduceImpl<T extends {}> {
   constructor(base: T, recipe: Recipe<T>, context: any) {
     this._base = toRaw(base)
     this.effect = new ReactiveEffect(recipe.bind(context, base))
+    this.effect.copyMap = new Map()
+    this.effect.copyBase = new Map()
   }
 
   get value() {
@@ -37,28 +34,38 @@ export class ProduceImpl<T extends {}> {
     let value: any
     value = self.effect.run()! as T
     value = this._processResult(value)
+    value = this._revertNotModifyValue(value)
+    self.effect.copyMap!.clear()
+    self.effect.copyBase!.clear()
     self.effect.stop()
     return value
   }
 
   private _processResult(value: any) {
-    if (value === undefined) {
-      return this._getDuplication()
+    let result = value
+    if (result === undefined) {
+      return (result = this._getDuplication())
     }
-    if (isObject(value) && value[ReactiveFlags.RAW]) {
-      value = toRaw(value)
-      if (value === this._base) {
-        return this._getDuplication()
+    if (isObject(result)) {
+      if (result[ReactiveFlags.RAW]) {
+        result = toRaw(result)
       }
-      return value
+      const record = this.effect.targetMap.get(result)
+      if (record?.modified) {
+        throw new Error(`cannot return a modified child draft`)
+      }
+      if (result === this._base) {
+        result = this._getDuplication()
+      } else {
+        const rootNode = this.effect.targetMap.values().next().value
+        if (rootNode && rootNode.modified) {
+          throw new Error(`draft is modified and another object is returned`)
+        }
+      }
+      return result
     }
 
-    const rootNode = this.effect.targetMap.values().next().value
-    if (rootNode && rootNode.modified) {
-      throw new Error(`draft is modified and another object is returned`)
-    }
-
-    return value
+    return result
   }
 
   set value(_newValue: T) {
@@ -90,51 +97,83 @@ export class ProduceImpl<T extends {}> {
     if (!isObject(rootNode.target)) {
       return rootNode.target
     }
-    const cache = new WeakMap<any, any>()
-    const rootDuplication = shallowCopy(rootNode.target)
-    cache.set(rootNode.target, rootDuplication)
+    return rootNode.target
+  }
+
+  private _revertNotModifyValue(value: any) {
+    if (!isObject(value)) {
+      return value
+    }
+    const { copyBase, targetMap, copyMap } = this.effect
+    const record = targetMap.get(value)
+    if (record && record.modified === false) {
+      const base = copyBase!.get(value)
+      return base || value
+    }
     const queue: {
       parent: any
       key: string | symbol
       value: any
     }[] = []
-    Reflect.ownKeys(rootDuplication).forEach((key) => {
-      const value = rootDuplication[key]
-      if (isObject(value)) {
+    Reflect.ownKeys(value).forEach((key: keyof typeof value) => {
+      let childValue = value[key]
+      if (isObject(childValue)) {
+        if (childValue === this._base) {
+          throw new Error(`cannot return a modified child draft`)
+        }
+        childValue = toRaw(childValue)
         queue.push({
-          parent: rootDuplication,
+          parent: value,
           key,
-          value,
+          value: childValue,
         })
       }
     })
-
+    // can't optimization by check `!record.modified`
+    // test: state with multiple references to an object
     while (queue.length) {
       const queueItem = queue.pop()!
-      const node = targetMap.get(queueItem.value)
-      if (node?.modified) {
-        const cacheValue = cache.get(node.target)
-        if (cacheValue) {
-          queueItem.parent[queueItem.key] = cacheValue
-          continue
+      let queueItemValue = queueItem.value
+      const queueItemKey = queueItem.key
+      const queueItemParent = queueItem.parent
+      const record = targetMap.get(queueItemValue)
+      if (!record) {
+        // no record meaning,not access the state
+        // do a check if the object ref on other property
+        // test: supports a base state with multiple references to an object
+        const copyValue = copyMap!.get(queueItemValue)
+        const copyValueRecord = targetMap.get(copyValue)
+        if (copyValueRecord?.modified) {
+          queueItemParent[queueItemKey] = copyValue
         }
-        const valueDuplication = shallowCopy(node.target)
-        cache.set(node.target, valueDuplication)
-        queueItem.parent[queueItem.key] = valueDuplication
-        Reflect.ownKeys(valueDuplication).forEach((key) => {
-          const value = valueDuplication[key]
-          if (isObject(value)) {
-            queue.push({
-              parent: valueDuplication,
-              key,
-              value,
-            })
-          }
-        })
+      } else if (record.modified) {
+        // if modified do a check, value should be copy value
+        if (record.target !== queueItemValue) {
+          queueItemParent[queueItemKey] = record.target
+        }
+      } else if (!record.modified) {
+        // not modified, revert copy ref to origin state ref
+        const baseValue = copyBase!.get(queueItemValue)
+        if (baseValue) {
+          queueItemParent[queueItemKey] = baseValue
+        }
       }
+      // queueItemValue must be newest, queueItemParent[queueItemKey] may update
+      // need update queueItemValue
+      queueItemValue = queueItemParent[queueItemKey]
+      Reflect.ownKeys(queueItemValue).forEach((key) => {
+        let childValue = queueItemValue[key]
+        if (isObject(childValue)) {
+          childValue = toRaw(childValue)
+          queue.push({
+            parent: queueItemValue,
+            key,
+            value: childValue,
+          })
+        }
+      })
     }
-
-    return rootDuplication
+    return value
   }
 }
 export function produce<T extends {}>(recipe: (draft: T) => any): any
@@ -158,31 +197,4 @@ export function produce<T extends {}>(this: any, base: any, recipe?: any): any {
   const pRef = new ProduceImpl<T>(base, recipe, context)
 
   return pRef.value
-}
-
-const slice = Array.prototype.slice
-/*#__PURE__*/
-export function shallowCopy(base: any) {
-  if (Array.isArray(base)) return slice.call(base)
-  const descriptors = Object.getOwnPropertyDescriptors(base)
-  let keys = Reflect.ownKeys(descriptors)
-  for (let i = 0; i < keys.length; i++) {
-    const key: any = keys[i]
-    const desc = descriptors[key]
-    if (desc.writable === false) {
-      desc.writable = true
-      desc.configurable = true
-    }
-    // like object.assign, we will read any _own_, get/set accessors. This helps in dealing
-    // with libraries that trap values, like mobx or vue
-    // unlike object.assign, non-enumerables will be copied as well
-    if (desc.get || desc.set)
-      descriptors[key] = {
-        configurable: true,
-        writable: true, // could live with !!desc.set as well here...
-        enumerable: desc.enumerable,
-        value: base[key],
-      }
-  }
-  return Object.create(Object.getPrototypeOf(base), descriptors)
 }
