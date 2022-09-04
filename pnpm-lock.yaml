@@ -182,11 +182,8 @@ importers:
   packages/redox:
     specifiers:
       dts-cli: ^1.5.1
-      immer: 9.0.6
       lodash: ^4.17.4
       lodash.clonedeep: ^4.5.0
-    dependencies:
-      immer: 9.0.6
     devDependencies:
       dts-cli: 1.5.1_ne2pw6sj4oqsxoym2tnqxm4ig4
       lodash: 4.17.21
@@ -13156,10 +13153,6 @@ packages:
 
   /immer/9.0.15:
     resolution: {integrity: sha512-2eB/sswms9AEUSkOm4SbV5Y7Vmt/bKRwByd52jfLkW4OLYeaTP3EEiJ9agqU0O/tq6Dk62Zfj+TJSqfm1rLVGQ==}
-    dev: false
-
-  /immer/9.0.6:
-    resolution: {integrity: sha512-G95ivKpy+EvVAnAab4fVa4YGYn24J1SpEktnJX7JJ45Bd7xqME/SCplFzYFmTbrkwZbQ4xJK1xMTUYBkN6pWsQ==}
     dev: false
 
   /import-cwd/2.1.0:

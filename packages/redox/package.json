@@ -44,9 +44,6 @@
   "engines": {
     "node": ">=10"
   },
-  "dependencies": {
-    "immer": "9.0.6"
-  },
   "devDependencies": {
     "dts-cli": "^1.5.1",
     "lodash": "^4.17.4",

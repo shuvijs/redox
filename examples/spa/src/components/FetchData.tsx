@@ -7,14 +7,14 @@ import { fetchA, fetchB } from '../models/fetchData'
 export type fetchASelectorParams = ModelSnapshot<typeof fetchA>
 export type fetchBSelectorParams = ModelSnapshot<typeof fetchB>
 
-const fetchASelector = function (stateAndViews: fetchAModelSnapshot) {
+const fetchASelector = function (stateAndViews: fetchASelectorParams) {
   return {
     data: stateAndViews.data,
     isLoading: stateAndViews.isLoading,
   }
 }
 
-const fetchBSelector = function (stateAndViews: fetchBModelSnapshot) {
+const fetchBSelector = function (stateAndViews: fetchBSelectorParams) {
   return {
     data: stateAndViews.data,
     isLoading: stateAndViews.isLoading,

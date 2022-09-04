@@ -61,6 +61,13 @@ export class ReactiveEffect<T = any> {
    * @internal
    */
   view?: ViewImpl<T>
+
+  /**
+   * Can be attached after creation
+   * @internal
+   */
+  copyMap?: Map<any, any>
+  copyBase?: Map<any, any>
   /**
    * @internal
    */
@@ -195,48 +202,74 @@ export function resetTracking() {
   shouldTrack = last === undefined ? true : last
 }
 
+export function getProducerCopy() {
+  return activeEffect?.copyMap
+}
+
+export function getProducerCopyBase() {
+  return activeEffect?.copyBase
+}
+
 export function track(
   target: object,
   type: TrackOpTypes,
   key: unknown,
   value: any
 ) {
-  // console.log(`track: `, { target, type, key, value })
   if (shouldTrack && activeEffect) {
     const debuggerEventExtraInfo: DebuggerEventExtraInfo | undefined =
       process.env.NODE_ENV === 'development' ? { target, type, key } : undefined
-    let current = activeEffect!.targetMap.get(target)
-    if (!current) {
-      activeEffect!.targetMap.set(
-        target,
-        (current = {
-          parent: NODE_ROOT,
-          record: new Map(),
-          modified: false,
-          target: target,
-        })
-      )
-    }
-    current.record.set(key, {
-      type,
-      value,
-    })
-    // process child
-    if (!activeEffect.view && isObject(value)) {
-      let child = activeEffect!.targetMap.get(value)
-      if (!child) {
-        activeEffect!.targetMap.set(
-          value,
-          (child = {
-            parent: current,
+    const targetMap = activeEffect!.targetMap
+    let current = targetMap.get(target)
+    if (getProducerCopy()) {
+      if (!current) {
+        targetMap.set(
+          target,
+          (current = {
+            parent: NODE_ROOT,
             record: new Map(),
             modified: false,
-            target: value,
+            target: target,
           })
         )
-      } else if (child.parent !== current) {
-        child.parent = current
       }
+      current.record.set(key, {
+        type,
+        value,
+      })
+      // process child
+      if (isObject(value)) {
+        let child = targetMap.get(value)
+        if (!child) {
+          activeEffect!.targetMap.set(
+            value,
+            (child = {
+              parent: current,
+              record: new Map(),
+              modified: false,
+              target: value,
+            })
+          )
+        } else if (child.parent !== current) {
+          child.parent = current
+        }
+      }
+    } else {
+      if (!current) {
+        targetMap.set(
+          target,
+          (current = {
+            parent: NODE_ROOT,
+            record: new Map(),
+            modified: false,
+            target: target,
+          })
+        )
+      }
+      current.record.set(key, {
+        type,
+        value,
+      })
     }
     if (process.env.NODE_ENV === 'development' && activeEffect!.onTrack) {
       activeEffect!.onTrack({
@@ -262,12 +295,6 @@ export function trigger(
   oldTarget?: Map<unknown, unknown> | Set<unknown>
 ) {
   if (shouldTrack && activeEffect) {
-    // console.log('target: ', target)
-    // console.log('type: ', type)
-    // console.log('key: ', key)
-    // console.log('newValue: ', newValue)
-    // console.log('oldValue: ', oldValue)
-    // console.log('oldTarget: ', oldTarget)
     const targetMap = activeEffect!.targetMap
     let modifiedTarget = targetMap.get(target)
     if (!modifiedTarget) {
@@ -290,7 +317,6 @@ export function trigger(
       setTargetParentValue(targetMap, newValue, modifiedTarget)
       setTargetParentValue(targetMap, oldValue, NODE_DELETE)
     }
-
     if (type === TriggerOpTypes.DELETE) {
       setTargetParentValue(targetMap, oldValue, NODE_DELETE)
     }

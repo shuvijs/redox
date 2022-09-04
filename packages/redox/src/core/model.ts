@@ -1,5 +1,5 @@
-import { produce, setAutoFreeze } from 'immer'
-import { isPlainObject, patchObj, invariant } from '../utils'
+import { produce } from '../reactivity/producer'
+import { isPlainObject, patchObj, invariant, isObject } from '../utils'
 import { warn } from '../warning'
 import {
   reactive,
@@ -10,15 +10,7 @@ import {
   EffectScope,
   onViewInvalidate,
 } from '../reactivity'
-import {
-  Deps,
-  Reducer,
-  ReducerOptions,
-  ActionOptions,
-  ViewOptions,
-  DefineModel,
-  AnyModel,
-} from './defineModel'
+import { AnyModel } from './defineModel'
 import { Views, Actions, Action, State, StateObject } from './modelOptions'
 import {
   ModelPublicInstance,
@@ -26,8 +18,6 @@ import {
 } from './modelPublicInstance'
 
 export { onViewInvalidate }
-
-setAutoFreeze(false)
 
 const randomString = () =>
   Math.random().toString(36).substring(7).split('').join('.')
@@ -75,7 +65,6 @@ export const enum AccessContext {
 export class ModelInternal<IModel extends AnyModel = AnyModel> {
   name: string
   options: IModel
-  reducer: Reducer<IModel['state']>
 
   // deps
   deps: Map<string, ModelInternal>
@@ -112,10 +101,10 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
     this.modify = this.modify.bind(this)
     this.getSnapshot = this.getSnapshot.bind(this)
     this.subscribe = this.subscribe.bind(this)
+    this.reducer = this.reducer.bind(this)
 
     this.options = model
     this.name = this.options.name || ''
-    this.reducer = createModelReducer(model)
     this._currentState = initState || model.state
     this._afterStateUpdate()
     this.actions = Object.create(null)
@@ -205,6 +194,33 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
     return this._snapshot
   }
 
+  reducer(state: IModel['state'], action: Action) {
+    if (action.type === ActionTypes.SET) {
+      return action.payload
+    }
+
+    let reducer = this.options.reducers?.[action.type]
+
+    if (
+      action.type === ActionTypes.MODIFY ||
+      action.type === ActionTypes.PATCH
+    ) {
+      reducer = action.payload
+    }
+
+    if (typeof reducer === 'function') {
+      // immer does not support 'undefined' state
+      if (state === undefined)
+        return reducer(state, action.payload) as IModel['state']
+      return produce(
+        isObject(state) ? reactive(state) : state,
+        (draft: any) => reducer!(draft, action.payload) as IModel['state']
+      )
+    }
+
+    return state
+  }
+
   dispatch(action: Action) {
     if (typeof action.type === 'undefined') {
       if (process.env.NODE_ENV === 'development') {
@@ -230,7 +246,6 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
     } finally {
       this._isDispatching = false
     }
-
     if (nextState !== this._currentState) {
       this._currentState = nextState
       this._afterStateUpdate()
@@ -368,40 +383,4 @@ export function createModelInstnace<IModel extends AnyModel>(
   initState: State
 ) {
   return new ModelInternal<IModel>(modelOptions, initState)
-}
-
-function createModelReducer<
-  N extends string,
-  S extends State,
-  R extends ReducerOptions<S>,
-  A extends ActionOptions,
-  V extends ViewOptions,
-  D extends Deps
->(model: DefineModel<N, S, R, A, V, D>): Reducer<S> {
-  // select and run a reducer based on the incoming action
-  return (state: S = model.state, action: Action): S => {
-    if (action.type === ActionTypes.SET) {
-      return action.payload
-    }
-
-    let reducer = model.reducers?.[action.type]
-
-    if (
-      action.type === ActionTypes.MODIFY ||
-      action.type === ActionTypes.PATCH
-    ) {
-      reducer = action.payload
-    }
-
-    if (typeof reducer === 'function') {
-      // immer does not support 'undefined' state
-      if (state === undefined) return reducer(state, action.payload) as S
-      return produce(
-        state,
-        (draft: any) => reducer!(draft, action.payload) as S
-      )
-    }
-
-    return state
-  }
 }
