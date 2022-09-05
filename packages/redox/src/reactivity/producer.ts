@@ -104,7 +104,7 @@ class ProduceImpl<T extends {}> {
     if (!isObject(value)) {
       return value
     }
-    const { copyBase, targetMap, copyMap } = this.effect
+    const { copyBase, targetMap } = this.effect
     const record = targetMap.get(value)
     if (record && record.modified === false) {
       const base = copyBase!.get(value)
@@ -132,8 +132,6 @@ class ProduceImpl<T extends {}> {
         })
       }
     })
-    // can't optimization by check `!record.modified`
-    // test: state with multiple references to an object
     while (queue.length) {
       const queueItem = queue.pop()!
       let queueItemValue = queueItem.value
@@ -141,14 +139,6 @@ class ProduceImpl<T extends {}> {
       const queueItemParent = queueItem.parent
       const record = targetMap.get(queueItemValue)
       if (!record) {
-        // no record meaning,not access the state
-        // do a check if the object ref on other property
-        // test: supports a base state with multiple references to an object
-        const copyValue = copyMap!.get(queueItemValue)
-        const copyValueRecord = targetMap.get(copyValue)
-        if (copyValueRecord?.modified) {
-          queueItemParent[queueItemKey] = copyValue
-        }
       } else if (record.modified) {
         // if modified do a check, value should be copy value
         if (record.target !== queueItemValue) {

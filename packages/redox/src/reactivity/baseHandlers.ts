@@ -148,11 +148,11 @@ function createGetter(isReadonly = false, shallow = false): ProxyGetter {
       isOriginValue = !hasChanged(baseTarget[key], res)
       res = toRaw(res) // res may be proxy
       if (isOriginValue) {
-        let copyRes = copyMap.get(res)
-        if (!copyRes) {
-          copyRes = getCopyValue(copyMap, res)
-        }
-        // target[(key) as keyof typeof target] = copyRes
+        let copyRes = shallowCopy(res)
+        copyMap.set(res, copyRes)
+        copyMap.set(copyRes, copyRes)
+        const copyBase = getProducerCopyBase()
+        copyBase!.set(copyRes, res)
         Reflect.set(target, key, copyRes, receiver)
         res = copyRes
       }
