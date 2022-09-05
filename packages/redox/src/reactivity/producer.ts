@@ -52,14 +52,20 @@ class ProduceImpl<T extends {}> {
       }
       const record = this.effect.targetMap.get(result)
       if (record?.modified) {
-        throw new Error(`cannot return a modified child draft`)
+        if (process.env.NODE_ENV === 'development') {
+          warn(`cannot return a modified child draft`)
+        }
+        return
       }
       if (result === this._base) {
         result = this._getDuplication()
       } else {
         const rootNode = this.effect.targetMap.values().next().value
         if (rootNode && rootNode.modified) {
-          throw new Error(`draft is modified and another object is returned`)
+          if (process.env.NODE_ENV === 'development') {
+            warn(`draft is modified and another object is returned`)
+          }
+          return result
         }
       }
       return result
@@ -119,7 +125,10 @@ class ProduceImpl<T extends {}> {
       let childValue = value[key]
       if (isObject(childValue)) {
         if (childValue === this._base) {
-          throw new Error(`cannot return a modified child draft`)
+          if (process.env.NODE_ENV === 'development') {
+            warn(`cannot return an object that references itself`)
+          }
+          return
         }
         childValue = toRaw(childValue)
         queue.push({
