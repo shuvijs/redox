@@ -1517,11 +1517,12 @@ describe(`reactivity/producer`, () => {
       // TODO: Avoid throwing if only the child draft was modified.
       it('cannot return a modified child draft', () => {
         const base = { a: {} }
-        produce(reactive(base), (d) => {
-          d.a.b = 1
-          return d.a
-        })
-        expect(`cannot return a modified child draft`).toHaveBeenWarned()
+        expect(() => {
+          produce(reactive(base), (d) => {
+            d.a.b = 1
+            return d.a
+          })
+        }).toThrow()
       })
 
       it('can return an object with two references to another object', () => {
@@ -1606,13 +1607,12 @@ describe(`reactivity/producer`, () => {
 
     it('throws when the draft is modified and another object is returned', () => {
       const base = { x: 3 }
-      produce(reactive(base), (draft) => {
-        draft.x = 4
-        return { x: 5 }
-      })
-      expect(
-        `draft is modified and another object is returned`
-      ).toHaveBeenWarned()
+      expect(() => {
+        produce(reactive(base), (draft) => {
+          draft.x = 4
+          return { x: 5 }
+        })
+      }).toThrow()
     })
 
     it('should fix #117 - 1', () => {
