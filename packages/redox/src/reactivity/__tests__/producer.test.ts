@@ -1059,25 +1059,15 @@ describe(`reactivity/producer`, () => {
 
     it('supports a base state with multiple references to an object', () => {
       const obj = {}
-      const res = produce({ a: obj, b: obj }, (d) => {
-        expect(d.a).toBe(d.b)
+      const res = produce(reactive({ a: obj, b: obj }), (d) => {
+        // Two drafts are created for each occurrence of an object in the base state.
+        expect(d.a).not.toBe(d.b)
         d.a.z = true
-        expect(d.b.z).toBeTruthy()
+        expect(d.b.z).toBeUndefined()
       })
+      expect(res.b).toBe(obj)
+      expect(res.a).not.toBe(res.b)
       expect(res.a.z).toBeTruthy()
-      expect(res.a).toBe(res.b)
-    })
-
-    it('supports a base state with deep level multiple references to an object', () => {
-      const obj = { 1: 1 }
-      const base = { a: obj, b: { c: obj, 2: 2 } }
-      const res = produce(reactive(base), (d) => {
-        expect(d.a).toBe(d.b.c)
-        d.a.z = true
-        expect(d.b.c.z).toBeTruthy()
-      })
-      expect(res.a.z).toBeTruthy()
-      expect(res.a).toBe(res.b.c)
     })
 
     it('supports a base state with deep level multiple references to an object No access same references', () => {
@@ -1087,7 +1077,7 @@ describe(`reactivity/producer`, () => {
         d.a.z = true
       })
       expect(res.a.z).toBeTruthy()
-      expect(res.a).toBe(res.b.c)
+      expect(res.a).not.toBe(res.b.c)
     })
 
     // NOTE: Except the root draft.
