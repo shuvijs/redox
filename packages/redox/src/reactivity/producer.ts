@@ -52,20 +52,14 @@ class ProduceImpl<T extends {}> {
       }
       const record = this.effect.targetMap.get(result)
       if (record?.modified) {
-        if (process.env.NODE_ENV === 'development') {
-          warn(`cannot return a modified child draft`)
-        }
-        return
+        throw new Error(`cannot return a modified child draft`)
       }
       if (result === this._base) {
         result = this._getDuplication()
       } else {
         const rootNode = this.effect.targetMap.values().next().value
         if (rootNode && rootNode.modified) {
-          if (process.env.NODE_ENV === 'development') {
-            warn(`draft is modified and another object is returned`)
-          }
-          return result
+          throw new Error(`draft is modified and another object is returned`)
         }
       }
       return result
