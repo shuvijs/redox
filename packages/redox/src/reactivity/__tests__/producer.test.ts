@@ -1287,9 +1287,9 @@ describe(`reactivity/producer`, () => {
           produce(reactive({ a: {} }), (parent) => {
             parent.a.b = 'b'
             const res = produce(reactive({ a: parent.a }), (child) => {
-              expect(child.a).toBe(parent.a)
+              expect(child.a).not.toBe(parent.a)
               expect(isDraft(child.a)).toBeTruthy()
-              expect(original(child.a)).not.toBe(parent.a)
+              expect(original(child.a)).toEqual(original(parent.a))
             })
           })
         })
