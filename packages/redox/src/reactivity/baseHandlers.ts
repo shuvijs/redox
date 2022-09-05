@@ -291,7 +291,10 @@ function getOwnPropertyDescriptor(target: object, key: keyof typeof target) {
 }
 
 function setPrototypeOf(_target: object, _v: object | null): boolean {
-  throw new Error(`not allow setPrototypeOf to set prototype`)
+  if (process.env.NODE_ENV === 'development') {
+    warn(`not allow setPrototypeOf to set prototype`)
+  }
+  return false
 }
 
 export const mutableHandlers: ProxyHandler<object> = {

@@ -6,7 +6,7 @@ import { isObject, shallowCopy } from '../../utils'
 import cloneDeep from 'lodash.clonedeep'
 import * as lodash from 'lodash'
 
-jest.setTimeout(1000)
+// jest.setTimeout(1000)
 
 function each(obj: any, iter: any, enumerableOnly = false) {
   if (isObject(obj)) {
@@ -23,10 +23,7 @@ const immerable: unique symbol = Symbol.for('immer-draftable')
 const isDraft = (target: any) => target[ReactiveFlags.IS_REACTIVE]
 const original = toRaw
 
-const isProd = process.env.NODE_ENV === 'production'
-
-const useProxies = true
-const autoFreeze = false
+process.env.NODE_ENV = 'development'
 
 describe(`reactivity/producer`, () => {
   describe(`base functionality`, () => {
@@ -66,11 +63,8 @@ describe(`reactivity/producer`, () => {
     })
 
     it('second argument should be a function', () => {
-      const originNodeEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'development'
       produce(reactive(baseState), undefined)
       expect(`recipe should be function`).toHaveBeenWarned()
-      process.env.NODE_ENV = originNodeEnv
     })
 
     it('returns the original state when no changes are made', () => {
@@ -127,13 +121,8 @@ describe(`reactivity/producer`, () => {
         s.anObject.test = true
         delete s.anObject.test
       })
-      if (useProxies) {
-        expect(nextState).not.toBe(baseState)
-        expect(nextState).toEqual(baseState)
-      } else {
-        // The copy is avoided in ES5.
-        expect(nextState).toBe(baseState)
-      }
+      expect(nextState).not.toBe(baseState)
+      expect(nextState).toEqual(baseState)
     })
 
     // Found by: https://github.com/mweststrate/immer/issues/328
@@ -153,13 +142,8 @@ describe(`reactivity/producer`, () => {
         delete s.a
         s.a = a
       })
-      if (useProxies) {
-        expect(nextState).not.toBe(baseState)
-        expect(nextState).toEqual(baseState)
-      } else {
-        // The copy is avoided in ES5.
-        expect(nextState).toBe(baseState)
-      }
+      expect(nextState).not.toBe(baseState)
+      expect(nextState).toEqual(baseState)
     })
 
     it('can get property descriptors', () => {
@@ -170,7 +154,7 @@ describe(`reactivity/producer`, () => {
         const desc = {
           configurable: true,
           enumerable: true,
-          ...(useProxies && { writable: true }),
+          writable: true,
         }
 
         // Known property
@@ -976,12 +960,10 @@ describe(`reactivity/producer`, () => {
 
       expect(nextState.x).toBe(2)
       expect(nextState.y).toBe(3)
-      if (!autoFreeze) {
-        nextState.y = 4 // decoupled now!
-        expect(nextState.y).toBe(4)
-        expect(nextState.x).toBe(2)
-        expect(Object.getOwnPropertyDescriptor(nextState, 'y').value).toBe(4)
-      }
+      nextState.y = 4 // decoupled now!
+      expect(nextState.y).toBe(4)
+      expect(nextState.x).toBe(2)
+      expect(Object.getOwnPropertyDescriptor(nextState, 'y').value).toBe(4)
     })
 
     it('can work with class with computed props', () => {
@@ -1378,6 +1360,7 @@ describe(`reactivity/producer`, () => {
       produce(reactive({}), (draft) => {
         expect(() => Object.setPrototypeOf(draft, Array)).toThrow()
       })
+      expect(`not allow setPrototypeOf to set prototype`).toHaveBeenWarned()
     })
 
     it("supports the 'in' operator", () => {
@@ -1534,12 +1517,11 @@ describe(`reactivity/producer`, () => {
       // TODO: Avoid throwing if only the child draft was modified.
       it('cannot return a modified child draft', () => {
         const base = { a: {} }
-        expect(() => {
-          produce(reactive(base), (d) => {
-            d.a.b = 1
-            return d.a
-          })
-        }).toThrow()
+        produce(reactive(base), (d) => {
+          d.a.b = 1
+          return d.a
+        })
+        expect(`cannot return a modified child draft`).toHaveBeenWarned()
       })
 
       it('can return an object with two references to another object', () => {
@@ -1562,9 +1544,10 @@ describe(`reactivity/producer`, () => {
       it('cannot return an object that references itself', () => {
         const res = {}
         res.self = res
-        expect(() => {
-          produce(reactive(res), () => res.self)
-        }).toThrow()
+        produce(reactive(res), () => res.self)
+        expect(
+          `cannot return an object that references itself`
+        ).toHaveBeenWarned()
       })
     })
 
@@ -1623,12 +1606,13 @@ describe(`reactivity/producer`, () => {
 
     it('throws when the draft is modified and another object is returned', () => {
       const base = { x: 3 }
-      expect(() => {
-        produce(reactive(base), (draft) => {
-          draft.x = 4
-          return { x: 5 }
-        })
-      }).toThrow()
+      produce(reactive(base), (draft) => {
+        draft.x = 4
+        return { x: 5 }
+      })
+      expect(
+        `draft is modified and another object is returned`
+      ).toHaveBeenWarned()
     })
 
     it('should fix #117 - 1', () => {
@@ -1736,11 +1720,11 @@ describe(`reactivity/producer`, () => {
 
     it('cannot produce undefined by returning undefined', () => {
       const base = 3
-      expect(produce(reactive(base), () => 4)).toBe(4)
-      expect(produce(reactive(base), () => null)).toBe(null)
-      expect(produce(reactive(base), () => undefined)).toBe(3)
-      expect(produce(reactive(base), () => {})).toBe(3)
-      expect(produce(reactive(undefined), () => {})).toBe(undefined)
+      expect(produce(base, () => 4)).toBe(4)
+      expect(produce(base, () => null)).toBe(null)
+      expect(produce(base, () => undefined)).toBe(3)
+      expect(produce(base, () => {})).toBe(3)
+      expect(produce(undefined, () => {})).toBe(undefined)
 
       expect(produce(reactive({}), () => undefined)).toEqual({})
     })
