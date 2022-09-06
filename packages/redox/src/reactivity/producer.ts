@@ -150,6 +150,7 @@ class ProduceImpl<T extends {}> {
         if (baseValue) {
           queueItemParent[queueItemKey] = baseValue
         }
+        continue
       }
       // queueItemValue must be newest, queueItemParent[queueItemKey] may update
       // need update queueItemValue
