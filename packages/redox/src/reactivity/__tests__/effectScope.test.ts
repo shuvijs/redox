@@ -44,6 +44,8 @@ describe('reactivity/effect/scope', () => {
   it('stop', () => {
     let dummy: any
     let doubled: any
+    let invalidate1: any
+    let invalidate2: any
     const container: any = {
       value: { num: 0 },
     }
@@ -51,8 +53,14 @@ describe('reactivity/effect/scope', () => {
 
     const scope = new EffectScope()
     scope.run(() => {
-      dummy = view(() => container.$value.num)
-      doubled = view(() => container.$value.num * 2)
+      dummy = view(
+        () => container.$value.num,
+        (a) => (invalidate1 = a)
+      )
+      doubled = view(
+        () => container.$value.num * 2,
+        (a) => (invalidate2 = a)
+      )
     })
 
     expect(scope.effects.length).toBe(2)
@@ -60,6 +68,8 @@ describe('reactivity/effect/scope', () => {
     expect(dummy.value).toBe(0)
     container.value = { num: 7 }
     container.$value = reactive(() => container.value)
+    invalidate1()
+    invalidate2()
     expect(dummy.value).toBe(7)
     expect(doubled.value).toBe(14)
 
@@ -67,6 +77,8 @@ describe('reactivity/effect/scope', () => {
 
     container.value = { num: 6 }
     container.$value = reactive(() => container.value)
+    invalidate1()
+    invalidate2()
     expect(dummy.value).toBe(7)
     expect(doubled.value).toBe(14)
   })
@@ -74,6 +86,8 @@ describe('reactivity/effect/scope', () => {
   it('should collect nested scope', () => {
     let dummy: any
     let doubled: any
+    let invalidate1: any
+    let invalidate2: any
     let container: any = {
       value: { num: 0 },
     }
@@ -81,10 +95,16 @@ describe('reactivity/effect/scope', () => {
 
     const scope = new EffectScope()
     scope.run(() => {
-      dummy = view(() => container.$value.num)
+      dummy = view(
+        () => container.$value.num,
+        (a) => (invalidate1 = a)
+      )
       // nested scope
       new EffectScope().run(() => {
-        doubled = view(() => container.$value.num * 2)
+        doubled = view(
+          () => container.$value.num * 2,
+          (a) => (invalidate2 = a)
+        )
       })
     })
 
@@ -95,6 +115,8 @@ describe('reactivity/effect/scope', () => {
     expect(dummy.value).toBe(0)
     container.value = { num: 7 }
     container.$value = reactive(() => container.value)
+    invalidate1()
+    invalidate2()
     expect(dummy.value).toBe(7)
     expect(doubled.value).toBe(14)
 
@@ -103,6 +125,8 @@ describe('reactivity/effect/scope', () => {
 
     container.value = { num: 6 }
     container.$value = reactive(() => container.value)
+    invalidate1()
+    invalidate2()
     expect(dummy.value).toBe(7)
     expect(doubled.value).toBe(14)
   })
@@ -110,6 +134,8 @@ describe('reactivity/effect/scope', () => {
   it('nested scope can be escaped', () => {
     let dummy: any
     let doubled: any
+    let invalidate1: any
+    let invalidate2: any
     let container: any = {
       value: { num: 0 },
     }
@@ -117,10 +143,16 @@ describe('reactivity/effect/scope', () => {
 
     const scope = new EffectScope()
     scope.run(() => {
-      dummy = view(() => container.$value.num)
+      dummy = view(
+        () => container.$value.num,
+        (a) => (invalidate1 = a)
+      )
       // nested scope
       new EffectScope(true).run(() => {
-        doubled = view(() => container.$value.num * 2)
+        doubled = view(
+          () => container.$value.num * 2,
+          (a) => (invalidate2 = a)
+        )
       })
     })
 
@@ -129,6 +161,8 @@ describe('reactivity/effect/scope', () => {
     expect(dummy.value).toBe(0)
     container.value = { num: 7 }
     container.$value = reactive(() => container.value)
+    invalidate1()
+    invalidate2()
     expect(dummy.value).toBe(7)
     expect(doubled.value).toBe(14)
 
@@ -136,6 +170,8 @@ describe('reactivity/effect/scope', () => {
 
     container.value = { num: 6 }
     container.$value = reactive(() => container.value)
+    invalidate1()
+    invalidate2()
     expect(dummy.value).toBe(7)
 
     // nested scope should not be stopped
@@ -145,6 +181,8 @@ describe('reactivity/effect/scope', () => {
   it('able to run the scope', () => {
     let dummy: any
     let doubled: any
+    let invalidate1: any
+    let invalidate2: any
     let container: any = {
       value: { num: 0 },
     }
@@ -152,19 +190,27 @@ describe('reactivity/effect/scope', () => {
 
     const scope = new EffectScope()
     scope.run(() => {
-      dummy = view(() => container.$value.num)
+      dummy = view(
+        () => container.$value.num,
+        (a) => (invalidate1 = a)
+      )
     })
 
     expect(scope.effects.length).toBe(1)
 
     scope.run(() => {
-      doubled = view(() => container.$value.num * 2)
+      doubled = view(
+        () => container.$value.num * 2,
+        (a) => (invalidate2 = a)
+      )
     })
 
     expect(scope.effects.length).toBe(2)
 
     container.value = { num: 7 }
     container.$value = reactive(() => container.value)
+    invalidate1()
+    invalidate2()
     expect(dummy.value).toBe(7)
     expect(doubled.value).toBe(14)
 
@@ -174,6 +220,7 @@ describe('reactivity/effect/scope', () => {
   it('can not run an inactive scope', () => {
     let dummy: any
     let doubled: any
+    let invalidate1: any
     let container: any = {
       value: { num: 0 },
     }
@@ -181,7 +228,10 @@ describe('reactivity/effect/scope', () => {
 
     const scope = new EffectScope()
     scope.run(() => {
-      dummy = view(() => container.$value.num)
+      dummy = view(
+        () => container.$value.num,
+        (a) => (invalidate1 = a)
+      )
     })
 
     expect(scope.effects.length).toBe(1)
@@ -198,6 +248,7 @@ describe('reactivity/effect/scope', () => {
 
     container.value = { num: 7 }
     container.$value = reactive(() => container.value)
+    invalidate1()
     expect(dummy.value).toBe(7)
     expect(doubled).toBe(undefined)
   })

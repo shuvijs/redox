@@ -94,6 +94,7 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
   private _snapshot: State | null
   private _currentState: IModel['state']
   private _listeners: Set<() => void> = new Set()
+  private _viewListeners: Set<() => void> = new Set()
   private _isDispatching: boolean
 
   constructor(model: IModel, initState: State) {
@@ -103,6 +104,7 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
     this.getSnapshot = this.getSnapshot.bind(this)
     this.subscribe = this.subscribe.bind(this)
     this.reducer = this.reducer.bind(this)
+    this._subscribeFromView = this._subscribeFromView.bind(this)
 
     this.options = model
     this.name = this.options.name || ''
@@ -287,6 +289,10 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
   }
 
   private _triggerListener() {
+    // view's listeners should be triggered first
+    for (const listener of this._viewListeners) {
+      listener()
+    }
     for (const listener of this._listeners) {
       listener()
     }
@@ -303,10 +309,18 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
         } finally {
           this.accessContext = oldCtx
         }
-      }, onInvalidate)
+      }, onInvalidate || this._subscribeFromView)
     })
 
     return view!
+  }
+
+  private _subscribeFromView(listener: () => void) {
+    this._viewListeners.add(listener)
+
+    return () => {
+      this._viewListeners.delete(listener)
+    }
   }
 
   private _afterStateUpdate() {
