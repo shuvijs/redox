@@ -52,6 +52,32 @@ describe('reactivity/view', () => {
     expect(fn).toHaveBeenCalledTimes(1)
   })
 
+  // FIXME
+  it.skip("should not be invoked when deps ref don't change (object with same referrence)", () => {
+    const fn = jest.fn()
+    const obj = { foo: 1, bar: 2 }
+    const store: any = {
+      state: {
+        a: obj,
+        b: obj,
+      },
+    }
+    store.$state = reactive(() => store.state)
+    const sum = view(() => {
+      fn()
+      return store.$state.a.foo + store.$state.b.bar
+    })
+    expect(sum.value).toBe(3)
+    expect(fn).toHaveBeenCalledTimes(1)
+
+    store.state = { a: { foo: 1, bar: 3 }, b: { foo: 3, bar: 2 } }
+    store.$state = reactive(() => store.state)
+
+    // should return cached value
+    expect(sum.value).toBe(3)
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
   it('should be invoked when deps ref change', () => {
     const fn = jest.fn()
     const store: any = {
