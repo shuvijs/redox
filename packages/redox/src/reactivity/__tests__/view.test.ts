@@ -4,16 +4,20 @@ import { view } from '../view'
 describe('reactivity/view', () => {
   it('should return cached value', () => {
     const fn = jest.fn()
+    let invalidate: any
     const store: any = {
       state: {
         num: 1,
       },
     }
     store.$state = reactive(() => store.state)
-    const double = view(() => {
-      fn()
-      return store.$state.num * 2
-    })
+    const double = view(
+      () => {
+        fn()
+        return store.$state.num * 2
+      },
+      (a) => (invalidate = a)
+    )
     expect(double.value).toBe(2)
     expect(double.value).toBe(2)
 
@@ -22,6 +26,7 @@ describe('reactivity/view', () => {
 
   it("should not be invoked when deps ref don't change", () => {
     const fn = jest.fn()
+    let invalidate: any
     const obj = {
       foo: 'bar',
     }
@@ -35,10 +40,13 @@ describe('reactivity/view', () => {
       this.a.foo
       return {}
     }
-    const double = view(() => {
-      fn()
-      return viewFn.call($state)
-    })
+    const double = view(
+      () => {
+        fn()
+        return viewFn.call($state)
+      },
+      (a) => (invalidate = a)
+    )
 
     const value = double.value
     expect(fn).toHaveBeenCalledTimes(1)
@@ -47,6 +55,7 @@ describe('reactivity/view', () => {
       a: obj,
     }
     $state = reactive(() => store.state)
+    invalidate()
 
     expect(double.value).toBe(value)
     expect(fn).toHaveBeenCalledTimes(1)
@@ -80,6 +89,7 @@ describe('reactivity/view', () => {
 
   it('should be invoked when deps ref change', () => {
     const fn = jest.fn()
+    let invalidate: any
     const store: any = {
       state: {
         a: {
@@ -93,10 +103,13 @@ describe('reactivity/view', () => {
       void this.a.foo
       return a
     }
-    const double = view(() => {
-      fn()
-      return viewFn.call($state)
-    })
+    const double = view(
+      () => {
+        fn()
+        return viewFn.call($state)
+      },
+      (a) => (invalidate = a)
+    )
 
     const value = double.value
     expect(fn).toHaveBeenCalledTimes(1)
@@ -107,27 +120,34 @@ describe('reactivity/view', () => {
       },
     }
     $state = reactive(() => store.state)
+    invalidate()
+
     expect(double.value === value).toBeFalsy()
     expect(fn).toHaveBeenCalledTimes(2)
   })
 
   it('should return the last value', () => {
     const fn = jest.fn()
+    let invalidate: any
     const store: any = {
       state: {
         num: 1,
       },
     }
     store.$state = reactive(() => store.state)
-    const double = view(() => {
-      fn()
-      return store.$state.num * 2
-    })
+    const double = view(
+      () => {
+        fn()
+        return store.$state.num * 2
+      },
+      (a) => (invalidate = a)
+    )
     expect(double.value).toBe(2)
     expect(fn).toHaveBeenCalledTimes(1)
 
     store.state = { num: 2 }
     store.$state = reactive(store.state)
+    invalidate()
 
     // re-calculate
     expect(double.value).toBe(4)
@@ -136,19 +156,24 @@ describe('reactivity/view', () => {
 
   it('should return the last value for none existed property', () => {
     const fn = jest.fn()
+    let invalidate: any
     const store: any = {
       state: {},
     }
     store.$state = reactive(() => store.state)
-    const num = view(() => {
-      fn()
-      return store.$state.num
-    })
+    const num = view(
+      () => {
+        fn()
+        return store.$state.num
+      },
+      (a) => (invalidate = a)
+    )
     expect(num.value).toBeUndefined()
     expect(fn).toHaveBeenCalledTimes(1)
 
     store.state = { num: 1 }
     store.$state = reactive(store.state)
+    invalidate()
 
     // re-calculate
     expect(num.value).toBe(1)
@@ -160,20 +185,28 @@ describe('reactivity/view', () => {
   it('should reactive to other view', () => {
     const fn1 = jest.fn()
     const fn2 = jest.fn()
+    let invalidate1: any
+    let invalidate2: any
     const store: any = {
       state: {
         num: 1,
       },
     }
     store.$state = reactive(() => store.state)
-    const double = view(() => {
-      fn1()
-      return store.$state.num * 2
-    })
-    const triple = view(() => {
-      fn2()
-      return double.value + 1
-    })
+    const double = view(
+      () => {
+        fn1()
+        return store.$state.num * 2
+      },
+      (a) => (invalidate1 = a)
+    )
+    const triple = view(
+      () => {
+        fn2()
+        return double.value + 1
+      },
+      (a) => (invalidate2 = a)
+    )
     expect(double.value).toBe(2)
     expect(triple.value).toBe(3)
     expect(fn1).toHaveBeenCalledTimes(1)
@@ -181,6 +214,8 @@ describe('reactivity/view', () => {
 
     store.state = { num: 2 }
     store.$state = reactive(() => store.state)
+    invalidate1()
+    invalidate2()
 
     // re-calculate
     expect(double.value).toBe(4)
@@ -219,6 +254,7 @@ describe('reactivity/view', () => {
 
   it('should support multiple reactive objects', () => {
     const fn = jest.fn()
+    let invalidate: any
     const store: any = {
       state: {
         num: 1,
@@ -240,10 +276,13 @@ describe('reactivity/view', () => {
       b: reactive(() => store2.state),
     }
 
-    const sum = view(() => {
-      fn()
-      return store.$state.num + store.$others.a.num + store.$others.b.num
-    })
+    const sum = view(
+      () => {
+        fn()
+        return store.$state.num + store.$others.a.num + store.$others.b.num
+      },
+      (a) => (invalidate = a)
+    )
     expect(sum.value).toBe(3)
     expect(fn).toHaveBeenCalledTimes(1)
 
@@ -255,6 +294,7 @@ describe('reactivity/view', () => {
       a: reactive(() => store1.state),
       b: reactive(() => store2.state),
     }
+    invalidate()
 
     // re-calculate
     expect(sum.value).toBe(9)
