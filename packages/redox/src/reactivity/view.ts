@@ -1,7 +1,7 @@
 import { warn } from '../warning'
 import { hasChanged, isObject, hasOwn } from '../utils'
 import { TrackOpTypes } from './operations'
-import { DebuggerOptions, ReactiveEffect, trackView } from './effect'
+import { ReactiveEffect, trackView } from './effect'
 import { ReactiveFlags, toRaw, toCompanion } from './reactive'
 
 export interface View<T = any> {
@@ -32,6 +32,7 @@ export class ViewImpl<T> {
     this.effect = new ReactiveEffect(getter)
     this.effect.view = this
     this.effect.active = this._cacheable = !disableCache
+
     if (onInvalidate) {
       const unSubscribe = onInvalidate(() => {
         this._dirty = true
@@ -47,9 +48,8 @@ export class ViewImpl<T> {
     const self = toRaw(this)
     if (!self._cacheable) {
       self._value = self.effect.run()!
-    } else {
-      // validate cache
-      if (self._dirty || !self._validateCache()) {
+    } else if (self._dirty) {
+      if (!self._validateCache()) {
         self._dirty = false
         self._value = self.effect.run()!
       }
@@ -65,6 +65,12 @@ export class ViewImpl<T> {
   }
 
   private _validateCache(): boolean {
+    // return false for the first run and switch to real func for the rest calls
+    this._validateCache = this.__validateCache
+    return false
+  }
+
+  private __validateCache(): boolean {
     const { targetMap, views } = this.effect
     if (targetMap.size <= 0 && views.size <= 0) {
       return true
@@ -107,15 +113,8 @@ export class ViewImpl<T> {
 export function view<T>(
   getter: ViewGetter<T>,
   onInvalidate?: onViewInvalidate,
-  disableCache: boolean = false,
-  debugOptions?: DebuggerOptions
+  disableCache: boolean = false
 ): View<T> {
   const cRef = new ViewImpl<T>(getter, onInvalidate, disableCache)
-
-  if (process.env.NODE_ENV === 'development' && debugOptions && !disableCache) {
-    cRef.effect.onTrack = debugOptions.onTrack
-    cRef.effect.onTrigger = debugOptions.onTrigger
-  }
-
   return cRef
 }
