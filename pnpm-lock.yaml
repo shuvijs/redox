@@ -100,8 +100,6 @@ importers:
       react: 16.14.0
       react-dom: 16.14.0_react@16.14.0
       typescript: 4.7.4
-<<<<<<< HEAD
-=======
 
   examples/ssr:
     specifiers:
@@ -143,88 +141,8 @@ importers:
       '@craco/craco': 6.4.3_5jme4ri3fmqyoymld5nudtzsgq
       '@shuvi/redox': link:../../packages/redox
       '@shuvi/redox-react': link:../../packages/react
-      react: 18.3.0-next-9e67e7a31-20220823
-      react-dom: 18.3.0-next-9e67e7a31-20220823_gqofsi2s4iueppr43xzi3t67qu
-
-  packages/plugins/log:
-    specifiers:
-      '@shuvi/redox': 0.0.6
-    devDependencies:
-      '@shuvi/redox': link:../../redox
-
-  packages/plugins/persist:
-    specifiers:
-      '@shuvi/redox': 0.0.6
-    devDependencies:
-      '@shuvi/redox': link:../../redox
-
-  packages/react:
-    specifiers:
-      '@shuvi/redox': 0.0.6
-      '@testing-library/react': ^13.3.0
-      '@types/react': ^18.0.5
-      '@types/react-dom': ^18.0.5
-      '@types/use-sync-external-store': 0.0.3
-      dts-cli: ^1.5.1
-      react: 18.1.0
-      react-dom: 18.1.0
-      use-sync-external-store: 1.2.0
-    dependencies:
-      use-sync-external-store: 1.2.0_react@18.1.0
-    devDependencies:
-      '@shuvi/redox': link:../redox
-      '@testing-library/react': 13.3.0_ef5jwxihqo6n7gxfmzogljlgcm
-      '@types/react': 18.0.14
-      '@types/react-dom': 18.0.5
-      '@types/use-sync-external-store': 0.0.3
-      dts-cli: 1.5.1_ne2pw6sj4oqsxoym2tnqxm4ig4
-      react: 18.1.0
-      react-dom: 18.1.0_react@18.1.0
->>>>>>> upstream/producer
-
-  examples/ssr:
-    specifiers:
-      '@shuvi/redox': workspace:*
-      '@shuvi/redox-react': workspace:*
-      '@types/node': ^13.11.0
-      '@types/react': ^18.0.5
-      '@types/react-dom': ^18.0.5
-      autocannon: ^7.8.1
-      express: ^4.17.3
-      express-status-monitor: ^1.3.4
-      react: 18.1.0
-      react-dom: 18.1.0
-      react-scripts: 5.0.1
-      react-scripts-with-ssr: 0.6.0
-    dependencies:
-      '@shuvi/redox': link:../../packages/redox
-      '@shuvi/redox-react': link:../../packages/react
-      '@types/node': 13.13.52
-      express: 4.18.1
-      express-status-monitor: 1.3.4
-      react-scripts: 5.0.1_mhgprbx4qahcer4gt2lbcdq4zy
-      react-scripts-with-ssr: 0.6.0_treee22277sh3yq6pnqeflwlmi
-    devDependencies:
-      '@types/react': 18.0.14
-      '@types/react-dom': 18.0.5
-      autocannon: 7.9.0
-      react: 18.1.0
-      react-dom: 18.1.0_react@18.1.0
-
-  examples/tearing:
-    specifiers:
-<<<<<<< HEAD
-      '@craco/craco': 6.4.3
-      '@shuvi/redox': workspace:*
-      '@shuvi/redox-react': workspace:*
-      react: next
-      react-dom: next
-    dependencies:
-      '@craco/craco': 6.4.3_5jme4ri3fmqyoymld5nudtzsgq
-      '@shuvi/redox': link:../../packages/redox
-      '@shuvi/redox-react': link:../../packages/react
-      react: 18.3.0-next-9ff738f53-20220826
-      react-dom: 18.3.0-next-9ff738f53-20220826_fqiyfghfnovkvkajgqqeu26jgy
+      react: 18.3.0-next-c28f313e6-20220908
+      react-dom: 18.3.0-next-c28f313e6-20220908_2lf3zldnb3ijysnw2o652omery
 
   packages/plugins/log:
     specifiers:
@@ -270,14 +188,6 @@ importers:
       dts-cli: 1.5.1_ne2pw6sj4oqsxoym2tnqxm4ig4
       lodash: 4.17.21
       lodash.clonedeep: 4.5.0
-=======
-      dts-cli: ^1.5.1
-      immer: 9.0.6
-    dependencies:
-      immer: 9.0.6
-    devDependencies:
-      dts-cli: 1.5.1_ne2pw6sj4oqsxoym2tnqxm4ig4
->>>>>>> upstream/producer
 
 packages:
 
@@ -1435,7 +1345,6 @@ packages:
     dependencies:
       '@babel/core': 7.2.2
       '@babel/helper-plugin-utils': 7.17.12
-<<<<<<< HEAD
     dev: false
 
   /@babel/plugin-syntax-import-assertions/7.17.12_@babel+core@7.1.6:
@@ -1448,20 +1357,6 @@ packages:
       '@babel/helper-plugin-utils': 7.17.12
     dev: false
 
-=======
-    dev: false
-
-  /@babel/plugin-syntax-import-assertions/7.17.12_@babel+core@7.1.6:
-    resolution: {integrity: sha512-n/loy2zkq9ZEM8tEOwON9wTQSTNDTDEz6NujPtJGLU7qObzT1N4c4YZZf8E6ATB2AjNQg/Ib2AIpO03EZaCehw==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.1.6
-      '@babel/helper-plugin-utils': 7.17.12
-    dev: false
-
->>>>>>> upstream/producer
   /@babel/plugin-syntax-import-assertions/7.17.12_@babel+core@7.18.5:
     resolution: {integrity: sha512-n/loy2zkq9ZEM8tEOwON9wTQSTNDTDEz6NujPtJGLU7qObzT1N4c4YZZf8E6ATB2AjNQg/Ib2AIpO03EZaCehw==}
     engines: {node: '>=6.9.0'}
@@ -1764,7 +1659,6 @@ packages:
       '@babel/core': 7.12.3
       '@babel/helper-plugin-utils': 7.17.12
     dev: false
-<<<<<<< HEAD
 
   /@babel/plugin-syntax-top-level-await/7.14.5_@babel+core@7.18.5:
     resolution: {integrity: sha512-hx++upLv5U1rgYfwe1xBQUhRmU41NEvpUvrp8jkrSCdvGSnM5/qdRMtylJ6PG5OFkBaHkbTAKTnd3/YyESRHFw==}
@@ -1777,11 +1671,6 @@ packages:
 
   /@babel/plugin-syntax-typescript/7.17.12_@babel+core@7.18.5:
     resolution: {integrity: sha512-TYY0SXFiO31YXtNg3HtFwNJHjLsAyIIhAhNWkQ5whPPS7HWUFlg9z0Ta4qAQNjQbP1wsSt/oKkmZ/4/WWdMUpw==}
-=======
-
-  /@babel/plugin-syntax-top-level-await/7.14.5_@babel+core@7.18.5:
-    resolution: {integrity: sha512-hx++upLv5U1rgYfwe1xBQUhRmU41NEvpUvrp8jkrSCdvGSnM5/qdRMtylJ6PG5OFkBaHkbTAKTnd3/YyESRHFw==}
->>>>>>> upstream/producer
     engines: {node: '>=6.9.0'}
     peerDependencies:
       '@babel/core': ^7.0.0-0
@@ -2130,20 +2019,6 @@ packages:
       '@babel/core': 7.2.2
       '@babel/helper-builder-binary-assignment-operator-visitor': 7.16.7
       '@babel/helper-plugin-utils': 7.17.12
-<<<<<<< HEAD
-    dev: false
-
-  /@babel/plugin-transform-flow-strip-types/7.17.12_@babel+core@7.18.5:
-    resolution: {integrity: sha512-g8cSNt+cHCpG/uunPQELdq/TeV3eg1OLJYwxypwHtAWo9+nErH3lQx9CSO2uI9lF74A0mR0t4KoMjs1snSgnTw==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.18.5
-      '@babel/helper-plugin-utils': 7.17.12
-      '@babel/plugin-syntax-flow': 7.17.12_@babel+core@7.18.5
-=======
->>>>>>> upstream/producer
     dev: false
 
   /@babel/plugin-transform-flow-strip-types/7.17.12_@babel+core@7.18.5:
@@ -2663,7 +2538,6 @@ packages:
     dependencies:
       '@babel/core': 7.1.6
       '@babel/plugin-transform-react-jsx': 7.17.12_@babel+core@7.1.6
-<<<<<<< HEAD
     dev: false
 
   /@babel/plugin-transform-react-jsx-development/7.16.7_@babel+core@7.18.5:
@@ -2676,20 +2550,6 @@ packages:
       '@babel/plugin-transform-react-jsx': 7.17.12_@babel+core@7.18.5
     dev: false
 
-=======
-    dev: false
-
-  /@babel/plugin-transform-react-jsx-development/7.16.7_@babel+core@7.18.5:
-    resolution: {integrity: sha512-RMvQWvpla+xy6MlBpPlrKZCMRs2AGiHOGHY3xRwl0pEeim348dDyxeH4xBsMPbIMhujeq7ihE702eM2Ew0Wo+A==}
-    engines: {node: '>=6.9.0'}
-    peerDependencies:
-      '@babel/core': ^7.0.0-0
-    dependencies:
-      '@babel/core': 7.18.5
-      '@babel/plugin-transform-react-jsx': 7.17.12_@babel+core@7.18.5
-    dev: false
-
->>>>>>> upstream/producer
   /@babel/plugin-transform-react-jsx-self/7.17.12_@babel+core@7.2.2:
     resolution: {integrity: sha512-7S9G2B44EnYOx74mue02t1uD8ckWZ/ee6Uz/qfdzc35uWHX5NgRy9i+iJSb2LFRgMd+QV9zNcStQaazzzZ3n3Q==}
     engines: {node: '>=6.9.0'}
@@ -8384,51 +8244,6 @@ packages:
       fsevents: 1.2.13
     transitivePeerDependencies:
       - supports-color
-<<<<<<< HEAD
-=======
-    dev: false
-
-  /chokidar/2.1.8_supports-color@5.5.0:
-    resolution: {integrity: sha512-ZmZUazfOzf0Nve7duiCKD23PFSCs4JPoYyccjUFF3aQkQadqBhfzhjkwBH2mNOG9cTBwhamM37EIsIkZw3nRgg==}
-    deprecated: Chokidar 2 does not receive security updates since 2019. Upgrade to chokidar 3 with 15x fewer dependencies
-    dependencies:
-      anymatch: 2.0.0_supports-color@5.5.0
-      async-each: 1.0.3
-      braces: 2.3.2_supports-color@5.5.0
-      glob-parent: 3.1.0
-      inherits: 2.0.4
-      is-binary-path: 1.0.1
-      is-glob: 4.0.3
-      normalize-path: 3.0.0
-      path-is-absolute: 1.0.1
-      readdirp: 2.2.1_supports-color@5.5.0
-      upath: 1.2.0
-    optionalDependencies:
-      fsevents: 1.2.13
-    transitivePeerDependencies:
-      - supports-color
-    dev: false
-
-  /chokidar/2.1.8_supports-color@6.1.0:
-    resolution: {integrity: sha512-ZmZUazfOzf0Nve7duiCKD23PFSCs4JPoYyccjUFF3aQkQadqBhfzhjkwBH2mNOG9cTBwhamM37EIsIkZw3nRgg==}
-    deprecated: Chokidar 2 does not receive security updates since 2019. Upgrade to chokidar 3 with 15x fewer dependencies
-    dependencies:
-      anymatch: 2.0.0_supports-color@6.1.0
-      async-each: 1.0.3
-      braces: 2.3.2_supports-color@6.1.0
-      glob-parent: 3.1.0
-      inherits: 2.0.4
-      is-binary-path: 1.0.1
-      is-glob: 4.0.3
-      normalize-path: 3.0.0
-      path-is-absolute: 1.0.1
-      readdirp: 2.2.1_supports-color@6.1.0
-      upath: 1.2.0
-    optionalDependencies:
-      fsevents: 1.2.13
-    transitivePeerDependencies:
-      - supports-color
->>>>>>> upstream/producer
     dev: false
 
   /chokidar/3.5.3:
@@ -9909,7 +9724,6 @@ packages:
       debug: 2.6.9
     transitivePeerDependencies:
       - supports-color
-<<<<<<< HEAD
     dev: false
 
   /detective/5.2.1:
@@ -9922,20 +9736,6 @@ packages:
       minimist: 1.2.6
     dev: false
 
-=======
-    dev: false
-
-  /detective/5.2.1:
-    resolution: {integrity: sha512-v9XE1zRnz1wRtgurGu0Bs8uHKFSTdteYZNbIPFVhUZ39L/S79ppMpdmVOZAnoz1jfEFodc48n6MX483Xo3t1yw==}
-    engines: {node: '>=0.8.0'}
-    hasBin: true
-    dependencies:
-      acorn-node: 1.8.2
-      defined: 1.0.0
-      minimist: 1.2.6
-    dev: false
-
->>>>>>> upstream/producer
   /didyoumean/1.2.2:
     resolution: {integrity: sha512-gxtyfqMg7GKyhQmb056K7M3xszy/myH8w+B4RT+QXBQsvAOdc3XymqDDPHx1BgPgsdAA5SIifona89YtRATDzw==}
     dev: false
@@ -10480,7 +10280,7 @@ packages:
     resolution: {integrity: sha512-NJ6Yn3FuDinBaBRWl/q5X/s4koRHBrgKAu+yGI6JCBeiu3qrcbJhwT2GeR/EXVfylRk8dpQVJoLEFhK+Mu31NA==}
     dependencies:
       d: 1.0.1
-      ext: 1.6.0
+      ext: 1.7.0
     dev: false
 
   /escalade/3.1.1:
@@ -10763,7 +10563,6 @@ packages:
     peerDependenciesMeta:
       '@typescript-eslint/parser':
         optional: true
-<<<<<<< HEAD
     dependencies:
       '@typescript-eslint/parser': 5.29.0_b5e7v2qnwxfo6hmiq56u52mz3e
       contains-path: 0.1.0
@@ -10797,41 +10596,6 @@ packages:
       array-includes: 3.1.5
       array.prototype.flat: 1.3.0
       debug: 2.6.9
-=======
-    dependencies:
-      '@typescript-eslint/parser': 5.29.0_b5e7v2qnwxfo6hmiq56u52mz3e
-      contains-path: 0.1.0
-      debug: 2.6.9
-      doctrine: 1.5.0
-      eslint: 5.6.0
-      eslint-import-resolver-node: 0.3.6
-      eslint-module-utils: 2.7.3_tf5cicivm5w4o4owwu2j7i4y2u
-      has: 1.0.3
-      lodash: 4.17.21
-      minimatch: 3.1.2
-      read-pkg-up: 2.0.0
-      resolve: 1.8.1
-    transitivePeerDependencies:
-      - eslint-import-resolver-typescript
-      - eslint-import-resolver-webpack
-      - supports-color
-    dev: false
-
-  /eslint-plugin-import/2.26.0_ffi3uiz42rv3jyhs6cr7p7qqry:
-    resolution: {integrity: sha512-hYfi3FXaM8WPLf4S1cikh/r4IxnO6zrhZbEGz2b660EJRbuxgpDS5gkCuYgGWg2xxh2rBuIr4Pvhve/7c31koA==}
-    engines: {node: '>=4'}
-    peerDependencies:
-      '@typescript-eslint/parser': '*'
-      eslint: ^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8
-    peerDependenciesMeta:
-      '@typescript-eslint/parser':
-        optional: true
-    dependencies:
-      '@typescript-eslint/parser': 4.33.0_hxadhbs2xogijvk7vq4t2azzbu
-      array-includes: 3.1.5
-      array.prototype.flat: 1.3.0
-      debug: 2.6.9
->>>>>>> upstream/producer
       doctrine: 2.1.0
       eslint: 7.32.0
       eslint-import-resolver-node: 0.3.6
@@ -11709,66 +11473,6 @@ packages:
     resolution: {integrity: sha512-zZBcOX9TfehHQhtupq57OF8lFZ3UZi08Y97dwFCkD8p9d/d2Y3M+ykKcwaMDEL+4qyUolgBDX6AblpR3fL212Q==}
     engines: {node: '>= 0.10.0'}
     dependencies:
-<<<<<<< HEAD
-=======
-      axios: 0.26.0_debug@4.1.1
-      debug: 4.1.1
-      handlebars: 4.7.7
-      on-headers: 1.0.2
-      pidusage: 2.0.18
-      socket.io: 2.4.1
-    optionalDependencies:
-      event-loop-stats: 1.2.0
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-    dev: false
-
-  /express/4.18.1:
-    resolution: {integrity: sha512-zZBcOX9TfehHQhtupq57OF8lFZ3UZi08Y97dwFCkD8p9d/d2Y3M+ykKcwaMDEL+4qyUolgBDX6AblpR3fL212Q==}
-    engines: {node: '>= 0.10.0'}
-    dependencies:
-      accepts: 1.3.8
-      array-flatten: 1.1.1
-      body-parser: 1.20.0
-      content-disposition: 0.5.4
-      content-type: 1.0.4
-      cookie: 0.5.0
-      cookie-signature: 1.0.6
-      debug: 2.6.9
-      depd: 2.0.0
-      encodeurl: 1.0.2
-      escape-html: 1.0.3
-      etag: 1.8.1
-      finalhandler: 1.2.0
-      fresh: 0.5.2
-      http-errors: 2.0.0
-      merge-descriptors: 1.0.1
-      methods: 1.1.2
-      on-finished: 2.4.1
-      parseurl: 1.3.3
-      path-to-regexp: 0.1.7
-      proxy-addr: 2.0.7
-      qs: 6.10.3
-      range-parser: 1.2.1
-      safe-buffer: 5.2.1
-      send: 0.18.0
-      serve-static: 1.15.0
-      setprototypeof: 1.2.0
-      statuses: 2.0.1
-      type-is: 1.6.18
-      utils-merge: 1.0.1
-      vary: 1.1.2
-    transitivePeerDependencies:
-      - supports-color
-    dev: false
-
-  /express/4.18.1_supports-color@5.5.0:
-    resolution: {integrity: sha512-zZBcOX9TfehHQhtupq57OF8lFZ3UZi08Y97dwFCkD8p9d/d2Y3M+ykKcwaMDEL+4qyUolgBDX6AblpR3fL212Q==}
-    engines: {node: '>= 0.10.0'}
-    dependencies:
->>>>>>> upstream/producer
       accepts: 1.3.8
       array-flatten: 1.1.1
       body-parser: 1.20.0_supports-color@5.5.0
@@ -11843,8 +11547,8 @@ packages:
       - supports-color
     dev: false
 
-  /ext/1.6.0:
-    resolution: {integrity: sha512-sdBImtzkq2HpkdRLtlLWDa6w4DX22ijZLKx8BMPUuKe1c5lbN6xwQDQCxSfxBQnHZ13ls/FH0MQZx/q/gr6FQg==}
+  /ext/1.7.0:
+    resolution: {integrity: sha512-6hxeJYaL110a9b5TEJSj0gojyHQAmA2ch5Os+ySCiA1QGdS697XWY1pzsrSjqA9LDEEgdB/KypIlR59RcLuHYw==}
     dependencies:
       type: 2.7.2
     dev: false
@@ -12274,8 +11978,6 @@ packages:
       readable-stream: 2.3.7
     dev: false
 
-<<<<<<< HEAD
-=======
   /follow-redirects/1.15.1:
     resolution: {integrity: sha512-yLAMQs+k0b2m7cVxpS1VKJVvoz7SS9Td1zss3XRwXj+ZDH00RJgnuLx7E44wx02kQLrdM3aOOy+FpzS7+8OizA==}
     engines: {node: '>=4.0'}
@@ -12286,7 +11988,6 @@ packages:
         optional: true
     dev: false
 
->>>>>>> upstream/producer
   /follow-redirects/1.15.1_debug@3.2.7:
     resolution: {integrity: sha512-yLAMQs+k0b2m7cVxpS1VKJVvoz7SS9Td1zss3XRwXj+ZDH00RJgnuLx7E44wx02kQLrdM3aOOy+FpzS7+8OizA==}
     engines: {node: '>=4.0'}
@@ -13314,11 +13015,7 @@ packages:
     engines: {node: '>=8.0.0'}
     dependencies:
       eventemitter3: 4.0.7
-<<<<<<< HEAD
-      follow-redirects: 1.15.1_debug@3.2.7
-=======
       follow-redirects: 1.15.1
->>>>>>> upstream/producer
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
@@ -13466,13 +13163,6 @@ packages:
 
   /immer/9.0.15:
     resolution: {integrity: sha512-2eB/sswms9AEUSkOm4SbV5Y7Vmt/bKRwByd52jfLkW4OLYeaTP3EEiJ9agqU0O/tq6Dk62Zfj+TJSqfm1rLVGQ==}
-<<<<<<< HEAD
-=======
-    dev: false
-
-  /immer/9.0.6:
-    resolution: {integrity: sha512-G95ivKpy+EvVAnAab4fVa4YGYn24J1SpEktnJX7JJ45Bd7xqME/SCplFzYFmTbrkwZbQ4xJK1xMTUYBkN6pWsQ==}
->>>>>>> upstream/producer
     dev: false
 
   /import-cwd/2.1.0:
@@ -20286,25 +19976,14 @@ packages:
       scheduler: 0.22.0
     dev: true
 
-<<<<<<< HEAD
-  /react-dom/18.3.0-next-9ff738f53-20220826_fqiyfghfnovkvkajgqqeu26jgy:
-    resolution: {integrity: sha512-CoTfJKKZZ6PYC/5lFalfB44+26uNGonenyay1+8vK9AWdHQzD2ZnZa/pYSQhhIf6i20W0f8WViTsK87ljs1xWQ==}
+  /react-dom/18.3.0-next-c28f313e6-20220908_2lf3zldnb3ijysnw2o652omery:
+    resolution: {integrity: sha512-O/4aA/XyTQckgA0iihqth1kxccXCVi+xir8ErFR5JSlXJ1L/kx9pxfmgA3Mcijq4j8amori1rJVDpQ6K2XAmSg==}
     peerDependencies:
-      react: 18.3.0-next-9ff738f53-20220826
+      react: 18.3.0-next-c28f313e6-20220908
     dependencies:
       loose-envify: 1.4.0
-      react: 18.3.0-next-9ff738f53-20220826
-      scheduler: 0.24.0-next-9ff738f53-20220826
-=======
-  /react-dom/18.3.0-next-9e67e7a31-20220823_gqofsi2s4iueppr43xzi3t67qu:
-    resolution: {integrity: sha512-JRac3jXKwqd08l/7TBun66LlObEPx9Ou5XrO/RXkJOQTgCis5kGWBjxHPxNoYHTcF4mZeAFB65iEIbS7N8GttQ==}
-    peerDependencies:
-      react: 18.3.0-next-9e67e7a31-20220823
-    dependencies:
-      loose-envify: 1.4.0
-      react: 18.3.0-next-9e67e7a31-20220823
-      scheduler: 0.24.0-next-9e67e7a31-20220823
->>>>>>> upstream/producer
+      react: 18.3.0-next-c28f313e6-20220908
+      scheduler: 0.24.0-next-c28f313e6-20220908
     dev: false
 
   /react-error-overlay/5.1.6:
@@ -20707,13 +20386,8 @@ packages:
     dependencies:
       loose-envify: 1.4.0
 
-<<<<<<< HEAD
-  /react/18.3.0-next-9ff738f53-20220826:
-    resolution: {integrity: sha512-TydUWXYoPPAEXZlFW0UGfxUrsiifqJD8rWa/M6Pe9LGCkD9NB0te4DfooQ3GHIbyFBrog40HYIwgCd7702aHKw==}
-=======
-  /react/18.3.0-next-9e67e7a31-20220823:
-    resolution: {integrity: sha512-6ItROfMHEH6Zx0JsOI0DhOd/iXpZo5o3DxULqAiHMaJoeizZep4o6lgDeqigXGZHySyd3TA9Yymrv/9LDKbPwQ==}
->>>>>>> upstream/producer
+  /react/18.3.0-next-c28f313e6-20220908:
+    resolution: {integrity: sha512-chISnShVwjWN9Bpom3o653+DfHCA116JTyqBNv7KGE18+AiwR0brwrtF+VhJ4GKkiLtnJKWuUjpo0tKsXt2L/A==}
     engines: {node: '>=0.10.0'}
     dependencies:
       loose-envify: 1.4.0
@@ -21549,13 +21223,8 @@ packages:
       loose-envify: 1.4.0
     dev: true
 
-<<<<<<< HEAD
-  /scheduler/0.24.0-next-9ff738f53-20220826:
-    resolution: {integrity: sha512-3m1vAgnOVDIH2CyQ1kjSbTMjf8Nh9ou8XW8/pdDAonlGq8lDO2F/8hB03sPLriF/B6BGG6EvwHoTG+7u9znwFA==}
-=======
-  /scheduler/0.24.0-next-9e67e7a31-20220823:
-    resolution: {integrity: sha512-cor6y0g+hRtZHKXTxhL43B5e/SBuDt4XqZ4FkgU8Yjye56OaIq+7tzZw2J2JiUgmMW9SBtsWNLPvZOZAolUEPQ==}
->>>>>>> upstream/producer
+  /scheduler/0.24.0-next-c28f313e6-20220908:
+    resolution: {integrity: sha512-Tga2X99ZKRlLvHgTs8s9OAq83SEjKU0DEyK79SPm9YHE+KCPmbCxnHzCdxoSTCs02zabcbumFRbHJHjjrvaopg==}
     dependencies:
       loose-envify: 1.4.0
     dev: false
