@@ -45,9 +45,7 @@ class ProduceImpl<T extends {}> {
       return (result = this._getDuplication())
     }
     if (isObject(result)) {
-      if (result[ReactiveFlags.RAW]) {
-        result = toRaw(result)
-      }
+      result = toRaw(result)
       const record = this.effect.targetMap.get(result)
       if (record?.modified) {
         throw new Error(`cannot return a modified child draft`)
@@ -55,6 +53,7 @@ class ProduceImpl<T extends {}> {
       if (result === this._base) {
         result = this._getDuplication()
       } else {
+        // FIXME?: it should not be reliable
         const rootNode = this.effect.targetMap.values().next().value
         if (rootNode && rootNode.modified) {
           throw new Error(`draft is modified and another object is returned`)

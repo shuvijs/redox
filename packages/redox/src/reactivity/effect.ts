@@ -1,7 +1,7 @@
 import { TrackOpTypes, TriggerOpTypes } from './operations'
-import { warn } from '../warning'
 import { extend, isObject, shallowCopy } from '../utils'
 import { ViewImpl, View } from './view'
+import { toRaw } from './reactive'
 import { EffectScope, recordEffectScope } from './effectScope'
 
 export interface AccessRecord {
@@ -10,11 +10,12 @@ export interface AccessRecord {
 }
 
 export type KeyAccessNode = {
-  parent: any | null
+  parent: KeyAccessNode | null
   record: Map<any, AccessRecord>
   modified: boolean
   target: any
 }
+
 export type TargetMap = Map<any, KeyAccessNode>
 
 export type DraftMap = Map<any, any>
@@ -45,8 +46,6 @@ export const MAP_KEY_ITERATE_KEY = Symbol(
   process.env.NODE_ENV === 'development' ? 'Map key iterate' : ''
 )
 
-export const NODE_ROOT = Symbol('root')
-
 export const NODE_DELETE = Symbol('delete')
 
 export class ReactiveEffect<T = any> {
@@ -70,14 +69,14 @@ export class ReactiveEffect<T = any> {
    * origin -> draft
    * @internal
    */
-  draftMap?: DraftMap = new Map()
+  draftMap?: DraftMap
 
   /**
    * Can be attached after creation
    * draft -> origin
    * @internal
    */
-  originMap?: OriginMap = new Map()
+  originMap?: OriginMap
 
   /**
    * @internal
@@ -204,10 +203,6 @@ export function resetTracking() {
   shouldTrack = last === undefined ? true : last
 }
 
-export function isInProducer(): boolean {
-  return Boolean(activeEffect?.draftMap)
-}
-
 export function isDraft(target: any): boolean {
   return activeEffect?.originMap?.has(target) ?? false
 }
@@ -218,18 +213,17 @@ export function toDraft<T>(target: T, force?: boolean): T {
     const originMap = activeEffect.originMap!
     let draft = draftMap.get(target)
     if (force || !draft) {
-      draft = shallowCopy(target)
-      // don't delete for debug
-      // draft.__r_copy = true
-      // draft.__r_copy_id = Math.random().toFixed(3)
-      draftMap.set(target, draft)
-      draftMap.set(draft, draft)
-      originMap.set(draft, target)
+      draft = makeDraft(draftMap, originMap, target)
     }
     return draft
   }
 
   return target
+}
+
+export function isExternal(target: any, key: any, record: AccessRecord) {
+  const origin = toOrigin(target)
+  return origin[key] != undefined
 }
 
 export function toOrigin<T>(target: T): T {
@@ -241,30 +235,44 @@ export function track(
   type: TrackOpTypes,
   key: unknown,
   value: any
-) {
+): AccessRecord | null {
   if (shouldTrack && activeEffect) {
-    const targetMap = activeEffect!.targetMap
+    const targetMap = activeEffect.targetMap
+    let currentRecord: AccessRecord
     let current = targetMap.get(target)
     if (!current) {
       targetMap.set(
         target,
         (current = {
-          parent: NODE_ROOT,
+          parent: null,
           record: new Map(),
           modified: false,
           target: target,
         })
       )
     }
-    current.record.set(key, {
-      type,
-      value,
-    })
 
-    if (isInProducer() && isObject(value)) {
+    const hasExternalValueRecord = current.record.has(key)
+    current.record.set(
+      key,
+      (currentRecord = {
+        type,
+        value,
+      })
+    )
+
+    if (activeEffect.draftMap && isObject(value)) {
       // process child
       let child = targetMap.get(value)
       if (!child) {
+        if (!hasExternalValueRecord) {
+          const rawValue = toRaw(value) // res may be proxy??
+          value = makeDraft(
+            activeEffect.draftMap!,
+            activeEffect.originMap!,
+            rawValue
+          )
+        }
         activeEffect!.targetMap.set(
           value,
           (child = {
@@ -274,11 +282,17 @@ export function track(
             target: value,
           })
         )
+        currentRecord.value = value
+        ;(target as any)[key as any] = value
       } else if (child.parent !== current) {
         child.parent = current
       }
+
+      return currentRecord
     }
   }
+
+  return null
 }
 
 export function trackView(view: View<any>, value: any) {
@@ -303,29 +317,32 @@ export function trigger(
         targetMap.set(
           target,
           (modifiedTarget = {
-            parent: NODE_ROOT,
+            parent: null,
             record: new Map(),
             modified: false,
             target: target,
           })
         )
       } else {
-        warn(`should access target first`)
         return
       }
     }
-    if (type === TriggerOpTypes.SET) {
-      setTargetParentValue(targetMap, newValue, modifiedTarget)
-      setTargetParentValue(targetMap, oldValue, NODE_DELETE)
-    }
-    if (type === TriggerOpTypes.DELETE) {
-      setTargetParentValue(targetMap, oldValue, NODE_DELETE)
-    }
-    if (type !== TriggerOpTypes.MODIFIED) {
-      modifiedTarget.record.set(key, {
-        type,
-        value: newValue,
-      })
+
+    modifiedTarget.record.set(key, {
+      type,
+      value: newValue,
+    })
+
+    switch (type) {
+      case TriggerOpTypes.SET:
+        setTargetParentValue(targetMap, newValue, modifiedTarget)
+        setTargetParentValue(targetMap, oldValue, NODE_DELETE)
+        break
+      case TriggerOpTypes.DELETE:
+        setTargetParentValue(targetMap, oldValue, NODE_DELETE)
+        break
+      default:
+        break
     }
     modifiedTarget.modified = true
     let parent = modifiedTarget.parent
@@ -334,6 +351,21 @@ export function trigger(
       parent = parent.parent
     }
   }
+}
+
+export function makeDraft<T>(
+  draftMap: DraftMap,
+  originMap: OriginMap,
+  target: T
+): T {
+  const draft = shallowCopy(target)
+  // don't delete for debug
+  // draft.__r_copy = true
+  // draft.__r_copy_id = Math.random().toFixed(3)
+  draftMap.set(target, draft)
+  draftMap.set(draft, draft)
+  originMap.set(draft, target)
+  return draft
 }
 
 function setTargetParentValue(targetMap: TargetMap, target: any, value: any) {

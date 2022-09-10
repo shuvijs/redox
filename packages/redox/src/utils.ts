@@ -91,7 +91,7 @@ export function invariant(condition: any, message?: string): asserts condition {
 }
 
 const slice = Array.prototype.slice
-/*#__PURE__*/
+
 export function shallowCopy(base: any) {
   if (Array.isArray(base)) return slice.call(base)
   const descriptors = Object.getOwnPropertyDescriptors(base)

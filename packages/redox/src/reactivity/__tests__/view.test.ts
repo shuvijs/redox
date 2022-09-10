@@ -98,15 +98,12 @@ describe('reactivity/view', () => {
       },
     }
     let $state = reactive(() => store.state)
-    const viewFn = function (this: any) {
-      const a = this.a
-      void this.a.foo
-      return a
-    }
     const double = view(
       () => {
         fn()
-        return viewFn.call($state)
+        const a = $state.a
+        void $state.a.foo
+        return a
       },
       (a) => (invalidate = a)
     )

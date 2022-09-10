@@ -208,7 +208,7 @@ export function toRaw<T>(observed: T): T {
 }
 
 export function toCompanion<T>(target: T): T | undefined {
-  const companionGetter = companionMap.get(target)
+  const companionGetter = companionMap.get(target as any)
   return companionGetter ? companionGetter() : target
 }
 

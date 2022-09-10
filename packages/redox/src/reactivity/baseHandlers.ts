@@ -19,8 +19,7 @@ import {
   pauseTracking,
   resetTracking,
   toDraft,
-  toOrigin,
-  isInProducer,
+  isDraft,
 } from './effect'
 import {
   isObject,
@@ -116,49 +115,31 @@ function createGetter(isReadonly = false, shallow = false): ProxyGetter {
       return target
     }
 
-    const originTarget = target
-    target = toDraft(target)
-    if (originTarget !== target) {
-      receiver = target
-    }
-
     const targetIsArray = isArray(target)
     if (!isReadonly && targetIsArray && hasOwn(arrayInstrumentations, key)) {
       return Reflect.get(arrayInstrumentations, key, receiver)
     }
 
+    // todo: make draft of root target in advance
+    target = toDraft(target)
     let res = Reflect.get(target, key, receiver)
-
-    const isResObj = isObject(res)
-
-    let isOriginValue = true
-    if (isInProducer() && isResObj) {
-      const baseTarget = toOrigin(target) as any
-      isOriginValue = !hasChanged(baseTarget[key], res)
-      if (isOriginValue) {
-        const rawRes = toRaw(res) // res may be proxy??
-        res = toDraft(rawRes, true)
-        ;(target as any)[key] = res
-        console.log('target', target)
-      }
-    }
 
     if (isSymbol(key) ? builtInSymbols.has(key) : isNonTrackableKeys.has(key)) {
       return res
     }
 
-    track(target, TrackOpTypes.GET, key, res)
-
-    if (isInProducer() && !isOriginValue) {
-      // if res isn't a proxy , it should be a external object, keep it as it is.
-      return reactiveMap.get(res) || res
+    const record = track(target, TrackOpTypes.GET, key, res)
+    if (record) {
+      const value = record.value
+      // if value isn't a draft, it a external value, keep it as it is
+      return isDraft(value) ? reactive(value) : value
     }
 
     if (shallow) {
       return res
     }
 
-    if (isResObj) {
+    if (isObject(res)) {
       // Convert returned value into a proxy as well. we do the isObject check
       // here to avoid invalid value warning. Also need to lazy access readonly
       // and reactive here to avoid circular dependency.
@@ -179,17 +160,9 @@ function createSetter(shallow = false) {
     value: unknown,
     receiver: object
   ): boolean {
-    const originTarget = target
-    console.log('target', target)
-    console.log('key', key)
+    const draft = toDraft(target)
 
-    target = toDraft(target)
-    console.log('target', target)
-    if (originTarget !== target) {
-      receiver = target
-    }
-
-    let oldValue = (target as any)[key]
+    let oldValue = (draft as any)[key]
     if (isReadonly(oldValue)) {
       return false
     }
@@ -203,17 +176,22 @@ function createSetter(shallow = false) {
     }
 
     const hadKey =
-      isArray(target) && isIntegerKey(key)
-        ? Number(key) < target.length
-        : hasOwn(target, key)
+      isArray(draft) && isIntegerKey(key)
+        ? Number(key) < draft.length
+        : hasOwn(draft, key)
 
-    const result = Reflect.set(target, key, value, receiver)
+    const result = Reflect.set(
+      draft,
+      key,
+      value,
+      target !== draft ? draft : receiver
+    )
     // don't trigger if target is something up in the prototype chain of original
     if (target === toRaw(receiver)) {
       if (!hadKey) {
-        trigger(target, TriggerOpTypes.ADD, key, value)
+        trigger(draft, TriggerOpTypes.ADD, key, value)
       } else if (hasChanged(value, oldValue)) {
-        trigger(target, TriggerOpTypes.SET, key, value, oldValue)
+        trigger(draft, TriggerOpTypes.SET, key, value, oldValue)
       }
     }
     return result
