@@ -24,20 +24,18 @@ class ProduceImpl<T extends {}> {
   constructor(base: T, recipe: Recipe<T>, context: any) {
     this._base = toRaw(base)
     this.effect = new ReactiveEffect(recipe.bind(context, base))
-    this.effect.copyMap = new Map()
-    this.effect.copyBase = new Map()
+    this.effect.draftMap = new Map()
+    this.effect.originMap = new Map()
   }
 
   get value() {
-    // the view may get wrapped by other proxies e.g. readonly() #3376
-    const self = toRaw(this)
     let value: any
-    value = self.effect.run()! as T
+    value = this.effect.run()! as T
     value = this._processResult(value)
     value = this._revertNotModifyValue(value)
-    self.effect.copyMap!.clear()
-    self.effect.copyBase!.clear()
-    self.effect.stop()
+    this.effect.draftMap!.clear()
+    this.effect.originMap!.clear()
+    this.effect.stop()
     return value
   }
 
@@ -104,10 +102,10 @@ class ProduceImpl<T extends {}> {
     if (!isObject(value)) {
       return value
     }
-    const { copyBase, targetMap } = this.effect
+    const { originMap, targetMap } = this.effect
     const record = targetMap.get(value)
     if (record && record.modified === false) {
-      const base = copyBase!.get(value)
+      const base = originMap!.get(value)
       return base || value
     }
     const queue: {
@@ -146,7 +144,7 @@ class ProduceImpl<T extends {}> {
         }
       } else if (!record.modified) {
         // not modified, revert copy ref to origin state ref
-        const baseValue = copyBase!.get(queueItemValue)
+        const baseValue = originMap!.get(queueItemValue)
         if (baseValue) {
           queueItemParent[queueItemKey] = baseValue
         }

@@ -1,10 +1,8 @@
 import { TrackOpTypes, TriggerOpTypes } from './operations'
 import { warn } from '../warning'
-import { extend, isObject } from '../utils'
+import { extend, isObject, shallowCopy } from '../utils'
 import { ViewImpl, View } from './view'
 import { EffectScope, recordEffectScope } from './effectScope'
-
-export declare const RawSymbol: unique symbol
 
 export interface AccessRecord {
   type: TrackOpTypes | TriggerOpTypes
@@ -18,6 +16,10 @@ export type KeyAccessNode = {
   target: any
 }
 export type TargetMap = Map<any, KeyAccessNode>
+
+export type DraftMap = Map<any, any>
+
+export type OriginMap = Map<any, any>
 
 export type EffectScheduler = (...args: any[]) => any
 
@@ -48,6 +50,7 @@ export const NODE_ROOT = Symbol('root')
 export const NODE_DELETE = Symbol('delete')
 
 export class ReactiveEffect<T = any> {
+  // target -> reactive
   targetMap: TargetMap = new Map()
 
   views = new Map<View<any>, any>()
@@ -64,10 +67,18 @@ export class ReactiveEffect<T = any> {
 
   /**
    * Can be attached after creation
+   * origin -> draft
    * @internal
    */
-  copyMap?: Map<any, any>
-  copyBase?: Map<any, any>
+  draftMap?: DraftMap = new Map()
+
+  /**
+   * Can be attached after creation
+   * draft -> origin
+   * @internal
+   */
+  originMap?: OriginMap = new Map()
+
   /**
    * @internal
    */
@@ -78,10 +89,6 @@ export class ReactiveEffect<T = any> {
   private deferStop?: boolean
 
   onStop?: () => void
-  // dev only
-  onTrack?: (event: DebuggerEvent) => void
-  // dev only
-  onTrigger?: (event: DebuggerEvent) => void
 
   constructor(
     public fn: () => T,
@@ -141,12 +148,7 @@ function cleanupEffect(effect: ReactiveEffect) {
   views.clear()
 }
 
-export interface DebuggerOptions {
-  onTrack?: (event: DebuggerEvent) => void
-  onTrigger?: (event: DebuggerEvent) => void
-}
-
-export interface ReactiveEffectOptions extends DebuggerOptions {
+export interface ReactiveEffectOptions {
   lazy?: boolean
   scheduler?: EffectScheduler
   scope?: EffectScope
@@ -202,12 +204,36 @@ export function resetTracking() {
   shouldTrack = last === undefined ? true : last
 }
 
-export function getProducerCopy() {
-  return activeEffect?.copyMap
+export function isInProducer(): boolean {
+  return Boolean(activeEffect?.draftMap)
 }
 
-export function getProducerCopyBase() {
-  return activeEffect?.copyBase
+export function isDraft(target: any): boolean {
+  return activeEffect?.originMap?.has(target) ?? false
+}
+
+export function toDraft<T>(target: T, force?: boolean): T {
+  if (activeEffect && activeEffect.draftMap) {
+    const draftMap = activeEffect.draftMap
+    const originMap = activeEffect.originMap!
+    let draft = draftMap.get(target)
+    if (force || !draft) {
+      draft = shallowCopy(target)
+      // don't delete for debug
+      // draft.__r_copy = true
+      // draft.__r_copy_id = Math.random().toFixed(3)
+      draftMap.set(target, draft)
+      draftMap.set(draft, draft)
+      originMap.set(draft, target)
+    }
+    return draft
+  }
+
+  return target
+}
+
+export function toOrigin<T>(target: T): T {
+  return activeEffect?.originMap?.get(target) ?? target
 }
 
 export function track(
@@ -217,65 +243,40 @@ export function track(
   value: any
 ) {
   if (shouldTrack && activeEffect) {
-    const debuggerEventExtraInfo: DebuggerEventExtraInfo | undefined =
-      process.env.NODE_ENV === 'development' ? { target, type, key } : undefined
     const targetMap = activeEffect!.targetMap
     let current = targetMap.get(target)
-    if (getProducerCopy()) {
-      if (!current) {
-        targetMap.set(
-          target,
-          (current = {
-            parent: NODE_ROOT,
-            record: new Map(),
-            modified: false,
-            target: target,
-          })
-        )
-      }
-      current.record.set(key, {
-        type,
-        value,
-      })
-      // process child
-      if (isObject(value)) {
-        let child = targetMap.get(value)
-        if (!child) {
-          activeEffect!.targetMap.set(
-            value,
-            (child = {
-              parent: current,
-              record: new Map(),
-              modified: false,
-              target: value,
-            })
-          )
-        } else if (child.parent !== current) {
-          child.parent = current
-        }
-      }
-    } else {
-      if (!current) {
-        targetMap.set(
-          target,
-          (current = {
-            parent: NODE_ROOT,
-            record: new Map(),
-            modified: false,
-            target: target,
-          })
-        )
-      }
-      current.record.set(key, {
-        type,
-        value,
-      })
+    if (!current) {
+      targetMap.set(
+        target,
+        (current = {
+          parent: NODE_ROOT,
+          record: new Map(),
+          modified: false,
+          target: target,
+        })
+      )
     }
-    if (process.env.NODE_ENV === 'development' && activeEffect!.onTrack) {
-      activeEffect!.onTrack({
-        effect: activeEffect!,
-        ...debuggerEventExtraInfo!,
-      })
+    current.record.set(key, {
+      type,
+      value,
+    })
+
+    if (isInProducer() && isObject(value)) {
+      // process child
+      let child = targetMap.get(value)
+      if (!child) {
+        activeEffect!.targetMap.set(
+          value,
+          (child = {
+            parent: current,
+            record: new Map(),
+            modified: false,
+            target: value,
+          })
+        )
+      } else if (child.parent !== current) {
+        child.parent = current
+      }
     }
   }
 }

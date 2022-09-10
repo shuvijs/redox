@@ -72,7 +72,6 @@ export class ViewImpl<T> {
 
   private __validateCache(): boolean {
     const { targetMap, views } = this.effect
-    console.log('[targetMap]', targetMap)
     if (targetMap.size <= 0 && views.size <= 0) {
       return true
     }
