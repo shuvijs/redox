@@ -9,7 +9,6 @@ import {
   effectScope,
   EffectScope,
   onViewInvalidate,
-  isReactive,
 } from '../reactivity'
 import { AnyModel } from './defineModel'
 import { Views, Actions, Action, State, StateObject } from './modelOptions'
