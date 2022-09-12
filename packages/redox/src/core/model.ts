@@ -9,7 +9,6 @@ import {
   effectScope,
   EffectScope,
   onViewInvalidate,
-  isReactive,
 } from '../reactivity'
 import { AnyModel } from './defineModel'
 import { Views, Actions, Action, State, StateObject } from './modelOptions'
@@ -216,11 +215,7 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
       if (state === undefined)
         return reducer(state, action.payload) as IModel['state']
       return produce(
-        isReactive(this.state)
-          ? this.state
-          : isObject(this.state)
-          ? reactive(this.state)
-          : this.state,
+        isObject(state) ? reactive(state) : state,
         (draft: any) => reducer!(draft, action.payload) as IModel['state']
       )
     }

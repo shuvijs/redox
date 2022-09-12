@@ -1277,6 +1277,10 @@ describe(`reactivity/producer`, () => {
               expect(child.b).toBe(2) // changed
               expect(child.c).toBe(2) // added
               expect(child.d).toBeUndefined() // deleted
+              child.f = 2
+              produce(reactive(child), (s) => {
+                console.log(s.f)
+              })
             })
           })
         })
