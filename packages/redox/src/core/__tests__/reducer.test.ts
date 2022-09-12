@@ -98,6 +98,24 @@ describe('defineModel/reducers', () => {
   })
 
   describe('immer', () => {
+    it('should not update with do nothing', () => {
+      const count = defineModel({
+        name: 'count',
+        state: { value: 0 },
+        reducers: {
+          add(_state) {},
+        },
+      })
+
+      const store = redoxStore.getModel(count)
+
+      const $state = store.$state
+
+      store.add()
+
+      expect(store.$state).toBe($state)
+    })
+
     it('should work with a basic literal', () => {
       const count = defineModel({
         name: 'count',
