@@ -192,14 +192,14 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
   }
 
   getState() {
-    return this.state
+    return this._currentState
   }
 
   getSnapshot() {
     if (this._snapshot === null) {
       this._snapshot = {
         $state: this._currentState,
-        ...this.state,
+        ...this._currentState,
         ...this.views,
       }
     }
