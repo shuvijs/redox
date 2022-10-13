@@ -1,304 +1,153 @@
 import { reactive } from '../reactive'
 import { view } from '../view'
+import { effect } from '../effect'
+import { produce } from '../producer'
 
 describe('reactivity/view', () => {
-  it('should return cached value', () => {
-    const fn = jest.fn()
-    let invalidate: any
-    const store: any = {
-      state: {
-        num: 1,
-      },
-    }
-    store.$state = reactive(() => store.state)
-    const double = view(
-      () => {
-        fn()
-        return store.$state.num * 2
-      },
-      (a) => (invalidate = a)
-    )
-    expect(double.value).toBe(2)
-    expect(double.value).toBe(2)
-
-    expect(fn).toHaveBeenCalledTimes(1)
-  })
-
-  it("should not be invoked when deps ref don't change", () => {
-    const fn = jest.fn()
-    let invalidate: any
-    const obj = {
-      foo: 'bar',
-    }
-    const store: any = {
-      state: {
-        a: obj,
-      },
-    }
-    let $state = reactive(() => store.state)
-    const viewFn = function (this: any) {
-      this.a.foo
-      return {}
-    }
-    const double = view(
-      () => {
-        fn()
-        return viewFn.call($state)
-      },
-      (a) => (invalidate = a)
-    )
-
-    const value = double.value
-    expect(fn).toHaveBeenCalledTimes(1)
-
-    store.state = {
-      a: obj,
-    }
-    $state = reactive(() => store.state)
-    invalidate()
-
-    expect(double.value).toBe(value)
-    expect(fn).toHaveBeenCalledTimes(1)
-  })
-
-  // FIXME
-  it.skip("should not be invoked when deps ref don't change (object with same referrence)", () => {
-    const fn = jest.fn()
-    const obj = { foo: 1, bar: 2 }
-    const store: any = {
-      state: {
-        a: obj,
-        b: obj,
-      },
-    }
-    store.$state = reactive(() => store.state)
-    const sum = view(() => {
-      fn()
-      return store.$state.a.foo + store.$state.b.bar
-    })
-    expect(sum.value).toBe(3)
-    expect(fn).toHaveBeenCalledTimes(1)
-
-    store.state = { a: { foo: 1, bar: 3 }, b: { foo: 3, bar: 2 } }
-    store.$state = reactive(() => store.state)
-
-    // should return cached value
-    expect(sum.value).toBe(3)
-    expect(fn).toHaveBeenCalledTimes(1)
-  })
-
-  it('should be invoked when deps ref change', () => {
-    const fn = jest.fn()
-    let invalidate: any
-    const store: any = {
-      state: {
-        a: {
-          foo: 'bar',
-        },
-      },
-    }
-    let $state = reactive(() => store.state)
-    const double = view(
-      () => {
-        fn()
-        const a = $state.a
-        void $state.a.foo
-        return a
-      },
-      (a) => (invalidate = a)
-    )
-
-    const value = double.value
-    expect(fn).toHaveBeenCalledTimes(1)
-
-    store.state = {
-      a: {
-        foo: 'bar',
-      },
-    }
-    $state = reactive(() => store.state)
-    invalidate()
-
-    expect(double.value === value).toBeFalsy()
-    expect(fn).toHaveBeenCalledTimes(2)
-  })
-
-  it('should return the last value', () => {
-    const fn = jest.fn()
-    let invalidate: any
-    const store: any = {
-      state: {
-        num: 1,
-      },
-    }
-    store.$state = reactive(() => store.state)
-    const double = view(
-      () => {
-        fn()
-        return store.$state.num * 2
-      },
-      (a) => (invalidate = a)
-    )
-    expect(double.value).toBe(2)
-    expect(fn).toHaveBeenCalledTimes(1)
-
-    store.state = { num: 2 }
-    store.$state = reactive(store.state)
-    invalidate()
-
-    // re-calculate
-    expect(double.value).toBe(4)
-    expect(fn).toHaveBeenCalledTimes(2)
-  })
-
-  it('should return the last value for none existed property', () => {
-    const fn = jest.fn()
-    let invalidate: any
+  it('should return updated value', () => {
     const store: any = {
       state: {},
     }
-    store.$state = reactive(() => store.state)
-    const num = view(
-      () => {
-        fn()
-        return store.$state.num
-      },
-      (a) => (invalidate = a)
-    )
-    expect(num.value).toBeUndefined()
-    expect(fn).toHaveBeenCalledTimes(1)
+    store.$state = reactive<{ foo?: number }>(store.state)
+    const cValue = view(() => store.$state.foo)
+    expect(cValue.value).toBe(undefined)
+    store.state = produce(store.$state, (draft) => {
+      draft.foo = 1
+    })
+    store.$state = reactive<{ foo?: number }>(store.state)
+    expect(cValue.value).toBe(1)
+  })
 
-    store.state = { num: 1 }
+  it('should compute lazily', () => {
+    const store: any = {
+      state: {},
+    }
+    store.$state = reactive<{ foo?: number }>(store.state)
+    const getter = jest.fn(() => store.$state.foo)
+    const cValue = view(getter)
+
+    // lazy
+    expect(getter).not.toHaveBeenCalled()
+
+    expect(cValue.value).toBe(undefined)
+    expect(getter).toHaveBeenCalledTimes(1)
+
+    // should not compute again
+    cValue.value
+    expect(getter).toHaveBeenCalledTimes(1)
+
+    // should not compute until needed
+    store.state = produce(store.$state, (draft) => {
+      draft.foo = 1
+    })
+    store.$state = reactive<{ foo?: number }>(store.state)
+    expect(getter).toHaveBeenCalledTimes(1)
+
+    // now it should compute
+    expect(cValue.value).toBe(1)
+    expect(getter).toHaveBeenCalledTimes(2)
+
+    // should not compute again
+    cValue.value
+    expect(getter).toHaveBeenCalledTimes(2)
+  })
+
+  it('should trigger effect', () => {
+    const store: any = {
+      state: {},
+    }
+    store.$state = reactive<{ foo?: number }>(store.state)
+    const cValue = view(() => store.$state.foo)
+    let fn = jest.fn()
+    effect(() => {
+      cValue.value
+      fn()
+    })
+    expect(fn).toHaveBeenCalledTimes(1)
+    store.state = produce(store.$state, (draft) => {
+      draft.foo++
+    })
+    expect(fn).toHaveBeenCalledTimes(2)
+    store.$state = reactive<{ foo?: number }>(store.state)
+  })
+
+  it('should work when chained', () => {
+    const store: any = {
+      state: { foo: 0 },
+    }
     store.$state = reactive(store.state)
-    invalidate()
-
-    // re-calculate
-    expect(num.value).toBe(1)
-    // cache
-    expect(num.value).toBe(1)
-    expect(fn).toHaveBeenCalledTimes(2)
+    const c1 = view(() => store.$state.foo)
+    const c2 = view(() => c1.value + 1)
+    expect(c2.value).toBe(1)
+    expect(c1.value).toBe(0)
+    store.state = produce(store.$state, (draft) => {
+      draft.foo++
+    })
+    store.$state = reactive(store.state)
+    expect(c2.value).toBe(2)
+    expect(c1.value).toBe(1)
   })
 
-  it('should reactive to other view', () => {
-    const fn1 = jest.fn()
-    const fn2 = jest.fn()
-    let invalidate1: any
-    let invalidate2: any
+  it('should trigger effect when chained (mixed invocations)', () => {
     const store: any = {
-      state: {
-        num: 1,
-      },
+      state: { foo: 0 },
     }
-    store.$state = reactive(() => store.state)
-    const double = view(
-      () => {
-        fn1()
-        return store.$state.num * 2
-      },
-      (a) => (invalidate1 = a)
-    )
-    const triple = view(
-      () => {
-        fn2()
-        return double.value + 1
-      },
-      (a) => (invalidate2 = a)
-    )
-    expect(double.value).toBe(2)
-    expect(triple.value).toBe(3)
-    expect(fn1).toHaveBeenCalledTimes(1)
-    expect(fn2).toHaveBeenCalledTimes(1)
+    store.$state = reactive(store.state)
+    const getter1 = jest.fn(() => store.$state.foo)
+    const getter2 = jest.fn(() => {
+      return c1.value + 1
+    })
+    const c1 = view(getter1)
+    const c2 = view(getter2)
 
-    store.state = { num: 2 }
-    store.$state = reactive(() => store.state)
-    invalidate1()
-    invalidate2()
+    let fn = jest.fn()
+    effect(() => {
+      c1.value + c2.value
+      fn()
+    })
 
-    // re-calculate
-    expect(double.value).toBe(4)
-    expect(triple.value).toBe(5)
-    expect(fn1).toHaveBeenCalledTimes(2)
-    expect(fn2).toHaveBeenCalledTimes(2)
-
-    // cached
-    expect(triple.value).toBe(5)
-    expect(fn2).toHaveBeenCalledTimes(2)
-  })
-
-  // FIXME: tracked other viewed result, can‘t find sample way to disabled tracked other viewed result, fix it in future
-  // it('should not tracked other view result', () => {
-  //   const store: any = {
-  //     state: {
-  //       a: {
-  //         b: {
-  //           c: 'c',
-  //         },
-  //       },
-  //     },
-  //   }
-  //   store.$state = reactive(() => store.state)
-  //   const objB = view(() => {
-  //     return store.$state.a.b
-  //   })
-  //   const objC = view(() => {
-  //     // @ts-ignore
-  //     return objB.value.c
-  //   })
-  //   objC.value
-  //   expect(objC.effect.targetMap.size).toBe(0)
-  //   expect(objC.effect.views.size).toBe(1)
-  // })
-
-  it('should support multiple reactive objects', () => {
-    const fn = jest.fn()
-    let invalidate: any
-    const store: any = {
-      state: {
-        num: 1,
-      },
-    }
-    const store1 = {
-      state: {
-        num: 1,
-      },
-    }
-    const store2 = {
-      state: {
-        num: 1,
-      },
-    }
-    store.$state = reactive(() => store.state)
-    store.$others = {
-      a: reactive(() => store1.state),
-      b: reactive(() => store2.state),
-    }
-
-    const sum = view(
-      () => {
-        fn()
-        return store.$state.num + store.$others.a.num + store.$others.b.num
-      },
-      (a) => (invalidate = a)
-    )
-    expect(sum.value).toBe(3)
     expect(fn).toHaveBeenCalledTimes(1)
+    expect(getter1).toHaveBeenCalledTimes(1)
+    expect(getter2).toHaveBeenCalledTimes(1)
+    store.state = produce(store.$state, (draft) => {
+      draft.foo++
+    })
+    store.$state = reactive(store.state)
+    expect(fn).toHaveBeenCalledTimes(3)
 
-    store.state = { num: 2 }
-    store1.state = { num: 3 }
-    store2.state = { num: 4 }
-    store.$state = reactive(() => store.state)
-    store.$others = {
-      a: reactive(() => store1.state),
-      b: reactive(() => store2.state),
+    // should not result in duplicate calls
+    expect(getter1).toHaveBeenCalledTimes(2)
+    expect(getter2).toHaveBeenCalledTimes(2)
+  })
+
+  it('should no longer update when stopped', () => {
+    const store: any = {
+      state: {},
     }
-    invalidate()
-
-    // re-calculate
-    expect(sum.value).toBe(9)
+    store.$state = reactive<{ foo?: number }>(store.state)
+    const cValue = view(() => store.$state.foo)
+    let fn = jest.fn()
+    effect(() => {
+      cValue.value
+      fn()
+    })
+    expect(fn).toHaveBeenCalledTimes(1)
+    store.state = produce(store.$state, (draft) => {
+      draft.foo = 1
+    })
+    store.$state = reactive(store.state)
     expect(fn).toHaveBeenCalledTimes(2)
-
-    // cached
-    expect(sum.value).toBe(9)
+    cValue.effect.stop()
+    store.state = produce(store.$state, (draft) => {
+      draft.foo = 2
+    })
+    store.$state = reactive(store.state)
     expect(fn).toHaveBeenCalledTimes(2)
+  })
+
+  it('should expose value when stopped', () => {
+    const x = view(() => 1)
+    x.effect.stop()
+    expect(x.value).toBe(1)
   })
 })

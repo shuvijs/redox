@@ -1,10 +1,10 @@
 import { warn } from '../warning'
-import { hasChanged, isObject, hasOwn } from '../utils'
-import { TrackOpTypes } from './operations'
-import { ReactiveEffect, trackView } from './effect'
-import { ReactiveFlags, toRaw, toCompanion } from './reactive'
+import { ReactiveEffect, trackView, triggerView } from './effect'
+import { ReactiveFlags, toRaw } from './reactive'
+import { Dep } from './dep'
 
 export interface View<T = any> {
+  dep?: Dep
   readonly value: T
   readonly effect: ReactiveEffect<T>
 }
@@ -14,6 +14,8 @@ export type ViewGetter<T> = (...args: any[]) => T
 export type onViewInvalidate = (fn: () => void) => () => void
 
 export class ViewImpl<T> {
+  public dep?: Dep = undefined
+
   public readonly effect: ReactiveEffect<T>
 
   public readonly [ReactiveFlags.IS_READONLY]: boolean = true
@@ -24,37 +26,25 @@ export class ViewImpl<T> {
 
   private _dirty = true
 
-  constructor(
-    getter: ViewGetter<T>,
-    onInvalidate?: onViewInvalidate,
-    disableCache?: boolean
-  ) {
-    this.effect = new ReactiveEffect(getter)
+  constructor(getter: ViewGetter<T>, disableCache?: boolean) {
+    this.effect = new ReactiveEffect(getter, () => {
+      if (!this._dirty) {
+        this._dirty = true
+        triggerView(this)
+      }
+    })
     this.effect.view = this
     this.effect.active = this._cacheable = !disableCache
-
-    if (onInvalidate) {
-      const unSubscribe = onInvalidate(() => {
-        this._dirty = true
-      })
-      this.effect.onStop = () => {
-        unSubscribe()
-      }
-    }
   }
 
   get value() {
-    // the view may get wrapped by other proxies e.g. readonly() #3376
+    // the view may get wrapped by other proxies e.g. readonly()
     const self = toRaw(this)
-    if (!self._cacheable) {
+    trackView(self)
+    if (self._dirty || !self._cacheable) {
+      self._dirty = false
       self._value = self.effect.run()!
-    } else if (self._dirty) {
-      if (!self._validateCache()) {
-        self._dirty = false
-        self._value = self.effect.run()!
-      }
     }
-    trackView(self, self._value)
     return self._value
   }
 
@@ -63,58 +53,12 @@ export class ViewImpl<T> {
       warn('Write operation failed: computed value is readonly')
     }
   }
-
-  private _validateCache(): boolean {
-    // return false for the first run and switch to real func for the rest calls
-    this._validateCache = this.__validateCache
-    return false
-  }
-
-  private __validateCache(): boolean {
-    const { targetMap, views } = this.effect
-    if (targetMap.size <= 0 && views.size <= 0) {
-      return true
-    }
-
-    for (const [view, value] of this.effect.views.entries()) {
-      if (hasChanged(view.value, value)) {
-        return false
-      }
-    }
-
-    const queue: any[] = [...targetMap.keys()]
-    while (queue.length) {
-      const target = queue.shift()!
-      const accessRecord = targetMap.get(target)
-      if (!accessRecord) {
-        continue
-      }
-
-      const compaion = toCompanion(target) || {}
-      for (let [key, { type, value }] of accessRecord.record.entries()) {
-        if (type === TrackOpTypes.HAS) {
-          if (hasOwn(compaion, key as any) !== value) {
-            return false
-          }
-        } else if (hasChanged(compaion[key as any], value)) {
-          return false
-        }
-
-        if (isObject(value)) {
-          queue.push(accessRecord.record.get(value))
-        }
-      }
-    }
-
-    return true
-  }
 }
 
 export function view<T>(
   getter: ViewGetter<T>,
-  onInvalidate?: onViewInvalidate,
   disableCache: boolean = false
 ): View<T> {
-  const cRef = new ViewImpl<T>(getter, onInvalidate, disableCache)
+  const cRef = new ViewImpl<T>(getter, disableCache)
   return cRef
 }

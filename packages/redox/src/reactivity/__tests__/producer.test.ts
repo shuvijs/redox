@@ -6,8 +6,6 @@ import { isObject, shallowCopy } from '../../utils'
 import cloneDeep from 'lodash.clonedeep'
 import * as lodash from 'lodash'
 
-// jest.setTimeout(1000)
-
 function each(obj: any, iter: any, enumerableOnly = false) {
   if (isObject(obj)) {
     ;(enumerableOnly ? Object.keys : Reflect.ownKeys)(obj).forEach((key) => {
@@ -1383,25 +1381,6 @@ describe(`reactivity/producer`, () => {
       const next1 = produce(reactive(base), function () {
         expect(this).toBe(undefined)
       })
-    })
-
-    it("'this' should not be bound anymore - 2", () => {
-      const incrementor = produce(function () {
-        expect(this).toBe(undefined)
-      })
-      incrementor()
-    })
-
-    it('should be possible to use dynamic bound this', () => {
-      const world = {
-        counter: { count: 1 },
-        inc: produce(function (draft) {
-          expect(this).toBe(world)
-          draft.counter.count = this.counter.count + 1
-        }),
-      }
-
-      expect(world.inc(reactive(world)).counter.count).toBe(2)
     })
 
     // See here: https://github.com/mweststrate/immer/issues/89

@@ -46,7 +46,7 @@ class ProduceImpl<T extends {}> {
     }
     if (isObject(result)) {
       result = toRaw(result)
-      const record = this.effect.targetMap.get(result)
+      const record = this.effect.targetRecord.get(result)
       if (record?.modified) {
         throw new Error(`cannot return a modified child draft`)
       }
@@ -54,7 +54,7 @@ class ProduceImpl<T extends {}> {
         result = this._getDuplication()
       } else {
         // FIXME?: it should not be reliable
-        const rootNode = this.effect.targetMap.values().next().value
+        const rootNode = this.effect.targetRecord.values().next().value
         if (rootNode && rootNode.modified) {
           throw new Error(`draft is modified and another object is returned`)
         }
@@ -72,12 +72,12 @@ class ProduceImpl<T extends {}> {
   }
 
   private _getDuplication(): T {
-    const { targetMap } = this.effect
-    if (targetMap.size <= 0) {
+    const { targetRecord } = this.effect
+    if (targetRecord.size <= 0) {
       return this._base
     }
     // const root = []
-    // for (const node of targetMap.values()) {
+    // for (const node of targetRecord.values()) {
     //   if (node.parent === NODE_ROOT) {
     //     root.push(node)
     //   }
@@ -87,7 +87,7 @@ class ProduceImpl<T extends {}> {
     //   return this._base
     // }
     // const rootNode = root[0]
-    const rootNode = targetMap.values().next().value
+    const rootNode = targetRecord.values().next().value
     if (!rootNode.modified) {
       return this._base
     }
@@ -101,8 +101,8 @@ class ProduceImpl<T extends {}> {
     if (!isObject(value)) {
       return value
     }
-    const { originMap, targetMap } = this.effect
-    const record = targetMap.get(value)
+    const { originMap, targetRecord } = this.effect
+    const record = targetRecord.get(value)
     if (record && record.modified === false) {
       const base = originMap!.get(value)
       return base || value
@@ -134,7 +134,7 @@ class ProduceImpl<T extends {}> {
       let queueItemValue = queueItem.value
       const queueItemKey = queueItem.key
       const queueItemParent = queueItem.parent
-      const record = targetMap.get(queueItemValue)
+      const record = targetRecord.get(queueItemValue)
       if (!record) {
       } else if (record.modified) {
         // if modified do a check, value should be copy value
@@ -170,13 +170,6 @@ class ProduceImpl<T extends {}> {
 export function produce<T extends {}>(recipe: (draft: T) => any): any
 export function produce<T extends {}>(base: T, recipe: (draft: T) => any): any
 export function produce<T extends {}>(this: any, base: any, recipe?: any): any {
-  if (arguments.length <= 1) {
-    return function (this: any, ...args: any[]) {
-      args.splice(1, 0, base)
-      return produce.apply(this, args as any)
-    }
-  }
-
   if (!isFunction(recipe)) {
     if (process.env.NODE_ENV === 'development') {
       warn(`recipe should be function, now is ${typeof recipe}`)

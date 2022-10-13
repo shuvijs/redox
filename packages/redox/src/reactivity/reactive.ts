@@ -1,4 +1,4 @@
-import { isObject, toRawType, def, isFunction } from '../utils'
+import { isObject, toRawType, def } from '../utils'
 import {
   mutableHandlers,
   readonlyHandlers,
@@ -27,7 +27,6 @@ export const reactiveMap = new WeakMap<Target, any>()
 export const shallowReactiveMap = new WeakMap<Target, any>()
 export const readonlyMap = new WeakMap<Target, any>()
 export const shallowReadonlyMap = new WeakMap<Target, any>()
-export const companionMap = new WeakMap<Target, any>()
 
 const enum TargetType {
   INVALID = 0,
@@ -77,27 +76,14 @@ function getTargetType(value: Target) {
  * ```
  */
 
-export function reactive<T extends () => any>(target: T): ReturnType<T>
-export function reactive<T extends {}>(target: T): T
-export function reactive<T extends {}>(target: T, targetCreator: () => T): T
-export function reactive(target: any, getCompanion?: any) {
-  if (isFunction(target)) {
-    getCompanion = target
-    target = target()
-  }
-
+export function reactive<T extends object>(target: T): T
+export function reactive(target: object) {
   // if trying to observe a readonly proxy, return the readonly version.
   if (isReadonly(target)) {
     return target
   }
 
-  return createReactiveObject(
-    target,
-    false,
-    mutableHandlers,
-    reactiveMap,
-    getCompanion
-  )
+  return createReactiveObject(target, false, mutableHandlers, reactiveMap)
 }
 
 type Primitive = string | number | boolean | bigint | symbol | undefined | null
@@ -149,8 +135,7 @@ function createReactiveObject(
   target: Target,
   isReadonly: boolean,
   baseHandlers: ProxyHandler<any>,
-  proxyMap: WeakMap<Target, any>,
-  getCompanion?: () => Target
+  proxyMap: WeakMap<Target, any>
 ) {
   if (!isObject(target)) {
     if (process.env.NODE_ENV === 'development') {
@@ -177,8 +162,6 @@ function createReactiveObject(
     return target
   }
   const proxy = new Proxy(target, baseHandlers)
-
-  companionMap.set(target, getCompanion)
   proxyMap.set(target, proxy)
   return proxy
 }
@@ -205,11 +188,6 @@ export function isProxy(value: unknown): boolean {
 export function toRaw<T>(observed: T): T {
   const raw = observed && (observed as Target)[ReactiveFlags.RAW]
   return raw ? toRaw(raw) : observed
-}
-
-export function toCompanion<T>(target: T): T | undefined {
-  const companionGetter = companionMap.get(target as any)
-  return companionGetter ? companionGetter() : target
 }
 
 export function markRaw<T extends object>(
