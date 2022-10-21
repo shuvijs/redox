@@ -1,16 +1,16 @@
 import { TrackOpTypes, TriggerOpTypes } from './operations'
-import {
-  extend,
-  isObject,
-  shallowCopy,
-  isArray,
-  isMap,
-  isIntegerKey,
-} from '../utils'
+import { extend, isArray, isMap, isIntegerKey } from '../utils'
 import { ViewImpl, View } from './view'
-import { toRaw } from './reactive'
+import { ReactiveState, toRaw } from './reactive'
 import { EffectScope, recordEffectScope } from './effectScope'
-import { Dep, createDep } from './dep'
+import {
+  Dep,
+  createDep,
+  initDepMarkers,
+  finalizeDepMarkers,
+  newTracked,
+  wasTracked,
+} from './dep'
 
 // The main WeakMap that stores {target -> key -> dep} connections.
 // Conceptually, it's easier to think of a dependency as a Dep class
@@ -19,7 +19,17 @@ import { Dep, createDep } from './dep'
 type KeyToDepMap = Map<any, Dep>
 const targetMap = new WeakMap<any, KeyToDepMap>()
 
+// The number of effects currently being tracked recursively.
+let effectTrackDepth = 0
+
 export let trackOpBit = 1
+
+/**
+ * The bitwise track markers support at most 30 levels of recursion.
+ * This value is chosen to enable modern JS engines to use a SMI on all platforms.
+ * When recursion depth is greater, fall back to using a full cleanup.
+ */
+const maxMarkerBits = 30
 
 export interface AccessRecord {
   type: TrackOpTypes | TriggerOpTypes
@@ -66,9 +76,6 @@ export const MAP_KEY_ITERATE_KEY = Symbol(
 export const NODE_DELETE = Symbol('delete')
 
 export class ReactiveEffect<T = any> {
-  // target -> KeyAccessNode
-  targetRecord: TargetRecord = new Map()
-
   deps: Dep[] = []
 
   active = true
@@ -80,20 +87,6 @@ export class ReactiveEffect<T = any> {
    * @internal
    */
   view?: ViewImpl<T>
-
-  /**
-   * Can be attached after creation
-   * origin -> draft
-   * @internal
-   */
-  draftMap?: DraftMap
-
-  /**
-   * Can be attached after creation
-   * draft -> origin
-   * @internal
-   */
-  originMap?: OriginMap
 
   /**
    * @internal
@@ -131,9 +124,22 @@ export class ReactiveEffect<T = any> {
       activeEffect = this
       shouldTrack = true
 
-      cleanupEffect(this)
+      trackOpBit = 1 << ++effectTrackDepth
+
+      if (effectTrackDepth <= maxMarkerBits) {
+        initDepMarkers(this)
+      } else {
+        cleanupEffect(this)
+      }
+
       return this.fn()
     } finally {
+      if (effectTrackDepth <= maxMarkerBits) {
+        finalizeDepMarkers(this)
+      }
+
+      trackOpBit = 1 << --effectTrackDepth
+
       activeEffect = this.parent
       shouldTrack = lastShouldTrack
       this.parent = undefined
@@ -159,8 +165,13 @@ export class ReactiveEffect<T = any> {
 }
 
 function cleanupEffect(effect: ReactiveEffect) {
-  const { targetRecord } = effect
-  targetRecord.clear()
+  const { deps } = effect
+  if (deps.length) {
+    for (let i = 0; i < deps.length; i++) {
+      deps[i].delete(effect)
+    }
+    deps.length = 0
+  }
 }
 
 export interface ReactiveEffectOptions {
@@ -219,28 +230,6 @@ export function resetTracking() {
   shouldTrack = last === undefined ? true : last
 }
 
-export function isDraft(target: any): boolean {
-  return activeEffect?.originMap?.has(target) ?? false
-}
-
-export function toDraft<T>(target: T, force?: boolean): T {
-  if (activeEffect && activeEffect.draftMap) {
-    const draftMap = activeEffect.draftMap
-    const originMap = activeEffect.originMap!
-    let draft = draftMap.get(target)
-    if (force || !draft) {
-      draft = makeDraft(draftMap, originMap, target)
-    }
-    return draft
-  }
-
-  return target
-}
-
-export function toOrigin<T>(target: T): T {
-  return activeEffect?.originMap?.get(target) ?? target
-}
-
 export function track(
   target: object,
   type: TrackOpTypes,
@@ -258,63 +247,6 @@ export function track(
     }
 
     trackEffects(dep)
-
-    if (activeEffect.draftMap) {
-      const targetRecord = activeEffect.targetRecord
-      let currentRecord: AccessRecord
-      let current = targetRecord.get(target)
-      if (!current) {
-        targetRecord.set(
-          target,
-          (current = {
-            parent: null,
-            record: new Map(),
-            modified: false,
-            target,
-          })
-        )
-      }
-
-      // if record of key exist, it's a external value
-      const isExternalValue = current.record.has(key)
-      current.record.set(
-        key,
-        (currentRecord = {
-          type,
-          value,
-        })
-      )
-
-      if (isObject(value)) {
-        // process child
-        let child = targetRecord.get(value)
-        if (!child) {
-          if (!isExternalValue) {
-            const rawValue = toRaw(value) // res may be proxy??
-            value = makeDraft(
-              activeEffect.draftMap!,
-              activeEffect.originMap!,
-              rawValue
-            )
-          }
-          activeEffect!.targetRecord.set(
-            value,
-            (child = {
-              parent: current,
-              record: new Map(),
-              modified: false,
-              target: value,
-            })
-          )
-          currentRecord.value = value
-          ;(target as any)[key as any] = value
-        } else if (child.parent !== current) {
-          child.parent = current
-        }
-
-        return currentRecord
-      }
-    }
   }
 
   return null
@@ -322,8 +254,15 @@ export function track(
 
 export function trackEffects(dep: Dep) {
   let shouldTrack = false
-  // Full cleanup mode.
-  shouldTrack = !dep.has(activeEffect!)
+  if (effectTrackDepth <= maxMarkerBits) {
+    if (!newTracked(dep)) {
+      dep.n |= trackOpBit // set newly tracked
+      shouldTrack = !wasTracked(dep)
+    }
+  } else {
+    // Full cleanup mode.
+    shouldTrack = !dep.has(activeEffect!)
+  }
 
   if (shouldTrack) {
     dep.add(activeEffect!)
@@ -337,6 +276,7 @@ export function trackView(view: View<any>) {
     trackEffects(view.dep || (view.dep = createDep()))
   }
 }
+
 export function triggerView(view: View<any>, newVal?: any) {
   view = toRaw(view)
   if (view.dep) {
@@ -345,63 +285,20 @@ export function triggerView(view: View<any>, newVal?: any) {
 }
 
 export function trigger(
-  target: object,
+  state: ReactiveState,
   type: TriggerOpTypes,
   key?: unknown,
   newValue?: unknown,
   oldValue?: unknown,
   oldTarget?: Map<unknown, unknown> | Set<unknown>
 ) {
-  if (shouldTrack && activeEffect) {
-    const targetRecord = activeEffect!.targetRecord
-    let modifiedTarget = targetRecord.get(target)
-    if (!modifiedTarget) {
-      if (targetRecord.size === 0) {
-        targetRecord.set(
-          target,
-          (modifiedTarget = {
-            parent: null,
-            record: new Map(),
-            modified: false,
-            target,
-          })
-        )
-      } else {
-        return
-      }
-    }
-
-    modifiedTarget.record.set(key, {
-      type,
-      value: newValue,
-    })
-
-    switch (type) {
-      case TriggerOpTypes.SET:
-        setTargetParentValue(targetRecord, newValue, modifiedTarget)
-        setTargetParentValue(targetRecord, oldValue, NODE_DELETE)
-        break
-      case TriggerOpTypes.DELETE:
-        setTargetParentValue(targetRecord, oldValue, NODE_DELETE)
-        break
-      default:
-        break
-    }
-    modifiedTarget.modified = true
-    let parent = modifiedTarget.parent
-    while (parent && parent.modified === false) {
-      parent.modified = true
-      parent = parent.parent
-    }
-  }
-
-  target = toOrigin(target)
-  const depsMap = targetMap.get(target)
+  const depsMap = targetMap.get(state)
   if (!depsMap) {
     // never been tracked
     return
   }
 
+  const target = state.base
   let deps: (Dep | undefined)[] = []
   if (type === TriggerOpTypes.CLEAR) {
     // collection being cleared
@@ -461,6 +358,12 @@ export function trigger(
     }
     triggerEffects(createDep(effects))
   }
+
+  // trigger draft listeners
+  const listeners = state.root?.listeners
+  if (listeners && listeners.length) {
+    listeners.forEach((listener) => listener())
+  }
 }
 
 export function triggerEffects(dep: Dep | ReactiveEffect[]) {
@@ -484,34 +387,6 @@ function triggerEffect(effect: ReactiveEffect) {
       effect.scheduler()
     } else {
       effect.run()
-    }
-  }
-}
-
-export function makeDraft<T>(
-  draftMap: DraftMap,
-  originMap: OriginMap,
-  target: T
-): T {
-  const draft = shallowCopy(target)
-  // don't delete for debug
-  // draft.__r_copy = true
-  // draft.__r_copy_id = Math.random().toFixed(3)
-  draftMap.set(target, draft)
-  draftMap.set(draft, draft)
-  originMap.set(draft, target)
-  return draft
-}
-
-function setTargetParentValue(
-  targetRecord: TargetRecord,
-  target: any,
-  value: any
-) {
-  if (isObject(target)) {
-    const currentTarget = targetRecord.get(target)
-    if (currentTarget?.parent) {
-      currentTarget.parent = value
     }
   }
 }

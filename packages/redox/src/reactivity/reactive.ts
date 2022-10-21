@@ -1,9 +1,6 @@
-import { isObject, toRawType, def } from '../utils'
-import {
-  mutableHandlers,
-  readonlyHandlers,
-  shallowReadonlyHandlers,
-} from './baseHandlers'
+import { isObject, toRawType, def, shallowCopy } from '../utils'
+import { AnyObject } from '../types'
+import { mutableHandlers, readonlyHandlers } from './baseHandlers'
 
 export declare const RawSymbol: unique symbol
 
@@ -11,22 +8,43 @@ export const enum ReactiveFlags {
   SKIP = '__r_skip',
   IS_REACTIVE = '__r_isReactive',
   IS_READONLY = '__r_isReadonly',
-  IS_SHALLOW = '__r_isShallow',
   RAW = '__r_raw',
+  STATE = '__r_state',
 }
 
 export interface Target {
   [ReactiveFlags.SKIP]?: boolean
   [ReactiveFlags.IS_REACTIVE]?: boolean
   [ReactiveFlags.IS_READONLY]?: boolean
-  [ReactiveFlags.IS_SHALLOW]?: boolean
-  [ReactiveFlags.RAW]?: any
+  [ReactiveFlags.STATE]?: ReactiveState
 }
 
-export const reactiveMap = new WeakMap<Target, any>()
-export const shallowReactiveMap = new WeakMap<Target, any>()
-export const readonlyMap = new WeakMap<Target, any>()
-export const shallowReadonlyMap = new WeakMap<Target, any>()
+export interface ReactiveState {
+  id: number
+  // The root state.
+  root?: ReactiveState
+  // The parent state.
+  parent?: ReactiveState
+  // The base object.
+  base: AnyObject
+  // The base proxy.
+  proxy: AnyObject
+  // The base copy with any updated values.
+  copy: AnyObject | null
+  // Track which properties have been assigned (true) or deleted (false).
+  assigned: Record<string, boolean>
+  // True for both shallow and deep changes.
+  modified: boolean
+  // Used during finalization.
+  finalized: boolean
+  // listener
+  listeners: Array<() => void>
+  // revoke proxy
+  revoke: () => void
+}
+
+export const reactiveMap = new WeakMap<ReactiveState, any>()
+export const readonlyMap = new WeakMap<ReactiveState, any>()
 
 const enum TargetType {
   INVALID = 0,
@@ -55,35 +73,18 @@ function getTargetType(value: Target) {
     : targetTypeMap(toRawType(value))
 }
 
-/**
- * Creates a reactive copy of the original object.
- *
- * The reactive conversion is "deep"—it affects all nested properties. In the
- * ES2015 Proxy based implementation, the returned proxy is **not** equal to the
- * original object. It is recommended to work exclusively with the reactive
- * proxy and avoid relying on the original object.
- *
- * A reactive object also automatically unwraps refs contained in it, so you
- * don't need to use `.value` when accessing and mutating their value:
- *
- * ```js
- * const obj = reactive({
- *   count: 0,
- * })
- *
- * obj.count++
- * obj.count // -> 1
- * ```
- */
-
-export function reactive<T extends object>(target: T): T
-export function reactive(target: object) {
+export function reactive<T extends object>(
+  target: T,
+  parent?: ReactiveState,
+  root?: ReactiveState
+): T
+export function reactive(target: object, parent?: ReactiveState) {
   // if trying to observe a readonly proxy, return the readonly version.
   if (isReadonly(target)) {
     return target
   }
 
-  return createReactiveObject(target, false, mutableHandlers, reactiveMap)
+  return createProxyObject(target, false, mutableHandlers, reactiveMap, parent)
 }
 
 type Primitive = string | number | boolean | bigint | symbol | undefined | null
@@ -112,30 +113,20 @@ export type DeepReadonly<T> = T extends Builtin
  * Creates a readonly copy of the original object. Note the returned copy is not
  * made reactive, but `readonly` can be called on an already reactive object.
  */
-export function readonly<T extends object>(target: T): DeepReadonly<T> {
-  return createReactiveObject(target, true, readonlyHandlers, readonlyMap)
+export function readonly<T extends object>(
+  target: T,
+  parent?: ReactiveState
+): DeepReadonly<T> {
+  return createProxyObject(target, true, readonlyHandlers, readonlyMap, parent)
 }
 
-/**
- * Returns a reactive-copy of the original object, where only the root level
- * properties are readonly, and does NOT unwrap refs nor recursively convert
- * returned properties.
- * This is used for creating the props proxy object for stateful components.
- */
-export function shallowReadonly<T extends object>(target: T): Readonly<T> {
-  return createReactiveObject(
-    target,
-    true,
-    shallowReadonlyHandlers,
-    shallowReadonlyMap
-  )
-}
-
-function createReactiveObject(
+let uid = 0
+function createProxyObject(
   target: Target,
   isReadonly: boolean,
   baseHandlers: ProxyHandler<any>,
-  proxyMap: WeakMap<Target, any>
+  proxyMap: WeakMap<ReactiveState, any>,
+  parent?: ReactiveState
 ) {
   if (!isObject(target)) {
     if (process.env.NODE_ENV === 'development') {
@@ -146,29 +137,57 @@ function createReactiveObject(
   // target is already a Proxy, return it.
   // exception: calling readonly() on a reactive object
   if (
-    target[ReactiveFlags.RAW] &&
+    target[ReactiveFlags.STATE] &&
     !(isReadonly && target[ReactiveFlags.IS_REACTIVE])
   ) {
     return target
-  }
-  // target already has corresponding Proxy
-  const existingProxy = proxyMap.get(target)
-  if (existingProxy) {
-    return existingProxy
   }
   // only specific value types can be observed.
   const targetType = getTargetType(target)
   if (targetType === TargetType.INVALID) {
     return target
   }
-  const proxy = new Proxy(target, baseHandlers)
-  proxyMap.set(target, proxy)
+
+  const isArray = Array.isArray(target)
+  let state: ReactiveState = {
+    id: uid++,
+    root: null as any, // set below
+    parent: parent,
+    base: target,
+    proxy: null as any, // set below
+    copy: null,
+    assigned: {},
+    modified: false,
+    finalized: false,
+    listeners: [],
+    revoke: null as any, // set below
+  }
+  if (isArray) {
+    const initValue = state
+    state = [] as any as ReactiveState
+    Object.keys(initValue).forEach((key) => {
+      Object.defineProperty(state, key, {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value: initValue[key as keyof typeof initValue],
+      })
+    })
+  }
+
+  const { proxy, revoke } = Proxy.revocable(state, baseHandlers)
+  state.proxy = proxy
+  state.revoke = revoke
+  state.root = parent ? parent.root : state
+
+  proxyMap.set(state, proxy)
+
   return proxy
 }
 
 export function isReactive(value: unknown): boolean {
   if (isReadonly(value)) {
-    return isReactive((value as Target)[ReactiveFlags.RAW])
+    return isReactive((value as Target)[ReactiveFlags.STATE])
   }
   return !!(value && (value as Target)[ReactiveFlags.IS_REACTIVE])
 }
@@ -177,17 +196,13 @@ export function isReadonly(value: unknown): boolean {
   return !!(value && (value as Target)[ReactiveFlags.IS_READONLY])
 }
 
-export function isShallow(value: unknown): boolean {
-  return !!(value && (value as Target)[ReactiveFlags.IS_SHALLOW])
-}
-
-export function isProxy(value: unknown): boolean {
-  return isReactive(value) || isReadonly(value)
+export function toState<T>(observed: T): ReactiveState | undefined {
+  return observed && (observed as Target)[ReactiveFlags.STATE]
 }
 
 export function toRaw<T>(observed: T): T {
-  const raw = observed && (observed as Target)[ReactiveFlags.RAW]
-  return raw ? toRaw(raw) : observed
+  const raw = toState(observed)
+  return raw ? toRaw(raw.base as any) : observed
 }
 
 export function markRaw<T extends object>(
@@ -197,8 +212,30 @@ export function markRaw<T extends object>(
   return value
 }
 
-export const toReactive = <T extends unknown>(value: T): T =>
-  isObject(value) ? reactive(value) : value
+export function isDraft(value: any): boolean {
+  return !!value && !!value[ReactiveFlags.STATE]
+}
 
-export const toReadonly = <T extends unknown>(value: T): T =>
-  isObject(value) ? readonly(value as Record<any, any>) : value
+export function isDraftable(value: any): boolean {
+  if (!value) return false
+  return getTargetType(value) !== TargetType.INVALID
+}
+
+export function latest(state: ReactiveState) {
+  return state.copy || state.base
+}
+
+export function prepareCopy(state: { base: any; copy: any }) {
+  if (!state.copy) {
+    state.copy = shallowCopy(state.base)
+  }
+}
+
+export function markChanged(state: ReactiveState) {
+  if (!state.modified) {
+    state.modified = true
+    if (state.parent) {
+      markChanged(state.parent)
+    }
+  }
+}

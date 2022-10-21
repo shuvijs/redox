@@ -1,5 +1,4 @@
 import { reactive, isReactive, markRaw, toRaw } from '../reactive'
-import { effect } from '../effect'
 
 describe('reactivity/reactive', () => {
   test('Object', () => {
@@ -98,17 +97,17 @@ describe('reactivity/reactive', () => {
   //   expect(dummy).toBe(false)
   // })
 
-  test('observed value should proxy mutations to original (Object)', () => {
+  test('observed value should not proxy mutations to original (Object)', () => {
     const original: any = { foo: 1 }
     const observed = reactive(original)
     // set
     observed.bar = 1
     expect(observed.bar).toBe(1)
-    expect(original.bar).toBe(1)
+    expect(original.bar).toBe(undefined)
     // delete
     delete observed.foo
     expect('foo' in observed).toBe(false)
-    expect('foo' in original).toBe(false)
+    expect('foo' in original).toBe(true)
   })
 
   test('original value change should reflect in observed value (Object)', () => {
@@ -124,12 +123,12 @@ describe('reactivity/reactive', () => {
     expect('foo' in observed).toBe(false)
   })
 
-  test('setting a property with an unobserved value should wrap with reactive', () => {
+  test('setting a property with an unobserved value should not be wrapped with reactive', () => {
     const observed = reactive<{ foo?: object }>({})
     const raw = {}
     observed.foo = raw
-    expect(observed.foo).not.toBe(raw)
-    expect(isReactive(observed.foo)).toBe(true)
+    expect(observed.foo).toBe(raw)
+    expect(isReactive(observed.foo)).toBe(false)
   })
 
   test('observing already observed value should return same Proxy', () => {
@@ -139,21 +138,11 @@ describe('reactivity/reactive', () => {
     expect(observed2).toBe(observed)
   })
 
-  test('observing the same value multiple times should return same Proxy', () => {
+  test('observing the same value multiple times should return different Proxy', () => {
     const original = { foo: 1 }
     const observed = reactive(original)
     const observed2 = reactive(original)
-    expect(observed2).toBe(observed)
-  })
-
-  test('should not pollute original object with Proxies', () => {
-    const original: any = { foo: 1 }
-    const original2 = { bar: 2 }
-    const observed = reactive(original)
-    const observed2 = reactive(original2)
-    observed.bar = observed2
-    expect(observed.bar).toBe(observed2)
-    expect(original.bar).toBe(original2)
+    expect(observed2).not.toBe(observed)
   })
 
   test('toRaw', () => {

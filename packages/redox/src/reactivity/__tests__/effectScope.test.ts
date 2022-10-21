@@ -42,69 +42,39 @@ describe('reactivity/effect/scope', () => {
   })
 
   it('stop', () => {
-    let dummy: any
-    let doubled: any
-    let invalidate1: any
-    let invalidate2: any
-    const container: any = {
-      value: { num: 0 },
-    }
-    container.$value = reactive(() => container.value)
+    let dummy, doubled
+    const counter = reactive({ num: 0 })
 
     const scope = new EffectScope()
     scope.run(() => {
-      dummy = view(
-        () => container.$value.num,
-        (a) => (invalidate1 = a)
-      )
-      doubled = view(
-        () => container.$value.num * 2,
-        (a) => (invalidate2 = a)
-      )
+      effect(() => (dummy = counter.num))
+      effect(() => (doubled = counter.num * 2))
     })
 
     expect(scope.effects.length).toBe(2)
 
-    expect(dummy.value).toBe(0)
-    container.value = { num: 7 }
-    container.$value = reactive(() => container.value)
-    invalidate1()
-    invalidate2()
-    expect(dummy.value).toBe(7)
-    expect(doubled.value).toBe(14)
+    expect(dummy).toBe(0)
+    counter.num = 7
+    expect(dummy).toBe(7)
+    expect(doubled).toBe(14)
 
     scope.stop()
 
-    container.value = { num: 6 }
-    container.$value = reactive(() => container.value)
-    invalidate1()
-    invalidate2()
-    expect(dummy.value).toBe(7)
-    expect(doubled.value).toBe(14)
+    counter.num = 6
+    expect(dummy).toBe(7)
+    expect(doubled).toBe(14)
   })
 
   it('should collect nested scope', () => {
-    let dummy: any
-    let doubled: any
-    let invalidate1: any
-    let invalidate2: any
-    let container: any = {
-      value: { num: 0 },
-    }
-    container.$value = reactive(() => container.value)
+    let dummy, doubled
+    const counter = reactive({ num: 0 })
 
     const scope = new EffectScope()
     scope.run(() => {
-      dummy = view(
-        () => container.$value.num,
-        (a) => (invalidate1 = a)
-      )
+      effect(() => (dummy = counter.num))
       // nested scope
       new EffectScope().run(() => {
-        doubled = view(
-          () => container.$value.num * 2,
-          (a) => (invalidate2 = a)
-        )
+        effect(() => (doubled = counter.num * 2))
       })
     })
 
@@ -112,126 +82,79 @@ describe('reactivity/effect/scope', () => {
     expect(scope.scopes!.length).toBe(1)
     expect(scope.scopes![0]).toBeInstanceOf(EffectScope)
 
-    expect(dummy.value).toBe(0)
-    container.value = { num: 7 }
-    container.$value = reactive(() => container.value)
-    invalidate1()
-    invalidate2()
-    expect(dummy.value).toBe(7)
-    expect(doubled.value).toBe(14)
+    expect(dummy).toBe(0)
+    counter.num = 7
+    expect(dummy).toBe(7)
+    expect(doubled).toBe(14)
 
     // stop the nested scope as well
     scope.stop()
 
-    container.value = { num: 6 }
-    container.$value = reactive(() => container.value)
-    invalidate1()
-    invalidate2()
-    expect(dummy.value).toBe(7)
-    expect(doubled.value).toBe(14)
+    counter.num = 6
+    expect(dummy).toBe(7)
+    expect(doubled).toBe(14)
   })
 
   it('nested scope can be escaped', () => {
-    let dummy: any
-    let doubled: any
-    let invalidate1: any
-    let invalidate2: any
-    let container: any = {
-      value: { num: 0 },
-    }
-    container.$value = reactive(() => container.value)
+    let dummy, doubled
+    const counter = reactive({ num: 0 })
 
     const scope = new EffectScope()
     scope.run(() => {
-      dummy = view(
-        () => container.$value.num,
-        (a) => (invalidate1 = a)
-      )
+      effect(() => (dummy = counter.num))
       // nested scope
       new EffectScope(true).run(() => {
-        doubled = view(
-          () => container.$value.num * 2,
-          (a) => (invalidate2 = a)
-        )
+        effect(() => (doubled = counter.num * 2))
       })
     })
 
     expect(scope.effects.length).toBe(1)
 
-    expect(dummy.value).toBe(0)
-    container.value = { num: 7 }
-    container.$value = reactive(() => container.value)
-    invalidate1()
-    invalidate2()
-    expect(dummy.value).toBe(7)
-    expect(doubled.value).toBe(14)
+    expect(dummy).toBe(0)
+    counter.num = 7
+    expect(dummy).toBe(7)
+    expect(doubled).toBe(14)
 
     scope.stop()
 
-    container.value = { num: 6 }
-    container.$value = reactive(() => container.value)
-    invalidate1()
-    invalidate2()
-    expect(dummy.value).toBe(7)
+    counter.num = 6
+    expect(dummy).toBe(7)
 
     // nested scope should not be stopped
-    expect(doubled.value).toBe(12)
+    expect(doubled).toBe(12)
   })
 
   it('able to run the scope', () => {
-    let dummy: any
-    let doubled: any
-    let invalidate1: any
-    let invalidate2: any
-    let container: any = {
-      value: { num: 0 },
-    }
-    container.$value = reactive(() => container.value)
+    let dummy, doubled
+    const counter = reactive({ num: 0 })
 
     const scope = new EffectScope()
     scope.run(() => {
-      dummy = view(
-        () => container.$value.num,
-        (a) => (invalidate1 = a)
-      )
+      effect(() => (dummy = counter.num))
     })
 
     expect(scope.effects.length).toBe(1)
 
     scope.run(() => {
-      doubled = view(
-        () => container.$value.num * 2,
-        (a) => (invalidate2 = a)
-      )
+      effect(() => (doubled = counter.num * 2))
     })
 
     expect(scope.effects.length).toBe(2)
 
-    container.value = { num: 7 }
-    container.$value = reactive(() => container.value)
-    invalidate1()
-    invalidate2()
-    expect(dummy.value).toBe(7)
-    expect(doubled.value).toBe(14)
+    counter.num = 7
+    expect(dummy).toBe(7)
+    expect(doubled).toBe(14)
 
     scope.stop()
   })
 
   it('can not run an inactive scope', () => {
-    let dummy: any
-    let doubled: any
-    let invalidate1: any
-    let container: any = {
-      value: { num: 0 },
-    }
-    container.$value = reactive(() => container.value)
+    let dummy, doubled
+    const counter = reactive({ num: 0 })
 
     const scope = new EffectScope()
     scope.run(() => {
-      dummy = view(
-        () => container.$value.num,
-        (a) => (invalidate1 = a)
-      )
+      effect(() => (dummy = counter.num))
     })
 
     expect(scope.effects.length).toBe(1)
@@ -239,17 +162,15 @@ describe('reactivity/effect/scope', () => {
     scope.stop()
 
     scope.run(() => {
-      doubled = view(() => container.$value.num * 2)
+      effect(() => (doubled = counter.num * 2))
     })
 
-    expect('cannot run an inactive effect scope').toHaveBeenWarned()
+    expect('cannot run an inactive effect scope.').toHaveBeenWarned()
 
     expect(scope.effects.length).toBe(1)
 
-    container.value = { num: 7 }
-    container.$value = reactive(() => container.value)
-    invalidate1()
-    expect(dummy.value).toBe(7)
+    counter.num = 7
+    expect(dummy).toBe(0)
     expect(doubled).toBe(undefined)
   })
 

@@ -1,5 +1,5 @@
 {
-  "name": "redox-react-examples-ssr",
+  "name": "examples-ssr",
   "version": "0.0.1",
   "private": true,
   "dependencies": {

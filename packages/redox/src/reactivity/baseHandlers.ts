@@ -3,13 +3,15 @@ import {
   readonly,
   toRaw,
   ReactiveFlags,
-  Target,
   readonlyMap,
   reactiveMap,
-  shallowReactiveMap,
-  shallowReadonlyMap,
   isReadonly,
-  isShallow,
+  ReactiveState,
+  Target,
+  latest,
+  prepareCopy,
+  markChanged,
+  toState,
 } from './reactive'
 import { TrackOpTypes, TriggerOpTypes } from './operations'
 import {
@@ -18,18 +20,8 @@ import {
   ITERATE_KEY,
   pauseTracking,
   resetTracking,
-  toDraft,
-  isDraft,
 } from './effect'
-import {
-  isObject,
-  hasOwn,
-  isSymbol,
-  hasChanged,
-  isArray,
-  isIntegerKey,
-  extend,
-} from '../utils'
+import { isObject, hasOwn, isSymbol, is, isArray, isIntegerKey } from '../utils'
 import { warn } from '../warning'
 
 export type ProxyGetterHandler = ProxyHandler<object>['get']
@@ -49,10 +41,15 @@ const builtInSymbols = new Set(
     .filter(isSymbol)
 )
 
+// Access a property without creating a proxy.
+function peek(obj: Target, prop: PropertyKey) {
+  const state = obj[ReactiveFlags.STATE]
+  const source = state ? latest(state) : obj
+  return (source as any)[prop]
+}
+
 const get = /*#__PURE__*/ createGetter()
-const shallowGet = /*#__PURE__*/ createGetter(false, true)
 const readonlyGet = /*#__PURE__*/ createGetter(true)
-const shallowReadonlyGet = /*#__PURE__*/ createGetter(true, true)
 
 const arrayInstrumentations = /*#__PURE__*/ createArrayInstrumentations()
 
@@ -62,9 +59,10 @@ function createArrayInstrumentations() {
   // values
   ;(['includes', 'indexOf', 'lastIndexOf'] as const).forEach((key) => {
     instrumentations[key] = function (this: unknown[], ...args: unknown[]) {
-      let arr = toRaw(this) as any
+      const state = toState(this)!
+      const arr = latest(state)
       for (let i = 0, l = this.length; i < l; i++) {
-        track(arr, TrackOpTypes.GET, i + '', Reflect.get(arr, i))
+        track(state, TrackOpTypes.GET, i + '', Reflect.get(arr, i))
       }
       // we run the method using the original args first (which may be reactive)
       const res = arr[key](...args)
@@ -81,147 +79,172 @@ function createArrayInstrumentations() {
   ;(['push', 'pop', 'shift', 'unshift', 'splice'] as const).forEach((key) => {
     instrumentations[key] = function (this: unknown[], ...args: unknown[]) {
       pauseTracking()
-      let target = toRaw(this) as any
-      target = toDraft(target)
+      let state = toState(this)!
+      let target = latest(state)
       const res = target[key].apply(this, args)
       resetTracking()
-      trigger(target, TriggerOpTypes.MODIFIED, key, args, null)
+      trigger(state, TriggerOpTypes.MODIFIED, key, args, null)
       return res
     }
   })
   return instrumentations
 }
 
-function createGetter(isReadonly = false, shallow = false): ProxyGetter {
-  return function get(target: Target, key: string | symbol, receiver: object) {
-    if (key === ReactiveFlags.IS_REACTIVE) {
+function createGetter(isReadonly = false): ProxyGetter {
+  return function get(
+    state: ReactiveState,
+    prop: PropertyKey,
+    receiver: object
+  ) {
+    const target = latest(state)
+    if (prop === ReactiveFlags.IS_REACTIVE) {
       return !isReadonly
-    } else if (key === ReactiveFlags.IS_READONLY) {
+    } else if (prop === ReactiveFlags.IS_READONLY) {
       return isReadonly
-    } else if (key === ReactiveFlags.IS_SHALLOW) {
-      return shallow
     } else if (
-      key === ReactiveFlags.RAW &&
-      receiver ===
-        (isReadonly
-          ? shallow
-            ? shallowReadonlyMap
-            : readonlyMap
-          : shallow
-          ? shallowReactiveMap
-          : reactiveMap
-        ).get(target)
+      prop === ReactiveFlags.STATE &&
+      receiver === (isReadonly ? readonlyMap : reactiveMap).get(state)
     ) {
-      return target
+      return state
     }
 
     const targetIsArray = isArray(target)
-    if (!isReadonly && targetIsArray && hasOwn(arrayInstrumentations, key)) {
-      return Reflect.get(arrayInstrumentations, key, receiver)
+    if (!isReadonly && targetIsArray && hasOwn(arrayInstrumentations, prop)) {
+      return Reflect.get(arrayInstrumentations, prop, receiver)
     }
 
-    // todo: make draft of root target in advance
-    target = toDraft(target)
-    let res = Reflect.get(target, key, receiver)
-
-    if (isSymbol(key) ? builtInSymbols.has(key) : isNonTrackableKeys.has(key)) {
-      return res
+    let value = Reflect.get(target, prop, receiver)
+    if (
+      isSymbol(prop) ? builtInSymbols.has(prop) : isNonTrackableKeys.has(prop)
+    ) {
+      return value
     }
 
-    const record = track(target, TrackOpTypes.GET, key, res)
-    if (record) {
-      const value = record.value
-      // if value isn't a draft, it a external value, keep it as it is
-      return isDraft(value) ? reactive(value) : value
+    track(state, TrackOpTypes.GET, prop, value)
+
+    if (!hasOwn(target, prop)) {
+      // non-existing or non-own property...
+      return value
     }
 
-    if (shallow) {
-      return res
+    if (state.finalized || !isObject(value)) {
+      return value
     }
 
-    if (isObject(res)) {
-      // Convert returned value into a proxy as well. we do the isObject check
-      // here to avoid invalid value warning. Also need to lazy access readonly
-      // and reactive here to avoid circular dependency.
-      return isReadonly ? readonly(res) : reactive(res)
+    // Check for existing proxy in modified state.
+    // Assigned values are never proxied. This catches any proxies we created, too.
+    if (value === peek(state.base, prop)) {
+      prepareCopy(state)
+      return (state.copy![prop as any] = isReadonly
+        ? readonly(value, state)
+        : reactive(value, state))
     }
-
-    return res
+    return value
   }
 }
 
 const set = /*#__PURE__*/ createSetter()
-const shallowSet = /*#__PURE__*/ createSetter(true)
 
-function createSetter(shallow = false) {
+function createSetter() {
   return function set(
-    target: object,
-    key: string | symbol,
+    state: ReactiveState,
+    prop: string /* strictly not, but helps TS */,
     value: unknown,
     receiver: object
   ): boolean {
-    const draft = toDraft(target)
-
-    let oldValue = (draft as any)[key]
-    if (isReadonly(oldValue)) {
+    const target = latest(state)
+    const current = peek(target, prop)
+    if (isReadonly(current)) {
       return false
-    }
-    if (!shallow) {
-      if (!isShallow(value) && !isReadonly(value)) {
-        oldValue = toRaw(oldValue)
-        value = toRaw(value)
-      }
-    } else {
-      // in shallow mode, objects are set as-is regardless of reactive or not
     }
 
     const hadKey =
-      isArray(draft) && isIntegerKey(key)
-        ? Number(key) < draft.length
-        : hasOwn(draft, key)
+      isArray(target) && isIntegerKey(prop)
+        ? Number(prop) < target.length
+        : hasOwn(target, prop)
 
-    const result = Reflect.set(
-      draft,
-      key,
-      value,
-      target !== draft ? draft : receiver
-    )
-    // don't trigger if target is something up in the prototype chain of original
-    if (target === toRaw(receiver)) {
-      if (!hadKey) {
-        trigger(draft, TriggerOpTypes.ADD, key, value)
-      } else if (hasChanged(value, oldValue)) {
-        trigger(draft, TriggerOpTypes.SET, key, value, oldValue)
+    if (!state.modified) {
+      // special case, if we assigning the original value to a draft, we can ignore the assignment
+      const currentState: ReactiveState = current?.[ReactiveFlags.STATE]
+      if (currentState && currentState.base === value) {
+        state.copy![prop] = value
+        state.assigned[prop] = false
+        return true
       }
+
+      // we need to be able to distinguish setting a non-existing to undefined (which is a change)
+      // from setting an existing property with value undefined to undefined (which is not a change)
+      if (
+        is(value, current) &&
+        (value !== undefined || hasOwn(state.base, prop))
+      )
+        return true
+
+      prepareCopy(state)
+      markChanged(state)
+    }
+
+    if (
+      is(state.copy![prop], value) &&
+      // special case: handle new props with value 'undefined'
+      (value !== undefined || prop in state.copy!)
+    )
+      return true
+
+    state.copy![prop] = value
+    state.assigned[prop] = true
+
+    // don't trigger if target is something up in the prototype chain of original
+    if (state === toState(receiver)) {
+      if (!hadKey) {
+        trigger(state, TriggerOpTypes.ADD, prop, value)
+      } else if (!is(value, current)) {
+        trigger(state, TriggerOpTypes.SET, prop, value, current)
+      }
+    }
+
+    return true
+  }
+}
+
+function deleteProperty(state: ReactiveState, prop: string): boolean {
+  const hadKey = hasOwn(latest(state), prop)
+  const current = peek(state.base, prop)
+
+  // The `undefined` check is a fast path for pre-existing keys.
+  if (current !== undefined || prop in state.base) {
+    state.assigned[prop] = false
+    prepareCopy(state)
+    markChanged(state)
+  } else {
+    // if an originally not assigned property was deleted
+    delete state.assigned[prop]
+  }
+
+  if (state.copy) {
+    const result = delete state.copy[prop]
+    if (result && hadKey) {
+      trigger(state, TriggerOpTypes.DELETE, prop, undefined, current)
     }
     return result
   }
+
+  return true
 }
 
-function deleteProperty(target: object, key: string | symbol): boolean {
-  target = toDraft(target)
-  const hadKey = hasOwn(target, key)
-  const oldValue = (target as any)[key]
-  const result = Reflect.deleteProperty(target, key)
-  if (result && hadKey) {
-    trigger(target, TriggerOpTypes.DELETE, key, undefined, oldValue)
+function has(state: ReactiveState, prop: PropertyKey): boolean {
+  const target = latest(state)
+  const result = Reflect.has(target, prop)
+  if (!isSymbol(prop) || !builtInSymbols.has(prop)) {
+    track(state, TrackOpTypes.HAS, prop, result)
   }
   return result
 }
 
-function has(target: object, key: string | symbol): boolean {
-  target = toDraft(target)
-  const result = Reflect.has(target, key)
-  if (!isSymbol(key) || !builtInSymbols.has(key)) {
-    track(target, TrackOpTypes.HAS, key, result)
-  }
-  return result
-}
-
-function ownKeys(target: object): (string | symbol)[] {
-  target = toDraft(target)
+function ownKeys(state: ReactiveState): (string | symbol)[] {
+  const target = latest(state)
   track(
-    target,
+    state,
     TrackOpTypes.ITERATE,
     isArray(target) ? 'length' : ITERATE_KEY,
     null
@@ -229,8 +252,8 @@ function ownKeys(target: object): (string | symbol)[] {
   return Reflect.ownKeys(target)
 }
 
-function getOwnPropertyDescriptor(target: object, key: keyof typeof target) {
-  target = toDraft(target)
+function getOwnPropertyDescriptor(state: ReactiveState, key: any) {
+  const target = latest(state)
   const desc = Reflect.getOwnPropertyDescriptor(target, key)
   if (!desc) return desc
   return {
@@ -241,11 +264,15 @@ function getOwnPropertyDescriptor(target: object, key: keyof typeof target) {
   }
 }
 
-function setPrototypeOf(_target: object, _v: object | null): boolean {
+function setPrototypeOf(state: ReactiveState, v: object | null): boolean {
   if (process.env.NODE_ENV === 'development') {
     warn(`not allow setPrototypeOf to set prototype`)
   }
-  return false
+  const res = Reflect.setPrototypeOf(state.base, v)
+  if (res && state.copy) {
+    Reflect.setPrototypeOf(state.copy, v)
+  }
+  return res
 }
 
 export const mutableHandlers: ProxyHandler<object> = {
@@ -279,23 +306,3 @@ export const readonlyHandlers: ProxyHandler<object> = {
     return true
   },
 }
-
-export const shallowReactiveHandlers = /*#__PURE__*/ extend(
-  {},
-  mutableHandlers,
-  {
-    get: shallowGet,
-    set: shallowSet,
-  }
-)
-
-// Props handlers are special in the sense that it should not unwrap top-level
-// refs (in order to allow refs to be explicitly passed down), but should
-// retain the reactivity of the normal readonly object.
-export const shallowReadonlyHandlers = /*#__PURE__*/ extend(
-  {},
-  readonlyHandlers,
-  {
-    get: shallowReadonlyGet,
-  }
-)
