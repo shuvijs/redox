@@ -1,4 +1,5 @@
-export { reactive, readonly, isReactive } from './reactive'
-export { View, view, ViewGetter, onViewInvalidate } from './view'
-export { ReactiveEffect } from './effect'
+export { toState, toBase, isDraft } from './common'
+export { View, view, ViewGetter } from './view'
+export { draft, snapshot, finishDraft, updateDraft, watch } from './draft'
+export { ReactiveEffect, pauseTracking, resetTracking } from './effect'
 export { EffectScope, effectScope } from './effectScope'

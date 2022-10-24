@@ -1,21 +1,17 @@
+import { DraftState, draft, draftMap } from './draft'
+import { TrackOpTypes, TriggerOpTypes } from './operations'
 import {
-  reactive,
-  readonly,
-  toRaw,
   ReactiveFlags,
-  readonlyMap,
-  reactiveMap,
-  isReadonly,
-  ReactiveState,
   Target,
+  toBase,
+  toState,
   latest,
   prepareCopy,
   markChanged,
-  toState,
-} from './reactive'
-import { TrackOpTypes, TriggerOpTypes } from './operations'
+} from './common'
 import {
   track,
+  trackDraft,
   trigger,
   ITERATE_KEY,
   pauseTracking,
@@ -49,7 +45,6 @@ function peek(obj: Target, prop: PropertyKey) {
 }
 
 const get = /*#__PURE__*/ createGetter()
-const readonlyGet = /*#__PURE__*/ createGetter(true)
 
 const arrayInstrumentations = /*#__PURE__*/ createArrayInstrumentations()
 
@@ -68,7 +63,7 @@ function createArrayInstrumentations() {
       const res = arr[key](...args)
       if (res === -1 || res === false) {
         // if that didn't work, run it again using raw values.
-        return arr[key](...args.map(toRaw))
+        return arr[key](...args.map(toBase))
       } else {
         return res
       }
@@ -83,33 +78,26 @@ function createArrayInstrumentations() {
       let target = latest(state)
       const res = target[key].apply(this, args)
       resetTracking()
-      trigger(state, TriggerOpTypes.MODIFIED, key, args, null)
       return res
     }
   })
   return instrumentations
 }
 
-function createGetter(isReadonly = false): ProxyGetter {
-  return function get(
-    state: ReactiveState,
-    prop: PropertyKey,
-    receiver: object
-  ) {
+function createGetter(): ProxyGetter {
+  return function get(state: DraftState, prop: PropertyKey, receiver: object) {
     const target = latest(state)
     if (prop === ReactiveFlags.IS_REACTIVE) {
-      return !isReadonly
-    } else if (prop === ReactiveFlags.IS_READONLY) {
-      return isReadonly
+      return true
     } else if (
       prop === ReactiveFlags.STATE &&
-      receiver === (isReadonly ? readonlyMap : reactiveMap).get(state)
+      receiver === draftMap.get(state)
     ) {
       return state
     }
 
     const targetIsArray = isArray(target)
-    if (!isReadonly && targetIsArray && hasOwn(arrayInstrumentations, prop)) {
+    if (targetIsArray && hasOwn(arrayInstrumentations, prop)) {
       return Reflect.get(arrayInstrumentations, prop, receiver)
     }
 
@@ -127,7 +115,7 @@ function createGetter(isReadonly = false): ProxyGetter {
       return value
     }
 
-    if (state.finalized || !isObject(value)) {
+    if (state.disposed || !isObject(value)) {
       return value
     }
 
@@ -135,9 +123,13 @@ function createGetter(isReadonly = false): ProxyGetter {
     // Assigned values are never proxied. This catches any proxies we created, too.
     if (value === peek(state.base, prop)) {
       prepareCopy(state)
-      return (state.copy![prop as any] = isReadonly
-        ? readonly(value, state)
-        : reactive(value, state))
+      const res = (state.copy![prop as any] = draft(value, state))
+      const resState = toState(res)
+      resState && trackDraft(res[ReactiveFlags.STATE])
+      return res
+    } else {
+      const resState = toState(value)
+      resState && trackDraft(resState)
     }
     return value
   }
@@ -147,16 +139,13 @@ const set = /*#__PURE__*/ createSetter()
 
 function createSetter() {
   return function set(
-    state: ReactiveState,
+    state: DraftState,
     prop: string /* strictly not, but helps TS */,
     value: unknown,
     receiver: object
   ): boolean {
     const target = latest(state)
     const current = peek(target, prop)
-    if (isReadonly(current)) {
-      return false
-    }
 
     const hadKey =
       isArray(target) && isIntegerKey(prop)
@@ -165,7 +154,7 @@ function createSetter() {
 
     if (!state.modified) {
       // special case, if we assigning the original value to a draft, we can ignore the assignment
-      const currentState: ReactiveState = current?.[ReactiveFlags.STATE]
+      const currentState: DraftState = current?.[ReactiveFlags.STATE]
       if (currentState && currentState.base === value) {
         state.copy![prop] = value
         state.assigned[prop] = false
@@ -207,7 +196,7 @@ function createSetter() {
   }
 }
 
-function deleteProperty(state: ReactiveState, prop: string): boolean {
+function deleteProperty(state: DraftState, prop: string): boolean {
   const hadKey = hasOwn(latest(state), prop)
   const current = peek(state.base, prop)
 
@@ -232,7 +221,7 @@ function deleteProperty(state: ReactiveState, prop: string): boolean {
   return true
 }
 
-function has(state: ReactiveState, prop: PropertyKey): boolean {
+function has(state: DraftState, prop: PropertyKey): boolean {
   const target = latest(state)
   const result = Reflect.has(target, prop)
   if (!isSymbol(prop) || !builtInSymbols.has(prop)) {
@@ -241,7 +230,7 @@ function has(state: ReactiveState, prop: PropertyKey): boolean {
   return result
 }
 
-function ownKeys(state: ReactiveState): (string | symbol)[] {
+function ownKeys(state: DraftState): (string | symbol)[] {
   const target = latest(state)
   track(
     state,
@@ -252,7 +241,7 @@ function ownKeys(state: ReactiveState): (string | symbol)[] {
   return Reflect.ownKeys(target)
 }
 
-function getOwnPropertyDescriptor(state: ReactiveState, key: any) {
+function getOwnPropertyDescriptor(state: DraftState, key: any) {
   const target = latest(state)
   const desc = Reflect.getOwnPropertyDescriptor(target, key)
   if (!desc) return desc
@@ -264,7 +253,7 @@ function getOwnPropertyDescriptor(state: ReactiveState, key: any) {
   }
 }
 
-function setPrototypeOf(state: ReactiveState, v: object | null): boolean {
+function setPrototypeOf(state: DraftState, v: object | null): boolean {
   if (process.env.NODE_ENV === 'development') {
     warn(`not allow setPrototypeOf to set prototype`)
   }
@@ -283,26 +272,4 @@ export const mutableHandlers: ProxyHandler<object> = {
   ownKeys,
   setPrototypeOf,
   getOwnPropertyDescriptor,
-}
-
-export const readonlyHandlers: ProxyHandler<object> = {
-  get: readonlyGet,
-  set(target, key) {
-    if (process.env.NODE_ENV === 'development') {
-      warn(
-        `Set operation on key "${String(key)}" failed: target is readonly.`,
-        target
-      )
-    }
-    return true
-  },
-  deleteProperty(target, key) {
-    if (process.env.NODE_ENV === 'development') {
-      warn(
-        `Delete operation on key "${String(key)}" failed: target is readonly.`,
-        target
-      )
-    }
-    return true
-  },
 }

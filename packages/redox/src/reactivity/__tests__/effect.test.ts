@@ -1,4 +1,5 @@
-import { reactive, markRaw, toRaw } from '../reactive'
+import { draft } from '../draft'
+import { toBase, markRaw } from '../common'
 import { view } from '../view'
 import { effect, stop } from '../effect'
 
@@ -11,7 +12,7 @@ describe('reactivity/effect', () => {
 
   it('should observe basic properties', () => {
     let dummy
-    const counter = reactive({ num: 0 })
+    const counter = draft({ num: 0 })
     effect(() => (dummy = counter.num))
 
     expect(dummy).toBe(0)
@@ -21,7 +22,7 @@ describe('reactivity/effect', () => {
 
   it('should observe multiple properties', () => {
     let dummy
-    const counter = reactive({ num1: 0, num2: 0 })
+    const counter = draft({ num1: 0, num2: 0 })
     effect(() => (dummy = counter.num1 + counter.num1 + counter.num2))
 
     expect(dummy).toBe(0)
@@ -31,7 +32,7 @@ describe('reactivity/effect', () => {
 
   it('should handle multiple effects', () => {
     let dummy1, dummy2
-    const counter = reactive({ num: 0 })
+    const counter = draft({ num: 0 })
     effect(() => (dummy1 = counter.num))
     effect(() => (dummy2 = counter.num))
 
@@ -44,7 +45,7 @@ describe('reactivity/effect', () => {
 
   it('should observe nested properties', () => {
     let dummy
-    const counter = reactive({ nested: { num: 0 } })
+    const counter = draft({ nested: { num: 0 } })
     effect(() => (dummy = counter.nested.num))
 
     expect(dummy).toBe(0)
@@ -54,7 +55,7 @@ describe('reactivity/effect', () => {
 
   it('should observe delete operations', () => {
     let dummy
-    const obj = reactive<{
+    const obj = draft<{
       prop?: string
     }>({ prop: 'value' })
     effect(() => (dummy = obj.prop))
@@ -66,7 +67,7 @@ describe('reactivity/effect', () => {
 
   it('should observe has operations', () => {
     let dummy
-    const obj = reactive<{ prop?: string | number }>({ prop: 'value' })
+    const obj = draft<{ prop?: string | number }>({ prop: 'value' })
     effect(() => (dummy = 'prop' in obj))
 
     expect(dummy).toBe(true)
@@ -78,8 +79,8 @@ describe('reactivity/effect', () => {
 
   it('should observe properties on the prototype chain', () => {
     let dummy
-    const counter = reactive<{ num?: number }>({ num: 0 })
-    const parentCounter = reactive({ num: 2 })
+    const counter = draft<{ num?: number }>({ num: 0 })
+    const parentCounter = draft({ num: 2 })
     Object.setPrototypeOf(counter, parentCounter)
     effect(() => (dummy = counter.num))
 
@@ -94,8 +95,8 @@ describe('reactivity/effect', () => {
 
   it('should observe has operations on the prototype chain', () => {
     let dummy
-    const counter = reactive<{ num?: number }>({ num: 0 })
-    const parentCounter = reactive<{ num?: number }>({ num: 2 })
+    const counter = draft<{ num?: number }>({ num: 0 })
+    const parentCounter = draft<{ num?: number }>({ num: 2 })
     Object.setPrototypeOf(counter, parentCounter)
     effect(() => (dummy = 'num' in counter))
 
@@ -110,8 +111,8 @@ describe('reactivity/effect', () => {
 
   it('should observe inherited property accessors', () => {
     let dummy, parentDummy, hiddenValue: any
-    const obj = reactive<{ prop?: number }>({})
-    const parent = reactive({
+    const obj = draft<{ prop?: number }>({})
+    const parent = draft({
       set prop(value) {
         hiddenValue = value
       },
@@ -136,7 +137,7 @@ describe('reactivity/effect', () => {
 
   it('should observe function call chains', () => {
     let dummy
-    const counter = reactive({ num: 0 })
+    const counter = draft({ num: 0 })
     effect(() => (dummy = getNum()))
 
     function getNum() {
@@ -150,7 +151,7 @@ describe('reactivity/effect', () => {
 
   it('should observe iteration', () => {
     let dummy
-    const list = reactive(['Hello'])
+    const list = draft(['Hello'])
     effect(() => (dummy = list.join(' ')))
 
     expect(dummy).toBe('Hello')
@@ -162,7 +163,7 @@ describe('reactivity/effect', () => {
 
   it('should observe implicit array length changes', () => {
     let dummy
-    const list = reactive(['Hello'])
+    const list = draft(['Hello'])
     effect(() => (dummy = list.join(' ')))
 
     expect(dummy).toBe('Hello')
@@ -174,7 +175,7 @@ describe('reactivity/effect', () => {
 
   it('should observe sparse array mutations', () => {
     let dummy
-    const list = reactive<string[]>([])
+    const list = draft<string[]>([])
     list[1] = 'World!'
     effect(() => (dummy = list.join(' ')))
 
@@ -187,7 +188,7 @@ describe('reactivity/effect', () => {
 
   it('should observe enumeration', () => {
     let dummy = 0
-    const numbers = reactive<Record<string, number>>({ num1: 3 })
+    const numbers = draft<Record<string, number>>({ num1: 3 })
     effect(() => {
       dummy = 0
       for (let key in numbers) {
@@ -205,7 +206,7 @@ describe('reactivity/effect', () => {
   it('should observe symbol keyed properties', () => {
     const key = Symbol('symbol keyed prop')
     let dummy, hasDummy
-    const obj = reactive<{ [key]?: string }>({ [key]: 'value' })
+    const obj = draft<{ [key]?: string }>({ [key]: 'value' })
     effect(() => (dummy = obj[key]))
     effect(() => (hasDummy = key in obj))
 
@@ -221,7 +222,7 @@ describe('reactivity/effect', () => {
   it('should not observe well-known symbol keyed properties', () => {
     const key = Symbol.isConcatSpreadable
     let dummy
-    const array: any = reactive([])
+    const array: any = draft([])
     effect(() => (dummy = array[key]))
 
     expect(array[key]).toBe(undefined)
@@ -236,7 +237,7 @@ describe('reactivity/effect', () => {
     const newFunc = () => {}
 
     let dummy
-    const obj = reactive({ func: oldFunc })
+    const obj = draft({ func: oldFunc })
     effect(() => (dummy = obj.func))
 
     expect(dummy).toBe(oldFunc)
@@ -245,7 +246,7 @@ describe('reactivity/effect', () => {
   })
 
   it('should observe chained getters relying on this', () => {
-    const obj = reactive({
+    const obj = draft({
       a: 1,
       get b() {
         return this.a
@@ -264,7 +265,7 @@ describe('reactivity/effect', () => {
   })
 
   it('should observe methods relying on this', () => {
-    const obj = reactive({
+    const obj = draft({
       a: 1,
       b() {
         return this.a
@@ -280,7 +281,7 @@ describe('reactivity/effect', () => {
 
   it('should not observe set operations without a value change', () => {
     let hasDummy, getDummy
-    const obj = reactive({ prop: 'value' })
+    const obj = draft({ prop: 'value' })
 
     const getSpy = jest.fn(() => (getDummy = obj.prop))
     const hasSpy = jest.fn(() => (hasDummy = 'prop' in obj))
@@ -298,8 +299,8 @@ describe('reactivity/effect', () => {
 
   it('should not observe raw mutations', () => {
     let dummy
-    const obj = reactive<{ prop?: string }>({})
-    effect(() => (dummy = toRaw(obj).prop))
+    const obj = draft<{ prop?: string }>({})
+    effect(() => (dummy = toBase(obj).prop))
 
     expect(dummy).toBe(undefined)
     obj.prop = 'value'
@@ -308,18 +309,18 @@ describe('reactivity/effect', () => {
 
   it('should not be triggered by raw mutations', () => {
     let dummy
-    const obj = reactive<{ prop?: string }>({})
+    const obj = draft<{ prop?: string }>({})
     effect(() => (dummy = obj.prop))
 
     expect(dummy).toBe(undefined)
-    toRaw(obj).prop = 'value'
+    toBase(obj).prop = 'value'
     expect(dummy).toBe(undefined)
   })
 
   it('should not be triggered by inherited raw setters', () => {
     let dummy, parentDummy, hiddenValue: any
-    const obj = reactive<{ prop?: number }>({})
-    const parent = reactive({
+    const obj = draft<{ prop?: number }>({})
+    const parent = draft({
       set prop(value) {
         hiddenValue = value
       },
@@ -333,13 +334,13 @@ describe('reactivity/effect', () => {
 
     expect(dummy).toBe(undefined)
     expect(parentDummy).toBe(undefined)
-    toRaw(obj).prop = 4
+    toBase(obj).prop = 4
     expect(dummy).toBe(undefined)
     expect(parentDummy).toBe(undefined)
   })
 
   it('should avoid implicit infinite recursive loops with itself', () => {
-    const counter = reactive({ num: 0 })
+    const counter = draft({ num: 0 })
 
     const counterSpy = jest.fn(() => counter.num++)
     effect(counterSpy)
@@ -352,7 +353,7 @@ describe('reactivity/effect', () => {
 
   it('should avoid infinite recursive loops when use Array.prototype.push/unshift/pop/shift', () => {
     ;(['push', 'unshift'] as const).forEach((key) => {
-      const arr = reactive<number[]>([])
+      const arr = draft<number[]>([])
       const counterSpy1 = jest.fn(() => (arr[key] as any)(1))
       const counterSpy2 = jest.fn(() => (arr[key] as any)(2))
       effect(counterSpy1)
@@ -362,7 +363,7 @@ describe('reactivity/effect', () => {
       expect(counterSpy2).toHaveBeenCalledTimes(1)
     })
     ;(['pop', 'shift'] as const).forEach((key) => {
-      const arr = reactive<number[]>([1, 2, 3, 4])
+      const arr = draft<number[]>([1, 2, 3, 4])
       const counterSpy1 = jest.fn(() => (arr[key] as any)())
       const counterSpy2 = jest.fn(() => (arr[key] as any)())
       effect(counterSpy1)
@@ -374,7 +375,7 @@ describe('reactivity/effect', () => {
   })
 
   it('should allow explicitly recursive raw function loops', () => {
-    const counter = reactive({ num: 0 })
+    const counter = draft({ num: 0 })
     const numSpy = jest.fn(() => {
       counter.num++
       if (counter.num < 10) {
@@ -387,7 +388,7 @@ describe('reactivity/effect', () => {
   })
 
   it('should avoid infinite loops with other effects', () => {
-    const nums = reactive({ num1: 0, num2: 1 })
+    const nums = draft({ num1: 0, num2: 1 })
 
     const spy1 = jest.fn(() => (nums.num1 = nums.num2))
     const spy2 = jest.fn(() => (nums.num2 = nums.num1))
@@ -409,7 +410,7 @@ describe('reactivity/effect', () => {
     expect(spy2).toHaveBeenCalledTimes(3)
   })
 
-  it('should return a new reactive version of the function', () => {
+  it('should return a new draft version of the function', () => {
     function greet() {
       return 'Hello World'
     }
@@ -423,7 +424,7 @@ describe('reactivity/effect', () => {
 
   it('should discover new branches while running automatically', () => {
     let dummy
-    const obj = reactive({ prop: 'value', run: false })
+    const obj = draft({ prop: 'value', run: false })
 
     const conditionalSpy = jest.fn(() => {
       dummy = obj.run ? obj.prop : 'other'
@@ -446,7 +447,7 @@ describe('reactivity/effect', () => {
   it('should discover new branches when running manually', () => {
     let dummy
     let run = false
-    const obj = reactive({ prop: 'value' })
+    const obj = draft({ prop: 'value' })
     const runner = effect(() => {
       dummy = run ? obj.prop : 'other'
     })
@@ -463,7 +464,7 @@ describe('reactivity/effect', () => {
 
   it('should not be triggered by mutating a property, which is used in an inactive branch', () => {
     let dummy
-    const obj = reactive({ prop: 'value', run: true })
+    const obj = draft({ prop: 'value', run: true })
 
     const conditionalSpy = jest.fn(() => {
       dummy = obj.run ? obj.prop : 'other'
@@ -481,7 +482,7 @@ describe('reactivity/effect', () => {
   })
 
   it('should handle deep effect recursion using cleanup fallback', () => {
-    const results = reactive([0])
+    const results = draft([0])
     const effects: { fx: any; index: number }[] = []
     for (let i = 1; i < 40; i++) {
       ;((index) => {
@@ -498,8 +499,8 @@ describe('reactivity/effect', () => {
   })
 
   it('should register deps independently during effect recursion', () => {
-    const input = reactive({ a: 1, b: 2, c: 0 })
-    const output = reactive({ fx1: 0, fx2: 0 })
+    const input = draft({ a: 1, b: 2, c: 0 })
+    const output = draft({ fx1: 0, fx2: 0 })
 
     const fx1Spy = jest.fn(() => {
       let result = 0
@@ -579,7 +580,7 @@ describe('reactivity/effect', () => {
 
   it('should not run multiple times for a single mutation', () => {
     let dummy
-    const obj = reactive<Record<string, number>>({})
+    const obj = draft<Record<string, number>>({})
     const fnSpy = jest.fn(() => {
       for (const key in obj) {
         dummy = obj[key]
@@ -595,7 +596,7 @@ describe('reactivity/effect', () => {
   })
 
   it('should allow nested effects', () => {
-    const nums = reactive({ num1: 0, num2: 1, num3: 2 })
+    const nums = draft({ num1: 0, num2: 1, num3: 2 })
     const dummy: any = {}
 
     const childSpy = jest.fn(() => (dummy.num1 = nums.num1))
@@ -629,7 +630,7 @@ describe('reactivity/effect', () => {
 
   it('should observe json methods', () => {
     let dummy = <Record<string, number>>{}
-    const obj = reactive<Record<string, number>>({})
+    const obj = draft<Record<string, number>>({})
     effect(() => {
       dummy = JSON.parse(JSON.stringify(obj))
     })
@@ -647,7 +648,7 @@ describe('reactivity/effect', () => {
         this.count++
       }
     }
-    const model = reactive(new Model())
+    const model = draft(new Model())
     let dummy
     effect(() => {
       dummy = model.count
@@ -658,7 +659,7 @@ describe('reactivity/effect', () => {
   })
 
   it('lazy', () => {
-    const obj = reactive({ foo: 1 })
+    const obj = draft({ foo: 1 })
     let dummy
     const runner = effect(() => (dummy = obj.foo), { lazy: true })
     expect(dummy).toBe(undefined)
@@ -675,7 +676,7 @@ describe('reactivity/effect', () => {
     const scheduler = jest.fn(() => {
       run = runner
     })
-    const obj = reactive({ foo: 1 })
+    const obj = draft({ foo: 1 })
     const runner = effect(
       () => {
         dummy = obj.foo
@@ -697,7 +698,7 @@ describe('reactivity/effect', () => {
 
   it('stop', () => {
     let dummy
-    const obj = reactive({ prop: 1 })
+    const obj = draft({ prop: 1 })
     const runner = effect(() => {
       dummy = obj.prop
     })
@@ -717,7 +718,7 @@ describe('reactivity/effect', () => {
   // its tracked deps. However, if the effect stops itself, the deps list is
   // emptied so their bits are never cleared.
   it('edge case: self-stopping effect tracking ref', () => {
-    const r = reactive({ value: true })
+    const r = draft({ value: true })
     const c = view(() => r.value)
     const runner = effect(() => {
       // reference ref
@@ -745,7 +746,7 @@ describe('reactivity/effect', () => {
 
   it('stop: a stopped effect is nested in a normal effect', () => {
     let dummy
-    const obj = reactive({ prop: 1 })
+    const obj = draft({ prop: 1 })
     const runner = effect(() => {
       dummy = obj.prop
     })
@@ -766,7 +767,7 @@ describe('reactivity/effect', () => {
   })
 
   it('markRaw', () => {
-    const obj = reactive({
+    const obj = draft({
       foo: markRaw({
         prop: 0,
       }),
@@ -783,7 +784,7 @@ describe('reactivity/effect', () => {
   })
 
   it('should not be triggered when the value and the old value both are NaN', () => {
-    const obj = reactive({
+    const obj = draft({
       foo: NaN,
     })
     const fnSpy = jest.fn(() => obj.foo)
@@ -793,7 +794,7 @@ describe('reactivity/effect', () => {
   })
 
   it('should trigger all effects when array length is set to 0', () => {
-    const observed: any = reactive([1])
+    const observed: any = draft([1])
     let dummy, record
     effect(() => {
       dummy = observed.length

@@ -1,30 +1,24 @@
 import { hasOwn, extend, isPlainObject } from '../utils'
 import { warn } from '../warning'
-import {
-  PublicPropertiesMap,
-  ProxyContext,
-  AccessContext,
-  onViewInvalidate,
-} from './model'
+import { PublicPropertiesMap, ProxyContext, AccessContext } from './model'
 import { AnyModel } from './defineModel'
-import { State, Actions, Views } from './modelOptions'
+import { State, GetActions, GetState, Views } from './modelOptions'
 import { createView, Selector, ModelView, ModelSnapshot } from './modelViews'
 
 export type ModelPublicInstance<IModel extends AnyModel> = {
+  $rawState: IModel['state']
   $state: IModel['state']
-  $set(newState: State): void
   $patch(newState: State): void
-  $modify(fn: (state: IModel['state']) => void): void
-  $actions: Actions<IModel>
+  $replace(newState: State): void
+  $actions: GetActions<IModel>
   $views: Views<IModel['views']>
   $getSnapshot(): ModelSnapshot<IModel>
   $createSelector: <R>(
-    selector: Selector<IModel, R>,
-    onInvalidate?: onViewInvalidate
+    selector: Selector<IModel, R>
   ) => ModelView<Selector<IModel, R>>
-} & IModel['state'] &
+} & GetState<IModel> &
   Views<IModel['views']> &
-  Actions<IModel>
+  GetActions<IModel>
 
 const enum AccessTypes {
   STATE,
@@ -39,10 +33,9 @@ export const publicPropertiesMap: PublicPropertiesMap =
   /*#__PURE__*/ extend(
     (Object.create(null),
     {
-      $state: (i) => i.stateWrapper.value,
-      $set: (i) => i.set,
+      $rawState: (i) => i.getState(),
+      $state: (i) => (i.isPrimitiveState ? i.stateRef.value : i.stateValue),
       $patch: (i) => i.patch,
-      $modify: (i) => i.modify,
       $actions: (i) => i.actions,
       $views: (i) => i.views,
       $getSnapshot: (i) => i.getSnapshot,
@@ -59,7 +52,7 @@ export const PublicInstanceProxyHandlers = {
       accessContext,
       depsProxy,
       ctx,
-      state,
+      stateValue: state,
     } = instance
 
     if (key[0] !== '$') {
@@ -115,8 +108,13 @@ export const PublicInstanceProxyHandlers = {
     }
   },
   set({ _: instance }: ProxyContext, key: string, value: any): boolean {
-    const { ctx, actions, views, accessContext } = instance
-
+    const {
+      ctx,
+      actions,
+      views,
+      accessContext,
+      stateRef: { value: state },
+    } = instance
     if (accessContext === AccessContext.VIEW) {
       if (process.env.NODE_ENV === 'development') {
         warn(`Cannot change state in view function`, instance)
@@ -124,7 +122,21 @@ export const PublicInstanceProxyHandlers = {
       return false
     }
 
-    if (hasOwn(actions, key)) {
+    if (hasOwn(state, key)) {
+      state[key] = value
+      return true
+    } else if (key === '$state') {
+      if (typeof value === 'bigint' || typeof value === 'symbol') {
+        if (process.env.NODE_ENV === 'development') {
+          warn("'BigInt' and 'Symbol' are not assignable to the State")
+        }
+        return false
+      }
+
+      // allow to assign $state to replace state
+      instance.replace(value)
+      return true
+    } else if (hasOwn(actions, key)) {
       if (process.env.NODE_ENV === 'development') {
         warn(
           `Attempting to mutate action "${key}". Actions are readonly.`,
@@ -151,9 +163,10 @@ export const PublicInstanceProxyHandlers = {
         )
       }
       return false
+    } else {
+      ctx[key] = value
     }
 
-    ctx[key] = value
     return true
   },
 }

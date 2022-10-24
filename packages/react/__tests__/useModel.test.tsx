@@ -4,7 +4,7 @@
 
 import React from 'react'
 import { render, act } from '@testing-library/react'
-import { defineModel } from '@shuvi/redox'
+import { defineModel, nextTick } from '@shuvi/redox'
 import { useModel, useRootModel, RedoxRoot } from '../src'
 import { countModel, countSelectorParameters } from './models'
 
@@ -25,9 +25,9 @@ describe('useModel', () => {
       state: {
         value: 1,
       },
-      reducers: {
-        add(state, payload: number = 1) {
-          state.value += payload
+      actions: {
+        add(payload: number = 1) {
+          this.value += payload
         },
       },
     })
@@ -51,7 +51,7 @@ describe('useModel', () => {
     )
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#button')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -87,10 +87,11 @@ describe('useModel', () => {
 
       expect(container.querySelector('#value')?.innerHTML).toEqual('1')
       expect(container.querySelector('#value1')?.innerHTML).toEqual('1')
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#button')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await nextTick()
       })
       expect(container.querySelector('#value')?.innerHTML).toEqual('3')
       expect(container.querySelector('#value1')?.innerHTML).toEqual('1')
@@ -123,10 +124,11 @@ describe('useModel', () => {
 
       expect(container.querySelector('#value')?.innerHTML).toEqual('1')
       expect(container.querySelector('#value1')?.innerHTML).toEqual('1')
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#button')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await nextTick()
       })
       expect(container.querySelector('#value')?.innerHTML).toEqual('3')
       expect(container.querySelector('#value1')?.innerHTML).toEqual('1')
@@ -156,10 +158,11 @@ describe('useModel', () => {
 
     expect(container.querySelector('#v')?.innerHTML).toEqual('1')
     expect(container.querySelector('#t')?.innerHTML).toEqual('2')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#button')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#v')?.innerHTML).toEqual('3')
     expect(container.querySelector('#t')?.innerHTML).toEqual('4')

@@ -1,7 +1,8 @@
 import { TrackOpTypes, TriggerOpTypes } from './operations'
 import { extend, isArray, isMap, isIntegerKey } from '../utils'
+import { DraftState } from './draft'
 import { ViewImpl, View } from './view'
-import { ReactiveState, toRaw } from './reactive'
+import { toBase } from './common'
 import { EffectScope, recordEffectScope } from './effectScope'
 import {
   Dep,
@@ -18,6 +19,7 @@ import {
 // raw Sets to reduce memory overhead.
 type KeyToDepMap = Map<any, Dep>
 const targetMap = new WeakMap<any, KeyToDepMap>()
+const referenceMap = new WeakMap<any, Dep>()
 
 // The number of effects currently being tracked recursively.
 let effectTrackDepth = 0
@@ -75,7 +77,10 @@ export const MAP_KEY_ITERATE_KEY = Symbol(
 
 export const NODE_DELETE = Symbol('delete')
 
+let uid = 0
 export class ReactiveEffect<T = any> {
+  id = uid++
+
   deps: Dep[] = []
 
   active = true
@@ -87,7 +92,6 @@ export class ReactiveEffect<T = any> {
    * @internal
    */
   view?: ViewImpl<T>
-
   /**
    * @internal
    */
@@ -122,6 +126,7 @@ export class ReactiveEffect<T = any> {
     try {
       this.parent = activeEffect
       activeEffect = this
+      // console.log('enter effect', this)
       shouldTrack = true
 
       trackOpBit = 1 << ++effectTrackDepth
@@ -140,6 +145,7 @@ export class ReactiveEffect<T = any> {
 
       trackOpBit = 1 << --effectTrackDepth
 
+      // console.log('exit effect', this)
       activeEffect = this.parent
       shouldTrack = lastShouldTrack
       this.parent = undefined
@@ -235,7 +241,7 @@ export function track(
   type: TrackOpTypes,
   key: unknown,
   value: any
-): AccessRecord | null {
+) {
   if (shouldTrack && activeEffect) {
     let depsMap = targetMap.get(target)
     if (!depsMap) {
@@ -248,8 +254,17 @@ export function track(
 
     trackEffects(dep)
   }
+}
 
-  return null
+export function trackDraft(target: DraftState) {
+  if (shouldTrack && activeEffect) {
+    let dep = referenceMap.get(target)
+    if (!dep) {
+      referenceMap.set(target, (dep = createDep()))
+    }
+
+    trackEffects(dep)
+  }
 }
 
 export function trackEffects(dep: Dep) {
@@ -272,20 +287,32 @@ export function trackEffects(dep: Dep) {
 
 export function trackView(view: View<any>) {
   if (shouldTrack && activeEffect) {
-    view = toRaw(view)
+    view = toBase(view)
     trackEffects(view.dep || (view.dep = createDep()))
   }
 }
 
 export function triggerView(view: View<any>, newVal?: any) {
-  view = toRaw(view)
+  view = toBase(view)
   if (view.dep) {
     triggerEffects(view.dep)
   }
 }
 
+export function triggerDraft(state: DraftState) {
+  const referenceDeps = referenceMap.get(state)
+  if (referenceDeps) {
+    const effects = [...referenceDeps]
+    for (const effect of effects) {
+      if (effect.view) {
+        effect.view.mightChange = true
+      }
+    }
+  }
+}
+
 export function trigger(
-  state: ReactiveState,
+  state: DraftState,
   type: TriggerOpTypes,
   key?: unknown,
   newValue?: unknown,
@@ -293,55 +320,52 @@ export function trigger(
   oldTarget?: Map<unknown, unknown> | Set<unknown>
 ) {
   const depsMap = targetMap.get(state)
-  if (!depsMap) {
-    // never been tracked
-    return
-  }
-
   const target = state.base
   let deps: (Dep | undefined)[] = []
-  if (type === TriggerOpTypes.CLEAR) {
-    // collection being cleared
-    // trigger all effects for target
-    deps = [...depsMap.values()]
-  } else if (key === 'length' && isArray(target)) {
-    depsMap.forEach((dep, key) => {
-      if (key === 'length' || key >= (newValue as number)) {
-        deps.push(dep)
+  if (depsMap) {
+    if (type === TriggerOpTypes.CLEAR) {
+      // collection being cleared
+      // trigger all effects for target
+      deps = [...depsMap.values()]
+    } else if (key === 'length' && isArray(target)) {
+      depsMap.forEach((dep, key) => {
+        if (key === 'length' || key >= (newValue as number)) {
+          deps.push(dep)
+        }
+      })
+    } else {
+      // schedule runs for SET | ADD | DELETE
+      if (key !== void 0) {
+        deps.push(depsMap.get(key))
       }
-    })
-  } else {
-    // schedule runs for SET | ADD | DELETE
-    if (key !== void 0) {
-      deps.push(depsMap.get(key))
-    }
 
-    // also run for iteration key on ADD | DELETE | Map.SET
-    switch (type) {
-      case TriggerOpTypes.ADD:
-        if (!isArray(target)) {
-          deps.push(depsMap.get(ITERATE_KEY))
-          if (isMap(target)) {
-            deps.push(depsMap.get(MAP_KEY_ITERATE_KEY))
+      // also run for iteration key on ADD | DELETE | Map.SET
+      switch (type) {
+        case TriggerOpTypes.ADD:
+          if (!isArray(target)) {
+            deps.push(depsMap.get(ITERATE_KEY))
+            if (isMap(target)) {
+              deps.push(depsMap.get(MAP_KEY_ITERATE_KEY))
+            }
+          } else if (isIntegerKey(key)) {
+            // new index added to array -> length changes
+            deps.push(depsMap.get('length'))
           }
-        } else if (isIntegerKey(key)) {
-          // new index added to array -> length changes
-          deps.push(depsMap.get('length'))
-        }
-        break
-      case TriggerOpTypes.DELETE:
-        if (!isArray(target)) {
-          deps.push(depsMap.get(ITERATE_KEY))
-          if (isMap(target)) {
-            deps.push(depsMap.get(MAP_KEY_ITERATE_KEY))
+          break
+        case TriggerOpTypes.DELETE:
+          if (!isArray(target)) {
+            deps.push(depsMap.get(ITERATE_KEY))
+            if (isMap(target)) {
+              deps.push(depsMap.get(MAP_KEY_ITERATE_KEY))
+            }
           }
-        }
-        break
-      case TriggerOpTypes.SET:
-        if (isMap(target)) {
-          deps.push(depsMap.get(ITERATE_KEY))
-        }
-        break
+          break
+        case TriggerOpTypes.SET:
+          if (isMap(target)) {
+            deps.push(depsMap.get(ITERATE_KEY))
+          }
+          break
+      }
     }
   }
 

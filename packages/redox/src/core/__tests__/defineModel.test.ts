@@ -119,17 +119,6 @@ describe('defineModel', () => {
       }).toThrow()
     })
 
-    test('reducers should be object', () => {
-      expect(() => {
-        defineModel({
-          name: 'a',
-          state: {},
-          // @ts-ignore
-          reducers: 1,
-        })
-      }).toThrow()
-    })
-
     test('actions should be object', () => {
       expect(() => {
         defineModel({
@@ -167,30 +156,12 @@ describe('defineModel', () => {
       ).toHaveBeenWarned()
     })
 
-    test('warn conflicted keys between reducers and actions', () => {
-      defineModel({
-        name: 'a',
-        state: {},
-        reducers: {
-          a() {},
-        },
-        actions: {
-          a() {},
-        },
-      })
-
-      expect(
-        `key "a" in "actions" is conflicted with the key in "reducers"`
-      ).toHaveBeenWarned()
-    })
-
     test('depends should be array or undefined', () => {
       expect(() => {
         defineModel(
           {
             name: 'a',
             state: {},
-            reducers: {},
           },
           // @ts-ignore
           {}
@@ -227,18 +198,12 @@ describe('defineModel', () => {
 
   describe('dependencies', () => {
     it('should access dependent models by this.$dep', () => {
-      let deps: any
       const depOne = defineModel({
         name: 'one',
         state: { count: 0 },
-        reducers: {
-          add: (s, p: number) => ({
-            count: s.count + p,
-          }),
-        },
         actions: {
-          actionAdd(n: number) {
-            this.add(n)
+          add(p: number) {
+            this.count += p
           },
         },
       })
@@ -246,10 +211,10 @@ describe('defineModel', () => {
       const depTwo = defineModel({
         name: 'two',
         state: { count: 0 },
-        reducers: {
-          add: (s, p: number) => ({
-            count: s.count + p,
-          }),
+        actions: {
+          add(p: number) {
+            this.count += p
+          },
         },
       })
 
@@ -257,18 +222,13 @@ describe('defineModel', () => {
         {
           name: 'model',
           state: { value: 0 },
-          reducers: {
-            add: (s, p: number) => ({ value: s.value + p }),
-          },
           actions: {
-            addByReducer(_: void) {
-              deps = this.$dep
+            add(p: number) {
+              this.value += p
+            },
+            addDep(_: void) {
               this.$dep.one.add(1)
               this.$dep.two.add(1)
-              this.add(1)
-            },
-            addByAction(_: void) {
-              this.$dep.one.actionAdd(1)
             },
           },
         },
@@ -279,27 +239,23 @@ describe('defineModel', () => {
       const depTwoStore = redoxStore.getModel(depTwo)
       const store = redoxStore.getModel(model)
 
-      store.addByReducer()
-      expect(store.$state).toEqual({ value: 1 })
+      store.addDep()
+      expect(store.$state).toEqual({ value: 0 })
       expect(depOneStore.$state).toEqual({ count: 1 })
       expect(depTwoStore.$state).toEqual({ count: 1 })
 
-      // expect(deps.one).toBe(depOneStore)
-      // expect(deps.two).toBe(depTwoStore)
-
-      store.addByAction()
-      expect(depOneStore.$state).toEqual({ count: 2 })
-      expect(depTwoStore.$state).toEqual({ count: 1 })
+      store.add(1)
+      expect(store.$state).toEqual({ value: 1 })
     })
 
-    it("should reactive to dep's view", async () => {
+    it("should reactive to dep's view", () => {
       const dep = defineModel({
         name: 'dep',
         state: { count: 1 },
-        reducers: {
-          add: (s, p: number) => ({
-            count: s.count + p,
-          }),
+        actions: {
+          add(p: number) {
+            this.count += p
+          },
         },
         views: {
           double() {
@@ -312,10 +268,10 @@ describe('defineModel', () => {
         {
           name: 'model',
           state: { value: 0 },
-          reducers: {
-            add: (s, p: number) => ({
-              value: s.value + p,
-            }),
+          actions: {
+            add(p: number) {
+              this.value += p
+            },
           },
           views: {
             all() {

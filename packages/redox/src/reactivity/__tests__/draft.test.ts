@@ -1,10 +1,10 @@
-import { createDraft, finishDraft } from '../draft'
+import { draft, finishDraft, snapshot } from '../draft'
 import { each } from '../../utils'
 
 const produce = <T extends any = any>(value: T, cb: (v: T) => void) => {
-  const draft = createDraft(value as any)
-  cb(draft)
-  const result = finishDraft(draft)
+  const obj = draft(value as any)
+  cb(obj)
+  const result = finishDraft(obj)
   return result
 }
 
@@ -747,5 +747,74 @@ describe(`reactivity/draft`, () => {
     afterEach(() => {
       expect(baseState).toBe(origBaseState)
     })
+  })
+
+  describe('reusable draft', () => {
+    it('should work', () => {
+      const baseState = {
+        a: 0,
+        b: {
+          foo: 'foo',
+        },
+      }
+      const draftState = draft(baseState)
+      draftState.a = 1
+      const state1 = finishDraft(draftState)
+      expect(state1.a).toEqual(1)
+      expect(state1.b).toBe(baseState.b)
+
+      draftState.b.foo = 'bar'
+      const state2 = finishDraft(draftState)
+      expect(state2.a).toEqual(1)
+      expect(state2.b).not.toBe(state1.b)
+      expect(state2.b.foo).toEqual('bar')
+    })
+  })
+
+  describe.skip('edge case', () => {
+    it.only('supports modifying nested objects', () => {
+      const baseState = [{ a: 1 }, {}] as any
+      const nextState = produce(baseState, (s) => {
+        s[0].a++
+        s[0].b = { c: s[0] }
+      })
+      expect(nextState).not.toBe(baseState)
+      expect(nextState[0].a).toBe(2)
+      expect(nextState[0].b.c.a).toBe(2)
+    })
+  })
+})
+
+describe(`reactivity/snapshot`, () => {
+  it('should work', () => {
+    const state = {
+      aProp: 'hi' as any,
+      anArray: [3, 2, { c: 3 }, 1] as any[],
+      anObject: {
+        nested: {
+          yummie: true,
+        },
+        coffee: false,
+      },
+    }
+
+    const drafted = draft(state)
+    drafted.aProp = 1
+    drafted.anArray[0] = 1
+    drafted.anObject.nested.yummie = false
+
+    const value = snapshot({ ...drafted }, drafted)
+    expect(value.aProp).toEqual(1)
+    expect(value.anArray[0]).toEqual(1)
+    expect(value.anObject.nested.yummie).toEqual(false)
+
+    drafted.aProp = 2
+    drafted.anArray[0] = 2
+    drafted.anObject.nested.yummie = true
+
+    // modification should not reflect to snapshot
+    expect(value.aProp).toEqual(1)
+    expect(value.anArray[0]).toEqual(1)
+    expect(value.anObject.nested.yummie).toEqual(false)
   })
 })

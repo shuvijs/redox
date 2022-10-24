@@ -1,4 +1,6 @@
 import { defineModel, redox, Plugin } from '../'
+import { nextTick } from '../scheduler'
+
 let redoxStore: ReturnType<typeof redox>
 
 describe('redox', () => {
@@ -13,11 +15,6 @@ describe('redox', () => {
     const model = defineModel({
       name: 'model',
       state: { value: 0 },
-      reducers: {
-        reducerOne: (state) => {
-          return { value: state.value + 1 }
-        },
-      },
       actions: {
         actionOne() {},
       },
@@ -28,9 +25,9 @@ describe('redox', () => {
 
     const store = redoxStore.getModel(model)
     expect(typeof store.$state).toBe('object')
-    expect(typeof store.$modify).toBe('function')
-    expect(typeof store.$set).toBe('function')
-    expect(typeof store.reducerOne).toBe('function')
+    expect(typeof store.$actions).toBe('object')
+    expect(typeof store.$views).toBe('object')
+    expect(typeof store.$patch).toBe('function')
     expect(typeof store.actionOne).toBe('function')
     expect(typeof store.viewOne).toBe('undefined')
   })
@@ -60,14 +57,14 @@ describe('redox', () => {
     expect(storeTwo.$state.value).toBe('two')
   })
 
-  it('should init dependencies', () => {
+  it('should access dependencies by name', async () => {
     redoxStore = redox()
     const depend = defineModel({
       name: 'depend',
       state: { depend: 0 },
-      reducers: {
-        increment(state, payload: number) {
-          state.depend = state.depend + payload
+      actions: {
+        increment(v: number) {
+          this.depend += v
         },
       },
     })
@@ -75,12 +72,10 @@ describe('redox', () => {
       {
         name: 'count',
         state: { value: 0 },
-        reducers: {
-          increment(state, payload: number) {
-            state.value = state.value + payload
-          },
-        },
         actions: {
+          increment(v: number) {
+            this.value += v
+          },
           dependAdd() {
             this.$dep.depend.increment(1)
           },
@@ -91,19 +86,20 @@ describe('redox', () => {
 
     const store = redoxStore.getModel(count)
     store.dependAdd()
+    await nextTick()
     expect(redoxStore.getState()).toEqual({
       count: { value: 0 },
       depend: { depend: 1 },
     })
   })
 
-  it('should access dependencies by index', () => {
+  it('should access dependencies by index', async () => {
     redoxStore = redox()
     const depend = defineModel({
       state: { depend: 0 },
-      reducers: {
-        increment(state, payload: number) {
-          state.depend = state.depend + payload
+      actions: {
+        increment(v: number) {
+          this.depend += v
         },
       },
     })
@@ -111,12 +107,10 @@ describe('redox', () => {
       {
         name: 'count',
         state: { value: 0 },
-        reducers: {
-          increment(state, payload: number) {
-            state.value = state.value + payload
-          },
-        },
         actions: {
+          increment(v: number) {
+            this.value += v
+          },
           dependAdd() {
             this.$dep[0].increment(1)
           },
@@ -127,29 +121,30 @@ describe('redox', () => {
 
     const store = redoxStore.getModel(count)
     store.dependAdd()
+    await nextTick()
     expect(redoxStore.getState()).toEqual({
       count: { value: 0 },
       _: [{ depend: 1 }],
     })
   })
 
-  it('getState should return the newest state', () => {
+  it('getState should return the newest state', async () => {
     redoxStore = redox()
     const count0 = defineModel({
       name: 'count0',
       state: { value: 0 },
-      reducers: {
-        increment(state, payload: number) {
-          state.value = state.value + payload
+      actions: {
+        increment(v: number) {
+          this.value += v
         },
       },
     })
     const count1 = defineModel({
       name: 'count1',
       state: { value: 0 },
-      reducers: {
-        increment(state, payload: number) {
-          state.value = state.value + payload
+      actions: {
+        increment(v: number) {
+          this.value += v
         },
       },
     })
@@ -161,9 +156,11 @@ describe('redox', () => {
       count1: { value: 0 },
     })
     store0.increment(1)
+    store1.increment(2)
+    await nextTick()
     expect(redoxStore.getState()).toEqual({
       count0: { value: 1 },
-      count1: { value: 0 },
+      count1: { value: 2 },
     })
   })
 
@@ -172,9 +169,9 @@ describe('redox', () => {
     const model = defineModel({
       name: 'model',
       state: { value: 0 },
-      reducers: {
-        increment(state, payload: number = 1) {
-          state.value = state.value + payload
+      actions: {
+        increment(v: number) {
+          this.value += v
         },
       },
     })
@@ -189,15 +186,15 @@ describe('redox', () => {
     expect(newStore.$state.value).toBe(0)
   })
 
-  it('subscribes and unsubscribes should work', () => {
+  it('subscribes and unsubscribes should work', async () => {
     redoxStore = redox()
     let firstCount = 0
     const first = defineModel({
       name: 'first',
       state: { value: 0 },
-      reducers: {
-        addOne: (state) => {
-          return { value: state.value + 1 }
+      actions: {
+        addOne() {
+          this.value += 1
         },
       },
     })
@@ -209,10 +206,10 @@ describe('redox', () => {
     const second = defineModel({
       name: 'second',
       state: { value: 0 },
-      reducers: {
-        addOne: (state, payload: number) => ({
-          value: state.value + payload,
-        }),
+      actions: {
+        add(n: number) {
+          this.value += n
+        },
       },
     })
     const secondStore = redoxStore.getModel(second)
@@ -221,31 +218,35 @@ describe('redox', () => {
     })
 
     firstStore.addOne()
+    await nextTick()
     expect(firstCount).toBe(1)
     firstStore.addOne()
+    await nextTick()
     expect(firstCount).toBe(2)
     expect(firstStore.$state).toStrictEqual({ value: 2 })
     expect(secondStore.$state).toStrictEqual({ value: 0 })
 
-    secondStore.addOne(5)
+    secondStore.add(5)
+    await nextTick()
     expect(secondCount).toBe(1)
     expect(secondStore.$state).toStrictEqual({ value: 5 })
 
     unSubscribeSecond()
-    secondStore.addOne(5)
+    secondStore.add(5)
+    await nextTick()
     expect(secondCount).toBe(1)
   })
 
-  it('should trigger change when dependencies have changed', () => {
+  it('should trigger change when dependencies have changed', async () => {
     redoxStore = redox()
     let dependCount = 0
     let storeCount = 0
     const first = defineModel({
       name: 'first',
       state: { value: 0 },
-      reducers: {
-        addOne: (state) => {
-          return { value: state.value + 1 }
+      actions: {
+        addOne() {
+          this.value += 1
         },
       },
     })
@@ -257,10 +258,10 @@ describe('redox', () => {
       {
         name: 'second',
         state: { value: 0 },
-        reducers: {
-          addOne: (state, payload: number) => ({
-            value: state.value + payload,
-          }),
+        actions: {
+          add(n: number) {
+            this.value += n
+          },
         },
       },
       [first]
@@ -272,12 +273,15 @@ describe('redox', () => {
     })
 
     depend.addOne()
+    await nextTick()
     expect(dependCount).toBe(1)
     expect(storeCount).toBe(1)
     depend.addOne()
+    await nextTick()
     expect(dependCount).toBe(2)
     expect(storeCount).toBe(2)
-    store.addOne(1)
+    store.add(1)
+    await nextTick()
     expect(dependCount).toBe(2)
     expect(storeCount).toBe(3)
   })
@@ -286,13 +290,13 @@ describe('redox', () => {
     it('should have the proper api', () => {
       const onInit = jest.fn()
       const onModel = jest.fn()
-      const onModelInstanced = jest.fn()
+      const onModelInstance = jest.fn()
       const onDestroy = jest.fn()
       const plugin: Plugin = () => {
         return {
           onInit,
           onModel,
-          onModelInstanced,
+          onModelInstance,
           onDestroy,
         }
       }
@@ -311,7 +315,7 @@ describe('redox', () => {
       })
       redoxStore.getModel(model)
       expect(onModel).toHaveBeenCalledWith(model)
-      expect(typeof onModelInstanced.mock.calls[0][0].dispatch).toBe('function')
+      expect(typeof onModelInstance.mock.calls[0][0].dispatch).toBe('function')
 
       redoxStore.destroy()
       expect(onDestroy).toHaveBeenCalledWith()

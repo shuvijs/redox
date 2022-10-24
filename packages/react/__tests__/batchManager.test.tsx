@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { render, act } from '@testing-library/react'
-import { redox } from '@shuvi/redox'
+import { redox, nextTick } from '@shuvi/redox'
 import { createBatchManager } from '../src/batchManager'
 import { countModel } from './models'
 
@@ -21,7 +21,7 @@ beforeEach(() => {
 afterEach(() => {})
 
 describe('batchedUpdates', () => {
-  test('addSubscribe worked', () => {
+  test('addSubscribe worked', async () => {
     const App = () => {
       const [index, setIndex] = useState(0)
 
@@ -41,8 +41,9 @@ describe('batchedUpdates', () => {
     const { container } = render(<App />)
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('0')
-    act(() => {
+    await act(async () => {
       redoxStore.getModel(countModel).add()
+      await nextTick()
     })
     expect(container.querySelector('#value')?.innerHTML).toEqual('1')
   })
@@ -72,7 +73,7 @@ describe('batchedUpdates', () => {
     expect(container.querySelector('#value')?.innerHTML).toEqual('1')
   })
 
-  test('unSubscribe worked', () => {
+  test('unSubscribe worked', async () => {
     let unsubscribe: any
     const App = () => {
       const [index, setIndex] = useState(0)
@@ -96,9 +97,10 @@ describe('batchedUpdates', () => {
     const { container } = render(<App />)
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('0')
-    act(() => {
+    await act(async () => {
       unsubscribe()
       redoxStore.getModel(countModel).add()
+      await nextTick()
     })
     expect(container.querySelector('#value')?.innerHTML).toEqual('0')
   })
@@ -131,8 +133,9 @@ describe('batchedUpdates', () => {
     expect(renderCount).toBe(1)
     expect(container.querySelector('#value')?.innerHTML).toEqual('0')
     expect(container.querySelector('#value1')?.innerHTML).toEqual('0')
-    act(() => {
+    await act(async () => {
       redoxStore.getModel(countModel).add()
+      await nextTick()
     })
     expect(renderCount).toBe(2)
     expect(container.querySelector('#value')?.innerHTML).toEqual('1')

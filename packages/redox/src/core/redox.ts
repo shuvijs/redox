@@ -15,6 +15,7 @@ export const proxyMethods = [
   'dispatch',
   'subscribe',
   'reducer',
+  'replace',
 ] as const
 
 export type ProxyMethods = typeof proxyMethods[number]
@@ -29,7 +30,7 @@ export interface RedoxStore extends Omit<Store, 'subscribe'> {
 export type PluginHook<IModel extends AnyModel = AnyModel> = {
   onInit?(redoxStore: RedoxStore, initialState: Record<string, State>): void
   onModel?(model: IModel): void
-  onModelInstanced?(instance: InternalModelProxy): void
+  onModelInstance?(instance: InternalModelProxy): void
   onDestroy?(): void
 }
 
@@ -163,7 +164,7 @@ class RedoxImpl implements RedoxStore {
       },
     })
     this._hooks.map((hook) => {
-      hook.onModelInstanced?.(modelInstanceProxy)
+      hook.onModelInstance?.(modelInstanceProxy)
     })
 
     this._modelManger.set(model, modelInstance)

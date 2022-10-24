@@ -1,5 +1,5 @@
 import { redox } from '@shuvi/redox'
-import createMemoryStorage from './utils/createMemoryStorage'
+import { createMemoryStorage } from './utils/createMemoryStorage'
 import redoxPersist, { persistModel } from '../src/index'
 import getStoredState from '../src/getStoredState'
 import { a } from './models/a'
@@ -35,7 +35,7 @@ describe('persistModel worked:', () => {
       rehydrated: true,
       version: -1,
     })
-    persistStore.$modify((state) => (state.version = 1))
+    persistStore.$patch({ version: 1 })
     expect(persistStore.$state).toStrictEqual({
       rehydrated: true,
       version: 1,

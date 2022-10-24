@@ -78,7 +78,7 @@ const counterModel = defineModel({
   },
   actions: {
     increment() {
-      this.$modify((state) => state.counter++)
+      this.counter += 1
     },
   },
 })

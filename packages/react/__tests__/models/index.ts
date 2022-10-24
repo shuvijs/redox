@@ -12,12 +12,10 @@ export const countModel = defineModel({
   state: {
     value: 1,
   },
-  reducers: {
-    add(state, payload: number = 1) {
-      state.value += payload
-    },
-  },
   actions: {
+    add(payload: number = 1) {
+      this.value += payload
+    },
     async asyncAdd(n: number) {
       await sleep(200)
       this.add(n)

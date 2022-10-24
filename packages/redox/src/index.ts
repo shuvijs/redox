@@ -10,6 +10,7 @@ import {
   AnyModel,
   RedoxStore,
   Plugin,
+  nextTick,
 } from './core'
 import devTools from './devtools'
 
@@ -38,6 +39,7 @@ export {
   Selector,
   ModelSnapshot,
   ModelView,
+  nextTick,
 }
 
 export * from './types'

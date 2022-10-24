@@ -1,33 +1,29 @@
-import { produce } from '../reactivity/producer'
-import { isPlainObject, patchObj, invariant, isObject } from '../utils'
+import { isPlainObject, hasOwn, isObject } from '../utils'
 import { warn } from '../warning'
 import {
-  reactive,
-  readonly,
   view as reactiveView,
   View,
   effectScope,
   EffectScope,
-  onViewInvalidate,
-  isReactive,
+  draft,
+  finishDraft,
+  watch,
+  snapshot,
 } from '../reactivity'
 import { AnyModel } from './defineModel'
-import { Views, Actions, Action, State, StateObject } from './modelOptions'
+import { Views, GetActions, Action, State, StateObject } from './modelOptions'
 import {
   ModelPublicInstance,
   PublicInstanceProxyHandlers,
 } from './modelPublicInstance'
-
-export { onViewInvalidate }
+import { queueJob, SchedulerJob } from './scheduler'
 
 const randomString = () =>
   Math.random().toString(36).substring(7).split('').join('.')
 
 const ActionTypes = {
   INIT: `@@redox/INIT${/* #__PURE__ */ randomString()}`,
-  SET: '@@redox/SET',
-  MODIFY: '@@redox/MODIFY',
-  PATCH: '@@redox/PATCH',
+  ACTION: '@@redox/ACTION',
 }
 
 export type UnSubscribe = () => void
@@ -63,6 +59,21 @@ export const enum AccessContext {
   VIEW,
 }
 
+function patchObj(base: Record<string, any>, patch: Record<string, any>) {
+  const keys = Object.keys(patch)
+  if (!keys.length) {
+    return
+  }
+
+  keys.forEach((key) => {
+    if (hasOwn(base, key) && isPlainObject(patch[key])) {
+      patchObj(base[key], patch[key])
+    } else {
+      base[key] = patch[key]
+    }
+  })
+}
+
 export class ModelInternal<IModel extends AnyModel = AnyModel> {
   name: string
   options: IModel
@@ -80,27 +91,29 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
   proxy: ModelPublicInstance<IModel> | null = null
 
   // props
-  actions: Actions<IModel>
+  actions: GetActions<IModel>
   views: Views<IModel['views']>
+  viewInstances: View[] = []
   accessContext: AccessContext
 
-  // state
-  state!: IModel['state']
-  stateWrapper!: {
+  stateRef: {
     value: IModel['state']
   }
+  stateValue!: IModel['state']
   effectScope: EffectScope
 
-  private _snapshot: State | null
-  private _currentState: IModel['state']
+  isPrimitiveState!: boolean
+
+  private _snapshot: State | null = null
+  private _initState: IModel['state']
+  private _currentState!: IModel['state']
   private _listeners: Set<() => void> = new Set()
   private _viewListeners: Set<() => void> = new Set()
   private _isDispatching: boolean
+  private _draftListenerHandler: () => void
 
   constructor(model: IModel, initState: State) {
-    this.set = this.set.bind(this)
     this.patch = this.patch.bind(this)
-    this.modify = this.modify.bind(this)
     this.getSnapshot = this.getSnapshot.bind(this)
     this.subscribe = this.subscribe.bind(this)
     this.reducer = this.reducer.bind(this)
@@ -108,15 +121,28 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
 
     this.options = model
     this.name = this.options.name || ''
-    this._currentState = initState || model.state
-    this._afterStateUpdate()
+    this._initState = initState || model.state
+
+    this.effectScope = effectScope()
+    this.stateRef = draft({
+      value: this._initState,
+    })
+    const update: SchedulerJob = () => {
+      this.dispatch({
+        type: ActionTypes.ACTION,
+        payload: finishDraft(this.stateRef as any).value,
+      })
+    }
+    this._draftListenerHandler = watch(this.stateRef, () => {
+      queueJob(update)
+    })
+
     this.actions = Object.create(null)
     this.views = Object.create(null)
     this.deps = new Map()
     this.accessContext = AccessContext.DEFAULT
 
     this._isDispatching = false
-    this.effectScope = effectScope()
 
     this.ctx = {
       _: this,
@@ -135,50 +161,32 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
     this.dispatch({ type: ActionTypes.INIT })
   }
 
-  set(newState: State) {
-    invariant(
-      typeof newState !== 'bigint' && typeof newState !== 'symbol',
-      "'BigInt' and 'Symbol' are not assignable to the State"
-    )
+  patch(obj: StateObject) {
+    if (!isPlainObject(obj)) {
+      if (process.env.NODE_ENV === 'development') {
+        warn(
+          `$patch argument should be an object, but receive a ${Object.prototype.toString.call(
+            obj
+          )}`
+        )
+      }
+      return
+    }
 
-    this.dispatch({
-      type: ActionTypes.SET,
-      payload: newState,
-    })
+    if (!this._currentState) {
+      return
+    }
+
+    patchObj(this.proxy!.$state, obj)
   }
 
-  patch(partState: StateObject) {
-    this.dispatch({
-      type: ActionTypes.PATCH,
-      payload: function patch(state: State) {
-        if (!isPlainObject(partState)) {
-          if (process.env.NODE_ENV === 'development') {
-            warn(
-              `$patch argument should be an object, but receive a ${Object.prototype.toString.call(
-                partState
-              )}`
-            )
-          }
-          return
-        }
-
-        if (!state) {
-          return partState
-        }
-
-        patchObj(state as StateObject, partState)
-        return
-      },
-    })
-  }
-
-  modify(modifier: (state: State) => void) {
-    this.dispatch({
-      type: ActionTypes.MODIFY,
-      payload: function modify(state: State) {
-        modifier(state)
-      },
-    })
+  replace(newState: StateObject) {
+    this.stateRef.value = newState
+    this.stateValue = this.stateRef.value
+    // invalid all views;
+    for (const view of this.viewInstances) {
+      view.effect.scheduler!()
+    }
   }
 
   getState() {
@@ -198,34 +206,14 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
   }
 
   reducer(state: IModel['state'], action: Action) {
-    if (action.type === ActionTypes.SET) {
-      return action.payload
+    switch (action.type) {
+      case ActionTypes.INIT:
+        return this._initState
+      case ActionTypes.ACTION:
+        return action.payload
+      default:
+        return state
     }
-
-    let reducer = this.options.reducers?.[action.type]
-
-    if (
-      action.type === ActionTypes.MODIFY ||
-      action.type === ActionTypes.PATCH
-    ) {
-      reducer = action.payload
-    }
-
-    if (typeof reducer === 'function') {
-      // immer does not support 'undefined' state
-      if (state === undefined)
-        return reducer(state, action.payload) as IModel['state']
-      return produce(
-        isReactive(this.state)
-          ? this.state
-          : isObject(this.state)
-          ? reactive(this.state)
-          : this.state,
-        (draft: any) => reducer!(draft, action.payload) as IModel['state']
-      )
-    }
-
-    return state
   }
 
   dispatch(action: Action) {
@@ -254,8 +242,10 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
       this._isDispatching = false
     }
     if (nextState !== this._currentState) {
+      this._snapshot = null
       this._currentState = nextState
-      this._afterStateUpdate()
+      this.isPrimitiveState = !isObject(nextState)
+      this.stateValue = this.stateRef.value
       // trigger self _listeners
       this._triggerListener()
     }
@@ -273,11 +263,12 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
 
   destroy() {
     this._currentState = null
-    this.stateWrapper = {
+    this.stateRef = {
       value: null,
     }
     this._listeners.clear()
     this.effectScope.stop()
+    this._draftListenerHandler()
   }
 
   depend(name: string, dep: ModelInternal<any>) {
@@ -298,72 +289,46 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
     }
   }
 
-  createView(viewFn: () => any, onInvalidate?: onViewInvalidate) {
+  createView(viewFn: () => any) {
     let view: View
     this.effectScope.run(() => {
       view = reactiveView(() => {
         const oldCtx = this.accessContext
         this.accessContext = AccessContext.VIEW
         try {
-          return viewFn.call(this.proxy)
+          let value = viewFn.call(this.proxy)
+          if (process.env.NODE_ENV === 'development') {
+            if (isObject(value)) {
+              if (value === this.proxy) {
+                warn(
+                  `detect returning "this" in view, it would cause unpected behavior`
+                )
+              } else if (value === this.proxy!.$state) {
+                warn(
+                  `detect returning "this.$state" in view, it would cause unpected behavior`
+                )
+              }
+            }
+          }
+          return value
         } finally {
           this.accessContext = oldCtx
         }
-      }, onInvalidate || this._subscribeFromView)
+      })
     })
 
+    this.viewInstances.push(view!)
     return view!
   }
 
-  private _subscribeFromView(listener: () => void) {
-    this._viewListeners.add(listener)
-
-    return () => {
-      this._viewListeners.delete(listener)
-    }
-  }
-
-  private _afterStateUpdate() {
-    this._snapshot = null
-    if (isPlainObject(this._currentState)) {
-      this.state = reactive({ ...this._currentState }, () => this._currentState)
-    } else {
-      this.state = this._currentState
-    }
-
-    // state ref should be readonly
-    this.stateWrapper = readonly(
-      reactive(() => ({
-        value: this._currentState,
-      }))
-    )
-  }
-
   private _initActions() {
-    // map reducer names to dispatch actions
-    const reducers = this.options.reducers
-    if (reducers) {
-      const reducersKeys = Object.keys(reducers)
-      reducersKeys.forEach((reducerName) => {
-        // @ts-ignore
-        this.actions[reducerName] = (payload?: any): Action => {
-          const action: Action = { type: reducerName }
-
-          if (typeof payload !== 'undefined') {
-            action.payload = payload
-          }
-
-          return this.dispatch(action)
-        }
-      })
-    }
-
     // map actions names to dispatch actions
     const actions = this.options.actions
     if (actions) {
       const actionKeys = Object.keys(actions)
       actionKeys.forEach((actionsName) => {
         const action = actions[actionsName]
+
         // @ts-ignore
         this.actions[actionsName as string] = (...args: any[]) => {
           return action.call(this.proxy, ...args)
@@ -379,11 +344,23 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
         const viewFn = views[viewName]
         const view = this.createView(viewFn)
 
+        const self = this
         Object.defineProperty(this.views, viewName, {
           configurable: true,
           enumerable: true,
           get() {
-            return view.value
+            // todo: fix dep.$state got collected by parent view
+            const viewWithState = view as View & { __pre: any; __snapshot: any }
+            let value = view.value
+            if (view.mightChange) {
+              view.mightChange = false
+              viewWithState.__snapshot = snapshot(value, self.stateRef.value)
+            } else if (viewWithState.__pre !== value) {
+              viewWithState.__snapshot = snapshot(value, self.stateRef.value)
+            }
+            viewWithState.__pre = value
+
+            return viewWithState.__snapshot
           },
           set() {
             if (process.env.NODE_ENV === 'development') {
@@ -393,6 +370,14 @@ export class ModelInternal<IModel extends AnyModel = AnyModel> {
           },
         })
       }
+    }
+  }
+
+  private _subscribeFromView(listener: () => void) {
+    this._viewListeners.add(listener)
+
+    return () => {
+      this._viewListeners.delete(listener)
     }
   }
 }

@@ -8,7 +8,7 @@ import { IStorageState, PersistOptions } from './types'
 const ACTIONTYPE = '_PERSISTSET'
 
 type StoreProxy = Parameters<
-  ReturnType<typeof redoxPersist>['onModelInstanced'] & Function
+  ReturnType<typeof redoxPersist>['onModelInstance'] & Function
 > extends infer P
   ? P extends { 0: any }
     ? P[0]
@@ -17,10 +17,7 @@ type StoreProxy = Parameters<
 
 function _rehydrated(storageState: IStorageState, store: StoreProxy) {
   if (storageState && store.name && storageState[store.name]) {
-    store.dispatch({
-      type: ACTIONTYPE,
-      payload: storageState[store.name],
-    })
+    store.replace(storageState[store.name])
   }
 }
 
@@ -52,7 +49,9 @@ const redoxPersist: Plugin<AnyModel, PersistOptions> = function (options) {
         },
       })
       if (typeof options.version !== 'undefined') {
-        persistStore.$modify((state) => (state.version = options.version!))
+        persistStore.$patch({
+          version: options.version,
+        })
       }
       getStoredState(options)
         .then((state) => {
@@ -61,10 +60,12 @@ const redoxPersist: Plugin<AnyModel, PersistOptions> = function (options) {
           )
             .then((migrateState) => {
               _storageState = migrateState
-              for (const Store of collectLoadingStore) {
-                _rehydrated(_storageState, Store)
+              for (const model of collectLoadingStore) {
+                _rehydrated(_storageState, model)
               }
-              persistStore.$modify((s) => (s.rehydrated = true))
+              persistStore.$patch({
+                rehydrated: true,
+              })
               collectLoadingStore.clear()
               _isInit = true
             })
@@ -76,7 +77,7 @@ const redoxPersist: Plugin<AnyModel, PersistOptions> = function (options) {
           console.error(`getStoredState inner error:`, err)
         })
     },
-    onModelInstanced(instance) {
+    onModelInstance(instance) {
       const originReducer = instance.reducer
       instance.reducer = function (state, action) {
         if (action.type === ACTIONTYPE) {

@@ -12,20 +12,21 @@ const model = defineModel({
     count: 0,
   },
   actions: {
+    add(payload: number) {
+      this.count += payload
+    },
     accessibleThisValue() {
       expectType<State>(this.$state)
-      expectType<void>(this.$set({ count: 0 }))
       expectType<void>(this.$patch({ count: 0 }))
-      expectType<void>(this.$modify((_) => {}))
-      expectType<number>(this.getValue())
+      expectType<number>(this.returnValue())
       expectType<Promise<void>>(this.asyncAdd(1))
-      expectType<void>(this.viewFunction)
-      expectType<Action>(this.add(1))
+      expectType<number>(this.viewFunction)
+      expectType<void>(this.add(1))
     },
     otherAction() {
-      return this.getValue()
+      return this.returnValue()
     },
-    getValue(): number {
+    returnValue(): number {
       this.otherAction()
       return this.$state.count
     },
@@ -36,37 +37,31 @@ const model = defineModel({
       await this.add(payload)
     },
   },
-  reducers: {
-    add(state, payload) {
-      state.count += payload
-    },
-  },
   views: {
-    viewFunction() {},
+    viewFunction() {
+      return 1
+    },
   },
 })
 
 const store = redoxStore.getModel(model)
 
-expectType<number>(store.getValue())
+// props
+expectType<State>(store.$state)
+
+// views
+expectType<number>(store.viewFunction)
+
+// actions
+expectType<number>(store.returnValue())
 expectType<number>(store.otherAction())
 expectType<void>(store.triggerReducer())
 //@ts-expect-error
 store.add()
-store.$modify((state) => {
-  expectType<number>(state.count)
-  //@ts-expect-error
-  state.count = ''
-})
 
-expectType<void>(store.$set(0))
-expectType<void>(store.$set(''))
-expectType<void>(store.$set(false))
-expectType<void>(store.$set([]))
-
+// methods
+store.$patch({ count: 0 })
 //@ts-expect-error
-store.$set(BigInt(1))
+store.$replace(BigInt(1))
 //@ts-expect-error
-store.$set(Symbol(1))
-
-expectType<State>(store.$state)
+store.$replace(Symbol(1))

@@ -1,9 +1,10 @@
-import { reactive, isReactive, markRaw, toRaw } from '../reactive'
+import { draft } from '../draft'
+import { isReactive, markRaw, toBase } from '../common'
 
-describe('reactivity/reactive', () => {
+describe('reactivity/createDraft', () => {
   test('Object', () => {
     const original = { foo: 1 }
-    const observed = reactive(original)
+    const observed = draft(original)
     expect(observed).not.toBe(original)
     expect(isReactive(observed)).toBe(true)
     expect(isReactive(original)).toBe(false)
@@ -17,14 +18,14 @@ describe('reactivity/reactive', () => {
 
   test('proto', () => {
     const obj = {}
-    const reactiveObj = reactive(obj)
+    const reactiveObj = draft(obj)
     expect(isReactive(reactiveObj)).toBe(true)
-    // read prop of reactiveObject will cause reactiveObj[prop] to be reactive
+    // read prop of reactiveObject will cause reactiveObj[prop] to be draft
     // @ts-ignore
     const prototype = reactiveObj['__proto__']
     const otherObj = { data: ['a'] }
     expect(isReactive(otherObj)).toBe(false)
-    const reactiveOther = reactive(otherObj)
+    const reactiveOther = draft(otherObj)
     expect(isReactive(reactiveOther)).toBe(true)
     expect(reactiveOther.data[0]).toBe('a')
   })
@@ -36,7 +37,7 @@ describe('reactivity/reactive', () => {
       },
       array: [{ bar: 2 }],
     }
-    const observed = reactive(original)
+    const observed = draft(original)
     expect(isReactive(observed.nested)).toBe(true)
     expect(isReactive(observed.array)).toBe(true)
     expect(isReactive(observed.array[0])).toBe(true)
@@ -45,7 +46,7 @@ describe('reactivity/reactive', () => {
   // test('observing subtypes of IterableCollections(Map, Set)', () => {
   //   // subtypes of Map
   //   class CustomMap extends Map {}
-  //   const cmap = reactive(new CustomMap())
+  //   const cmap = draft(new CustomMap())
 
   //   expect(cmap instanceof Map).toBe(true)
   //   expect(isReactive(cmap)).toBe(true)
@@ -55,7 +56,7 @@ describe('reactivity/reactive', () => {
 
   //   // subtypes of Set
   //   class CustomSet extends Set {}
-  //   const cset = reactive(new CustomSet())
+  //   const cset = draft(new CustomSet())
 
   //   expect(cset instanceof Set).toBe(true)
   //   expect(isReactive(cset)).toBe(true)
@@ -72,7 +73,7 @@ describe('reactivity/reactive', () => {
   // test('observing subtypes of WeakCollections(WeakMap, WeakSet)', () => {
   //   // subtypes of WeakMap
   //   class CustomMap extends WeakMap {}
-  //   const cmap = reactive(new CustomMap())
+  //   const cmap = draft(new CustomMap())
 
   //   expect(cmap instanceof WeakMap).toBe(true)
   //   expect(isReactive(cmap)).toBe(true)
@@ -83,7 +84,7 @@ describe('reactivity/reactive', () => {
 
   //   // subtypes of WeakSet
   //   class CustomSet extends WeakSet {}
-  //   const cset = reactive(new CustomSet())
+  //   const cset = draft(new CustomSet())
 
   //   expect(cset instanceof WeakSet).toBe(true)
   //   expect(isReactive(cset)).toBe(true)
@@ -99,7 +100,7 @@ describe('reactivity/reactive', () => {
 
   test('observed value should not proxy mutations to original (Object)', () => {
     const original: any = { foo: 1 }
-    const observed = reactive(original)
+    const observed = draft(original)
     // set
     observed.bar = 1
     expect(observed.bar).toBe(1)
@@ -112,7 +113,7 @@ describe('reactivity/reactive', () => {
 
   test('original value change should reflect in observed value (Object)', () => {
     const original: any = { foo: 1 }
-    const observed = reactive(original)
+    const observed = draft(original)
     // set
     original.bar = 1
     expect(original.bar).toBe(1)
@@ -123,8 +124,8 @@ describe('reactivity/reactive', () => {
     expect('foo' in observed).toBe(false)
   })
 
-  test('setting a property with an unobserved value should not be wrapped with reactive', () => {
-    const observed = reactive<{ foo?: object }>({})
+  test('setting a property with an unobserved value should not be wrapped with draft', () => {
+    const observed = draft<{ foo?: object }>({})
     const raw = {}
     observed.foo = raw
     expect(observed.foo).toBe(raw)
@@ -133,31 +134,31 @@ describe('reactivity/reactive', () => {
 
   test('observing already observed value should return same Proxy', () => {
     const original = { foo: 1 }
-    const observed = reactive(original)
-    const observed2 = reactive(observed)
+    const observed = draft(original)
+    const observed2 = draft(observed)
     expect(observed2).toBe(observed)
   })
 
   test('observing the same value multiple times should return different Proxy', () => {
     const original = { foo: 1 }
-    const observed = reactive(original)
-    const observed2 = reactive(original)
+    const observed = draft(original)
+    const observed2 = draft(original)
     expect(observed2).not.toBe(observed)
   })
 
-  test('toRaw', () => {
+  test('toBase', () => {
     const original = { foo: 1 }
-    const observed = reactive(original)
-    expect(toRaw(observed)).toBe(original)
-    expect(toRaw(original)).toBe(original)
+    const observed = draft(original)
+    expect(toBase(observed)).toBe(original)
+    expect(toBase(original)).toBe(original)
   })
 
-  test('toRaw on object using reactive as prototype', () => {
-    const original = reactive({})
+  test('toBase on object using draft as prototype', () => {
+    const original = draft({})
     const obj = Object.create(original)
-    const raw = toRaw(obj)
+    const raw = toBase(obj)
     expect(raw).toBe(obj)
-    expect(raw).not.toBe(toRaw(original))
+    expect(raw).not.toBe(toBase(original))
   })
 
   test('non-observable values', () => {
@@ -165,9 +166,9 @@ describe('reactivity/reactive', () => {
     const originNodeEnv = process.env.NODE_ENV
     process.env.NODE_ENV = 'development'
     const assertValue = (value: any) => {
-      reactive(value)
+      draft(value)
       warn.mock.calls[warn.mock.calls.length - 1][0].includes(
-        `value cannot be made reactive: ${String(value)}`
+        `value cannot be made draft: ${String(value)}`
       )
     }
 
@@ -187,18 +188,18 @@ describe('reactivity/reactive', () => {
 
     // built-ins should work and return same value
     const p = Promise.resolve()
-    expect(reactive(p)).toBe(p)
+    expect(draft(p)).toBe(p)
     const r = new RegExp('')
-    expect(reactive(r)).toBe(r)
+    expect(draft(r)).toBe(r)
     const d = new Date()
-    expect(reactive(d)).toBe(d)
+    expect(draft(d)).toBe(d)
 
     warn.mockRestore()
     process.env.NODE_ENV = originNodeEnv
   })
 
   test('markRaw', () => {
-    const obj = reactive({
+    const obj = draft({
       foo: { a: 1 },
       bar: markRaw({ b: 2 }),
     })
@@ -207,7 +208,7 @@ describe('reactivity/reactive', () => {
   })
 
   test('should not observe non-extensible objects', () => {
-    const obj = reactive({
+    const obj = draft({
       foo: Object.preventExtensions({ a: 1 }),
       // sealed or frozen objects are considered non-extensible as well
       bar: Object.freeze({ a: 1 }),
@@ -223,7 +224,7 @@ describe('reactivity/reactive', () => {
       foo: 1,
       __r_skip: true,
     }
-    const observed = reactive(original)
+    const observed = draft(original)
     expect(isReactive(observed)).toBe(false)
   })
 })

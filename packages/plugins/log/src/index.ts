@@ -2,7 +2,7 @@ import { Plugin } from '@shuvi/redox'
 
 const redoxLog: Plugin = function () {
   return {
-    onModelInstanced(instance) {
+    onModelInstance(instance) {
       const originDispatch = instance.dispatch
       instance.dispatch = function (action) {
         console.log('action: ', action)

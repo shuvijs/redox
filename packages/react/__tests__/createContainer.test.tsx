@@ -4,7 +4,7 @@
 
 import React from 'react'
 import { render, act } from '@testing-library/react'
-import { defineModel, redox, Plugin } from '@shuvi/redox'
+import { defineModel, redox, Plugin, nextTick } from '@shuvi/redox'
 import {
   createContainer,
   RedoxRoot,
@@ -36,13 +36,13 @@ describe('createContainer', () => {
   test('createContainer should accept redox argument', () => {
     const onInit = jest.fn()
     const onModel = jest.fn()
-    const onModelInstanced = jest.fn()
+    const onModelInstance = jest.fn()
     const onDestroy = jest.fn()
     const plugin: Plugin = () => {
       return {
         onInit,
         onModel,
-        onModelInstanced,
+        onModelInstance,
         onDestroy,
       }
     }
@@ -68,10 +68,10 @@ describe('createContainer', () => {
 
     expect(onInit).toHaveBeenCalled()
     expect(onModel).toHaveBeenCalled()
-    expect(typeof onModelInstanced.mock.calls[0][0].dispatch).toBe('function')
+    expect(typeof onModelInstance.mock.calls[0][0].dispatch).toBe('function')
   })
 
-  test('Local RedoxRoot and useSharedModel should work', () => {
+  test('Local RedoxRoot and useSharedModel should work', async () => {
     const { Provider: LocalProvider, useSharedModel } = createContainer()
 
     const SubApp = () => {
@@ -94,15 +94,16 @@ describe('createContainer', () => {
     )
 
     expect(container.querySelector('#state')?.innerHTML).toEqual('1')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#button')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#state')?.innerHTML).toEqual('2')
   })
 
-  test('nest useSharedModel should get it own context', () => {
+  test('nest useSharedModel should get it own context', async () => {
     const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
       createContainer()
     const { Provider: LocalProviderB, useSharedModel: useSharedModelB } =
@@ -161,10 +162,11 @@ describe('createContainer', () => {
     expect(container.querySelector('#stateB')?.innerHTML).toEqual('1')
     expect(container.querySelector('#stateCA')?.innerHTML).toEqual('1')
     expect(container.querySelector('#stateCB')?.innerHTML).toEqual('1')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#buttonA')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#stateA')?.innerHTML).toEqual('2')
     expect(container.querySelector('#stateB')?.innerHTML).toEqual('1')
@@ -172,7 +174,7 @@ describe('createContainer', () => {
     expect(container.querySelector('#stateCB')?.innerHTML).toEqual('1')
   })
 
-  test('each container should be isolation', () => {
+  test('each container should be isolation', async () => {
     const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
       createContainer()
 
@@ -210,16 +212,17 @@ describe('createContainer', () => {
 
     expect(container.querySelector('#stateA1')?.innerHTML).toEqual('1')
     expect(container.querySelector('#stateA2')?.innerHTML).toEqual('1')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#buttonA1')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#stateA1')?.innerHTML).toEqual('2')
     expect(container.querySelector('#stateA2')?.innerHTML).toEqual('1')
   })
 
-  test('different containers share same redoxStore should has same state', () => {
+  test('different containers share same redoxStore should has same state', async () => {
     const redoxStore = redox()
     const { Provider: LocalProviderA, useSharedModel: useSharedModelA } =
       createContainer()
@@ -279,10 +282,11 @@ describe('createContainer', () => {
     expect(container.querySelector('#stateB')?.innerHTML).toEqual('1')
     expect(container.querySelector('#stateCA')?.innerHTML).toEqual('1')
     expect(container.querySelector('#stateCB')?.innerHTML).toEqual('1')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#buttonA')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#stateA')?.innerHTML).toEqual('2')
     expect(container.querySelector('#stateB')?.innerHTML).toEqual('2')
@@ -290,7 +294,7 @@ describe('createContainer', () => {
     expect(container.querySelector('#stateCB')?.innerHTML).toEqual('2')
   })
 
-  test('redoxStore can exist independently wether the component is unmount', () => {
+  test('redoxStore can exist independently wether the component is unmount', async () => {
     const { Provider: LocalProvider, useSharedModel } = createContainer()
 
     const SubApp = () => {
@@ -327,21 +331,23 @@ describe('createContainer', () => {
     const { container } = render(<App />)
 
     expect(container.querySelector('#state')?.innerHTML).toEqual('1')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#button')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#state')?.innerHTML).toEqual('2')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#toggle')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     redoxStore.getModel(countModel).add(1)
   })
 
-  test('container state should sync with redoxStore', () => {
+  test('container state should sync with redoxStore', async () => {
     const { Provider: LocalProvider, useSharedModel } = createContainer()
 
     const SubApp = () => {
@@ -377,29 +383,32 @@ describe('createContainer', () => {
     const { container } = render(<App />)
 
     expect(container.querySelector('#state')?.innerHTML).toEqual('1')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#button')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#state')?.innerHTML).toEqual('2')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#toggle')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#state')?.innerHTML).toEqual('1')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#toggle')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#state')?.innerHTML).toEqual('2')
   })
 })
 
 describe('createContainer/RedoxRoot', () => {
-  test('RedoxRoot should worked without props redoxStore', () => {
+  test('RedoxRoot should worked without props redoxStore', async () => {
     const App = () => {
       const [state, actions] = useRootModel(countModel)
       return (
@@ -419,10 +428,11 @@ describe('createContainer/RedoxRoot', () => {
     )
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#button')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#value')?.innerHTML).toEqual('2')
   })
@@ -462,9 +472,9 @@ describe('createContainer/useRootModel', () => {
         state: {
           value: 1,
         },
-        reducers: {
-          add(state, payload: number = 1) {
-            state.value += payload
+        actions: {
+          add(payload: number = 1) {
+            this.value += payload
           },
         },
       })
@@ -497,9 +507,9 @@ describe('createContainer/useRootModel', () => {
         state: {
           value: 1,
         },
-        reducers: {
-          add(state, payload: number = 1) {
-            state.value += payload
+        actions: {
+          add(payload: number = 1) {
+            this.value += payload
           },
         },
       })
@@ -532,9 +542,9 @@ describe('createContainer/useRootModel', () => {
         state: {
           value: 1,
         },
-        reducers: {
-          add(state, payload: number = 1) {
-            state.value += payload
+        actions: {
+          add(payload: number = 1) {
+            this.value += payload
           },
         },
       })
@@ -594,10 +604,11 @@ describe('createContainer/useRootModel', () => {
     expect(AppState).toBeTruthy()
     expect(AppState === AppState1).toBeTruthy()
     expect(AppState === SubAppState).toBeTruthy()
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#button')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('2')
@@ -641,10 +652,11 @@ describe('createContainer/useRootModel', () => {
     expect(AppActions).toBeTruthy()
     expect(AppActions === AppActions1).toBeTruthy()
     expect(AppActions === SubAppActions).toBeTruthy()
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#button')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
 
     expect(container.querySelector('#value')?.innerHTML).toEqual('2')
@@ -685,22 +697,25 @@ describe('createContainer/useRootModel', () => {
     )
 
     expect(container.querySelector('#state')?.innerHTML).toEqual('1')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#button')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#state')?.innerHTML).toEqual('2')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#toggle')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#state')?.innerHTML).toEqual(undefined)
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#toggle')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#state')?.innerHTML).toEqual('2')
   })
@@ -713,9 +728,9 @@ describe('createContainer/useRootStaticModel', () => {
         state: {
           value: 1,
         },
-        reducers: {
-          add(state, payload: number = 1) {
-            state.value += payload
+        actions: {
+          add(payload: number = 1) {
+            this.value += payload
           },
         },
       })
@@ -748,9 +763,9 @@ describe('createContainer/useRootStaticModel', () => {
         state: {
           value: 1,
         },
-        reducers: {
-          add(state, payload: number = 1) {
-            state.value += payload
+        actions: {
+          add(payload: number = 1) {
+            this.value += payload
           },
         },
       })
@@ -783,9 +798,9 @@ describe('createContainer/useRootStaticModel', () => {
         state: {
           value: 1,
         },
-        reducers: {
-          add(state, payload: number = 1) {
-            state.value += payload
+        actions: {
+          add(payload: number = 1) {
+            this.value += payload
           },
         },
       })
@@ -809,7 +824,7 @@ describe('createContainer/useRootStaticModel', () => {
     })
   })
 
-  test('should state keep same ref in one component', () => {
+  test('should state keep same ref in one component', async () => {
     let stateRef: any
     let stateRef1: any
 
@@ -846,10 +861,11 @@ describe('createContainer/useRootStaticModel', () => {
       </RedoxRoot>
     )
 
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#add')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
 
     expect(stateRef === stateRef1).toBeTruthy()

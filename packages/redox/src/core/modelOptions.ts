@@ -1,6 +1,5 @@
 import {
   ViewOptions,
-  ReducerOptions,
   ActionOptions,
   Deps,
   AnyModel,
@@ -8,14 +7,6 @@ import {
 } from './defineModel'
 import { warn } from '../warning'
 import { invariant, isPlainObject } from '../utils'
-
-type PickFirst<Arr extends unknown[]> = Arr extends [infer First, ...unknown[]]
-  ? First
-  : Arr extends []
-  ? never
-  : Arr extends [first?: infer First]
-  ? First | undefined
-  : never
 
 export type Optional<T> = T | undefined
 
@@ -49,20 +40,6 @@ export interface ActionWithPayload<T = any> {
 
 export type EmptyObject = { [X: string | number | symbol]: never }
 
-export type ReducerFn<Payload = never> = [Payload] extends [never]
-  ? () => Action<never>
-  : [Payload] extends [optional?: infer T]
-  ? (
-      payload?: Exclude<T, undefined>
-    ) => ActionWithPayload<Exclude<T, undefined>>
-  : (payload: Payload) => ActionWithPayload<Payload>
-
-export type GetDispatchFromReducer<State, Reducer> = Reducer extends () => any
-  ? ReducerFn
-  : Reducer extends (state: State, ...args: infer Args) => State | void
-  ? ReducerFn<PickFirst<Args>>
-  : never
-
 type FilterIndex<T> = {
   [P in keyof T as string extends P
     ? never
@@ -70,14 +47,6 @@ type FilterIndex<T> = {
     ? never
     : P]: T[P]
 }
-
-export type DispatchFunctionsByReducerOptions<S, R> = R extends undefined
-  ? {}
-  : FilterIndex<R> extends infer FilterR
-  ? {
-      [K in keyof FilterR]: GetDispatchFromReducer<S, FilterR[K]>
-    }
-  : never
 
 export type DispatchFunctionsByActionOptions<A> = A extends ActionOptions
   ? FilterIndex<A> extends infer FilterA
@@ -87,21 +56,26 @@ export type DispatchFunctionsByActionOptions<A> = A extends ActionOptions
     : {}
   : {}
 
-export type DispatchFuncions<S, R, A> = DispatchFunctionsByReducerOptions<
-  S,
-  R
-> &
-  DispatchFunctionsByActionOptions<A>
+export type DispatchFuncions<S, A> = DispatchFunctionsByActionOptions<A>
 
-export type Actions<Model> = Model extends DefineModel<
+export type GetState<Model> = Model extends DefineModel<
   any,
   infer S,
-  infer R,
+  any,
+  any,
+  any
+>
+  ? { [K in keyof S]: S[K] }
+  : never
+
+export type GetActions<Model> = Model extends DefineModel<
+  any,
+  infer S,
   infer A,
   any,
   any
 >
-  ? DispatchFuncions<S, R, A> & EmptyObject
+  ? DispatchFuncions<S, A> & EmptyObject
   : never
 
 export type Views<ViewOptions> = {
@@ -112,29 +86,26 @@ export type Views<ViewOptions> = {
 
 export type ActionThis<
   S extends State = {},
-  R extends ReducerOptions<any> = {},
   A extends ActionOptions = {},
   V extends ViewOptions = {},
   D extends Deps = {}
 > = {
   $state: S
-  $set: (s: S) => void
   $patch: (s: StateObject) => void
-  $modify: (modifier: (s: S) => void) => void
-} & Views<V> & {
+} & S &
+  Views<V> & {
     $dep: {
       [K in keyof D]: D[K] extends DefineModel<
         any,
         infer DS,
-        infer DR,
         infer DA,
         infer DV,
         infer DDeps
       >
-        ? ActionThis<DS, DR, DA, DV, DDeps>
+        ? ActionThis<DS, DA, DV, DDeps>
         : ActionThis
     }
-  } & DispatchFuncions<S, R, A>
+  } & DispatchFuncions<S, A>
 
 export type ViewThis<
   S extends State = {},
@@ -147,7 +118,6 @@ export type ViewThis<
       [K in keyof D]: D[K] extends DefineModel<
         any,
         infer DS,
-        any,
         any,
         infer DV,
         infer DDeps
@@ -204,7 +174,6 @@ export const validateModelOptions = (model: AnyModel): void => {
     typeof model.state !== 'bigint' && typeof model.state !== 'symbol',
     'state can not be BigInt or Symbol'
   )
-  validateProperty(model, 'reducers', 'object')
   validateProperty(model, 'actions', 'object')
   validateProperty(model, 'views', 'object')
 
@@ -213,6 +182,5 @@ export const validateModelOptions = (model: AnyModel): void => {
   checkConflictedKey('views', model, keys)
 
   keys.clear()
-  checkConflictedKey('reducers', model, keys)
   checkConflictedKey('actions', model, keys)
 }

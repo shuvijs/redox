@@ -1,4 +1,3 @@
-import { onViewInvalidate } from '../reactivity'
 import { AnyModel } from './defineModel'
 import { Views, EmptyObject } from './modelOptions'
 import { ModelInternal } from './model'
@@ -20,12 +19,11 @@ export interface ModelView<T extends (...args: any[]) => any = any> {
 
 export function createView<IModel extends AnyModel, TReturn>(
   instance: ModelInternal<IModel>,
-  selector: Selector<IModel, TReturn>,
-  onInvalidate?: onViewInvalidate
+  selector: Selector<IModel, TReturn>
 ): ModelView<Selector<IModel, TReturn>> {
   const view = instance.createView(function (this: any) {
     return selector(this)
-  }, onInvalidate)
+  })
 
   const res = function () {
     return view.value

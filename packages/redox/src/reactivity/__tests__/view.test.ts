@@ -1,10 +1,13 @@
-import { reactive, isReadonly } from '../reactive'
+import { draft } from '../draft'
 import { view } from '../view'
 import { effect } from '../effect'
 
+// should compute again when deps change
+// return different reference when deps change
+
 describe('reactivity/view', () => {
   it('should return updated value', () => {
-    const value = reactive<{ foo?: number }>({})
+    const value = draft<{ foo?: number }>({})
     const cValue = view(() => value.foo)
     expect(cValue.value).toBe(undefined)
     value.foo = 1
@@ -12,7 +15,7 @@ describe('reactivity/view', () => {
   })
 
   it('should compute lazily', () => {
-    const value = reactive<{ foo?: number }>({})
+    const value = draft<{ foo?: number }>({})
     const getter = jest.fn(() => value.foo)
     const cValue = view(getter)
 
@@ -39,8 +42,42 @@ describe('reactivity/view', () => {
     expect(getter).toHaveBeenCalledTimes(2)
   })
 
+  it.skip('should trigger parent object change when child props is modified', () => {
+    const value = draft<{ a: { b: number } }>({
+      a: {
+        b: 0,
+      },
+    })
+    const getter = jest.fn(() => value.a)
+    const cValue = view(getter)
+
+    // lazy
+    expect(getter).not.toHaveBeenCalled()
+
+    expect(cValue.value).toEqual({ b: 0 })
+    expect(getter).toHaveBeenCalledTimes(1)
+
+    // should not compute again
+    cValue.value
+    expect(getter).toHaveBeenCalledTimes(1)
+
+    // should not compute until needed
+    value.a.b = 1
+    expect(getter).toHaveBeenCalledTimes(1)
+
+    // now it should compute
+    expect(cValue.value).toEqual({
+      b: 1,
+    })
+    expect(getter).toHaveBeenCalledTimes(2)
+
+    // should not compute again
+    cValue.value
+    expect(getter).toHaveBeenCalledTimes(2)
+  })
+
   it('should trigger effect', () => {
-    const value = reactive<{ foo?: number }>({})
+    const value = draft<{ foo?: number }>({})
     const cValue = view(() => value.foo)
     let dummy
     effect(() => {
@@ -52,7 +89,7 @@ describe('reactivity/view', () => {
   })
 
   it('should work when chained', () => {
-    const value = reactive({ foo: 0 })
+    const value = draft({ foo: 0 })
     const c1 = view(() => value.foo)
     const c2 = view(() => c1.value + 1)
     expect(c2.value).toBe(1)
@@ -63,7 +100,7 @@ describe('reactivity/view', () => {
   })
 
   it('should trigger effect when chained', () => {
-    const value = reactive({ foo: 0 })
+    const value = draft({ foo: 0 })
     const getter1 = jest.fn(() => value.foo)
     const getter2 = jest.fn(() => {
       return c1.value + 1
@@ -86,7 +123,7 @@ describe('reactivity/view', () => {
   })
 
   it('should trigger effect when chained (mixed invocations)', () => {
-    const value = reactive({ foo: 0 })
+    const value = draft({ foo: 0 })
     const getter1 = jest.fn(() => value.foo)
     const getter2 = jest.fn(() => {
       return c1.value + 1
@@ -110,7 +147,7 @@ describe('reactivity/view', () => {
   })
 
   it('should no longer update when stopped', () => {
-    const value = reactive<{ foo?: number }>({})
+    const value = draft<{ foo?: number }>({})
     const cValue = view(() => value.foo)
     let dummy
     effect(() => {
@@ -126,7 +163,7 @@ describe('reactivity/view', () => {
 
   it('should invalidate before non-computed effects', () => {
     let plusOneValues: number[] = []
-    const value = reactive({ foo: 0 })
+    const value = draft({ foo: 0 })
     const plusOne = view(() => value.foo + 1)
     effect(() => {
       value.foo
@@ -138,14 +175,6 @@ describe('reactivity/view', () => {
     value.foo++
     // on the 2nd run, plusOne.value should have already updated.
     expect(plusOneValues).toMatchObject([1, 2, 2])
-  })
-
-  it('should be readonly', () => {
-    let a = { a: 1 }
-    const x = view(() => a)
-    expect(isReadonly(x)).toBe(true)
-    expect(isReadonly(x.value)).toBe(false)
-    expect(isReadonly(x.value.a)).toBe(false)
   })
 
   it('should expose value when stopped', () => {

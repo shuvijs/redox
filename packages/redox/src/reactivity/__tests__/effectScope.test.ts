@@ -1,6 +1,5 @@
-import { reactive } from '../reactive'
 import { effect } from '../effect'
-import { view } from '../view'
+import { draft } from '../draft'
 import { EffectScope, onScopeDispose, getCurrentScope } from '../effectScope'
 
 let oldEnv: any
@@ -32,7 +31,7 @@ describe('reactivity/effect/scope', () => {
     const scope = new EffectScope()
     scope.run(() => {
       let dummy
-      const counter = reactive({ num: 0 })
+      const counter = draft({ num: 0 })
       effect(() => (dummy = counter.num))
 
       expect(dummy).toBe(0)
@@ -43,7 +42,7 @@ describe('reactivity/effect/scope', () => {
 
   it('stop', () => {
     let dummy, doubled
-    const counter = reactive({ num: 0 })
+    const counter = draft({ num: 0 })
 
     const scope = new EffectScope()
     scope.run(() => {
@@ -67,7 +66,7 @@ describe('reactivity/effect/scope', () => {
 
   it('should collect nested scope', () => {
     let dummy, doubled
-    const counter = reactive({ num: 0 })
+    const counter = draft({ num: 0 })
 
     const scope = new EffectScope()
     scope.run(() => {
@@ -97,7 +96,7 @@ describe('reactivity/effect/scope', () => {
 
   it('nested scope can be escaped', () => {
     let dummy, doubled
-    const counter = reactive({ num: 0 })
+    const counter = draft({ num: 0 })
 
     const scope = new EffectScope()
     scope.run(() => {
@@ -126,7 +125,7 @@ describe('reactivity/effect/scope', () => {
 
   it('able to run the scope', () => {
     let dummy, doubled
-    const counter = reactive({ num: 0 })
+    const counter = draft({ num: 0 })
 
     const scope = new EffectScope()
     scope.run(() => {
@@ -150,7 +149,7 @@ describe('reactivity/effect/scope', () => {
 
   it('can not run an inactive scope', () => {
     let dummy, doubled
-    const counter = reactive({ num: 0 })
+    const counter = draft({ num: 0 })
 
     const scope = new EffectScope()
     scope.run(() => {

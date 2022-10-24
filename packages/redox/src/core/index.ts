@@ -1,5 +1,6 @@
 export * from './modelOptions'
 export * from './defineModel'
+export * from './scheduler'
 export { ModelPublicInstance } from './modelPublicInstance'
 export { Selector, ModelSnapshot, ModelView } from './modelViews'
 export * from './model'

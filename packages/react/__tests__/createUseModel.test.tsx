@@ -10,6 +10,7 @@ import {
   AnyModel,
   Selector,
   ModelSnapshot,
+  nextTick,
 } from '@shuvi/redox'
 import { createBatchManager } from '../src/batchManager'
 import { IUseModel, IUseStaticModel } from '../src/types'
@@ -49,7 +50,7 @@ beforeEach(() => {
 afterEach(() => {})
 
 describe('createUseModel', () => {
-  test('could access state and view', async () => {
+  test('could access state and view', () => {
     const model = defineModel({
       name: 'model',
       state: { value: 1 },
@@ -93,10 +94,11 @@ describe('createUseModel', () => {
 
       const { container } = render(<App />)
       expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#button')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await nextTick()
       })
       expect(container.querySelector('#value')?.innerHTML).toEqual('2')
     })
@@ -107,9 +109,9 @@ describe('createUseModel', () => {
         state: {
           value: 1,
         },
-        reducers: {
-          add(state, payload: number = 1) {
-            state.value += payload
+        actions: {
+          add(payload: number = 1) {
+            this.value += payload
           },
         },
       })
@@ -128,10 +130,11 @@ describe('createUseModel', () => {
 
       const { container } = render(<App />)
       expect(container.querySelector('#value')?.innerHTML).toEqual('1')
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#button')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await nextTick()
       })
       expect(container.querySelector('#value')?.innerHTML).toEqual('2')
     })
@@ -172,12 +175,10 @@ describe('createUseModel', () => {
         {
           name: 'newModel',
           state: { value: 0 },
-          reducers: {
-            add(state, payload: number = 1) {
-              state.value += payload
-            },
-          },
           actions: {
+            add(payload: number = 1) {
+              this.value += payload
+            },
             async asyncAdd() {
               await this.$dep.countModel.asyncAdd(1)
               this.add(this.$dep.countModel.$state.value)
@@ -223,10 +224,11 @@ describe('createUseModel', () => {
 
       expect(container.querySelector('#v')?.innerHTML).toEqual('0')
       expect(container.querySelector('#t')?.innerHTML).toEqual('2')
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#button')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await nextTick()
       })
       await act(async () => {
         jest.runAllTimers()
@@ -236,20 +238,21 @@ describe('createUseModel', () => {
     })
   })
 
-  test('should only consume model once', () => {
+  test('should only consume model once', async () => {
     const App = () => {
       const [state, setState] = React.useState(1)
-      const [model, actions] = useTestModel({
-        state: {
-          count: state,
-        },
-        actions: {
-          add() {
-            // @ts-ignore
-            this.$modify((s) => (s.count += 1))
+      const [model, actions] = useTestModel(
+        defineModel({
+          state: {
+            count: state,
           },
-        },
-      })
+          actions: {
+            add() {
+              this.count += 1
+            },
+          },
+        })
+      )
 
       return (
         <>
@@ -265,16 +268,17 @@ describe('createUseModel', () => {
     const { container } = render(<App />)
 
     expect(container.querySelector('#count')!.textContent).toEqual('1')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#state')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(container.querySelector('#state')!.textContent).toEqual('2')
     expect(container.querySelector('#count')!.textContent).toEqual('1')
   })
 
-  test('should only consume model once with selector', () => {
+  test('should only consume model once with selector', async () => {
     const fn = jest.fn()
     const countSelector = (s: any) => {
       fn()
@@ -283,17 +287,16 @@ describe('createUseModel', () => {
     const App = () => {
       const [state, setState] = React.useState(1)
       const [count, actions] = useTestModel(
-        {
+        defineModel({
           state: {
             count: state,
           },
           actions: {
             add() {
-              // @ts-ignore
-              this.$modify((s) => (s.count += 1))
+              this.count += 1
             },
           },
-        },
+        }),
         countSelector
       )
 
@@ -312,10 +315,11 @@ describe('createUseModel', () => {
 
     expect(fn).toHaveBeenCalledTimes(1)
     expect(container.querySelector('#count')!.textContent).toEqual('1')
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#state')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
     expect(fn).toHaveBeenCalledTimes(1)
     expect(container.querySelector('#state')!.textContent).toEqual('2')
@@ -329,13 +333,13 @@ describe('createUseModel', () => {
       },
       actions: {
         add() {
-          this.$modify((s) => (s.count += 1))
+          this.count += 1
         },
       },
     })
 
     describe('no dependencies params', () => {
-      test('global selector', () => {
+      test('global selector', async () => {
         const fn = jest.fn()
         const countSelector = (s: ModelSnapshot<typeof countModel>) => {
           fn()
@@ -360,22 +364,24 @@ describe('createUseModel', () => {
 
         expect(fn).toHaveBeenCalledTimes(1)
         expect(container.querySelector('#count')!.textContent).toEqual('1')
-        act(() => {
+        await act(async () => {
           container
             .querySelector('#state')
             ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+          await nextTick()
         })
         expect(fn).toHaveBeenCalledTimes(1)
-        act(() => {
+        await act(async () => {
           container
             .querySelector('#count')
             ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+          await nextTick()
         })
         expect(fn).toHaveBeenCalledTimes(2)
         expect(container.querySelector('#count')!.textContent).toEqual('2')
       })
 
-      test('inline selector', () => {
+      test('inline selector', async () => {
         const fn = jest.fn()
         const App = () => {
           const [state, setState] = React.useState(0)
@@ -399,14 +405,14 @@ describe('createUseModel', () => {
 
         expect(fn).toHaveBeenCalledTimes(1)
         expect(container.querySelector('#count')!.textContent).toEqual('1')
-        act(() => {
+        await act(async () => {
           container
             .querySelector('#state')
             ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
         })
         expect(fn).toHaveBeenCalledTimes(2)
         expect(container.querySelector('#count')!.textContent).toEqual('1')
-        act(() => {
+        await act(async () => {
           container
             .querySelector('#count')
             ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -443,13 +449,13 @@ describe('createUseModel', () => {
       const { container } = render(<App />)
 
       expect(fn).toHaveBeenCalledTimes(1)
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#state')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
       })
       expect(fn).toHaveBeenCalledTimes(1)
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#count')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -492,16 +498,18 @@ describe('createUseModel', () => {
 
       expect(fn).toHaveBeenCalledTimes(1)
       expect(container.querySelector('#value')!.textContent).toEqual('1')
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#btn1')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await nextTick()
       })
       expect(fn).toHaveBeenCalledTimes(1)
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#btn2')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await nextTick()
       })
       expect(fn).toHaveBeenCalledTimes(2)
       expect(container.querySelector('#value')!.textContent).toEqual('2')
@@ -543,10 +551,11 @@ describe('createUseModel', () => {
       expect(selector1).toHaveBeenCalledTimes(1)
       expect(selector2).toHaveBeenCalledTimes(0)
       expect(container.querySelector('#value')?.textContent).toEqual('1')
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#count')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await nextTick()
       })
       // cache worked, use countSelector1 cache, not computed
       expect(selector1).toHaveBeenCalledTimes(1)
@@ -554,7 +563,7 @@ describe('createUseModel', () => {
       expect(container.querySelector('#value')?.innerHTML).toEqual('1')
 
       // drop countSelector1 cache,  countSelector2 run and cache countSelector2
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#switch')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -562,7 +571,7 @@ describe('createUseModel', () => {
       expect(selector1).toHaveBeenCalledTimes(1)
       expect(selector2).toHaveBeenCalledTimes(1)
       expect(container.querySelector('#value')?.textContent).toEqual('2')
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#count')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -572,18 +581,20 @@ describe('createUseModel', () => {
       expect(container.querySelector('#value')?.textContent).toEqual('2')
 
       // drop countSelector2 cache,  countSelector1 run and cache countSelector1
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#switch')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await nextTick()
       })
       expect(selector1).toHaveBeenCalledTimes(2)
       expect(selector2).toHaveBeenCalledTimes(1)
       expect(container.querySelector('#value')?.textContent).toEqual('1')
-      act(() => {
+      await act(async () => {
         container
           .querySelector('#count')
           ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+        await nextTick()
       })
       expect(selector1).toHaveBeenCalledTimes(2)
       expect(selector2).toHaveBeenCalledTimes(1)
@@ -604,7 +615,7 @@ describe('createUseModel', () => {
     })
   })
 
-  test('could trigger component render outside of component', () => {
+  test('could trigger component render outside of component', async () => {
     let AppRenderCount = 0
 
     function App() {
@@ -621,9 +632,10 @@ describe('createUseModel', () => {
     render(<App />)
     expect(AppRenderCount).toBe(1)
 
-    act(() => {
+    await act(async () => {
       const countStore = redoxStore.getModel(countModel)
       countStore.add()
+      await nextTick()
     })
 
     expect(AppRenderCount).toBe(2)
@@ -644,12 +656,16 @@ describe('createUseModel', () => {
 
     const { container } = render(<App />)
 
+    await act(async () => {
+      await nextTick()
+    })
+
     expect(container.querySelector('#value')!.textContent).toEqual('2')
   })
 })
 
 describe('createUseStaticModel', () => {
-  test('could access state and view', async () => {
+  test('could access state and view', () => {
     const model = defineModel({
       name: 'model',
       state: { value: 1 },
@@ -676,7 +692,7 @@ describe('createUseStaticModel', () => {
     expect(container.querySelector('#t')?.innerHTML).toEqual('2')
   })
 
-  test('state updated, but component should not rendered', () => {
+  test('state updated, but component should not rendered', async () => {
     let renderTime = 0
     let currentCount = 0
 
@@ -711,16 +727,17 @@ describe('createUseStaticModel', () => {
     expect(renderTime).toBe(1)
     expect(currentCount).toBe(1)
 
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#add')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await nextTick()
     })
 
     expect(renderTime).toBe(1)
     expect(currentCount).toBe(1)
 
-    act(() => {
+    await act(async () => {
       container
         .querySelector('#updateCount')
         ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -728,7 +745,7 @@ describe('createUseStaticModel', () => {
     expect(currentCount).toBe(2)
   })
 
-  test('should render with newest state even update state during render', async () => {
+  test('should render with newest state even update state during render', () => {
     let firstRender = true
     const App = () => {
       const [state, actions] = useTestStaticModel(countModel)
@@ -742,7 +759,6 @@ describe('createUseStaticModel', () => {
     }
 
     const { container } = render(<App />)
-
     expect(container.querySelector('#value')!.textContent).toEqual('2')
   })
 })

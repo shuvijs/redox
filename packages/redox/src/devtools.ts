@@ -7,7 +7,7 @@ const reduxDevTools: Plugin = function () {
   let id = 0
   const unsubscribeSet = new Set<() => void>()
   return {
-    onModelInstanced(instance) {
+    onModelInstance(instance) {
       if (
         typeof window !== 'undefined' &&
         (window as any).__REDUX_DEVTOOLS_EXTENSION__
