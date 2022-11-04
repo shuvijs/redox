@@ -234,7 +234,7 @@ function updateDeps(pkg, depType, version) {
 }
 
 async function publishPackage(pkgRoot, version) {
-  const pkgName = getPkgName(pkgName)
+  const pkgName = getPkgName(pkgRoot)
 
   if (skippedPackages.includes(pkgName)) {
     return
