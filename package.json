@@ -73,5 +73,6 @@
     "extends": [
       "@commitlint/config-conventional"
     ]
-  }
+  },
+  "version": "0.1.0-rc.0"
 }

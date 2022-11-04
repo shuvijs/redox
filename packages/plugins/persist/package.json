@@ -49,5 +49,6 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/shuvijs/redox.git"
-  }
+  },
+  "version": "0.1.0-rc.0"
 }
