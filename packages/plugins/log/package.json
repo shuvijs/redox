@@ -1,6 +1,5 @@
 {
   "name": "@shuvi/redox-log",
-  "version": "0.0.7",
   "description": "A Redux Framework",
   "homepage": "https://shuvijs.github.io/shuvijs.org",
   "sideEffects": false,
@@ -28,10 +27,12 @@
   "engines": {
     "node": ">=10"
   },
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
+    "@shuvi/redox": "workspace:*"
   },
-	"devDependencies": {
-    "@shuvi/redox": "0.0.7"
+  "peerDependencies": {
+    "@shuvi/redox": "workspace:*"
   },
   "authors": [],
   "bugs": {
