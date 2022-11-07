@@ -33,11 +33,9 @@ import { defineModel } from '@shuvi/redox'
 const count = defineModel({
   name: 'count',
   state: { count: 0 },
-  reducers: {
-    increment: (state, payload: number) => {
-      return {
-        value: state.value + payload,
-      }
+  actions: {
+    add(n: number) {
+      this.count += n
     },
   },
 })
@@ -54,18 +52,12 @@ const filters = defineModel({
     status: 'todo',
     search: '',
   },
-  reducers: {
-    updateStatus: (state, status: 'todo' | 'doing' | 'done') => {
-      return {
-        ...state,
-        status,
-      }
+  actions: {
+    updateStatus(state, status: 'todo' | 'doing' | 'done') {
+      this.status = status
     },
-    updateSearch: (state, search: string) => {
-      return {
-        ...state,
-        search,
-      }
+    updateSearch(state, search: string) {
+      this.search = search
     },
   },
 })
@@ -76,31 +68,20 @@ const todo = defineModel(
     state: {
       todoList: [],
     },
-    reducers: {
-      // update list by returning new value
-      add: (state, todo) => {
-        return {
-          ...state,
-          todoList: [...state.todoList, todo],
-        }
-      },
-      //  update by modifing state
-      remove: (state, id) => {
-        const index = state.todoList.findIndex((todo) => todo.id === id)
-        if (index >= 0) {
-          state.todoList.splice(index, 1)
-        }
-      },
-    },
     actions: {
-      // asynchronous function
+      add(state, todo) {
+        this.todoList.push(todo)
+      },
+      remove(state, id) {
+        const index = this.todoList.findIndex((todo) => todo.id === id)
+        if (index >= 0) {
+          this.todoList.splice(index, 1)
+        }
+      },
       async fetchTodos() {
         const resp = await fetch('https://example.com/todos')
         const data = await response.json()
-        // predefined helper of reducer
-        this.$set({
-          todoList: data,
-        })
+        this.todoList = data
       },
     },
     views: {
@@ -147,13 +128,12 @@ function App() {
 
 #### `options [object]`
 
-| Name        | Type                                                                    | Description                                                                                                                                                                        |
-| ----------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `name?`     | `string`                                                                | `optional` for **useModel**, `required` for **useRootModel**, **useSharedModel** and **useRootStaticModel**. Since `name` is treated as the key of `cache`, it should be `unique`. |
-| `state`     | `object`, `string`, `number`, `boolean`, `array`, `undefined` or `null` | `required`. It could be any primitive type except `bigint` and `symbol`.                                                                                                           |
-| `reducers?` | `object`                                                                | `optional`. Define your reducers here, the corresponding actions will be `generated automatically`. [immer](https://github.com/immerjs/immer) support out of the box.              |
-| `actions?`  | `object`                                                                | `optional`. Normally user defined actions have more complex logic than actions of reducers, like fetching data then dispatch actions.                                              |
-| `views?`    | `object`                                                                | `optional`. Functions in views have `cache` mechanism. It holds the returned value of functions. Upadte the `cache` if the state of dependencies has changed.                      |
+| Name       | Type                                                                    | Description                                                                                                                                                                        |
+| ---------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name?`    | `string`                                                                | `optional` for **useModel**, `required` for **useRootModel**, **useSharedModel** and **useRootStaticModel**. Since `name` is treated as the key of `cache`, it should be `unique`. |
+| `state`    | `object`, `string`, `number`, `boolean`, `array`, `undefined` or `null` | `required`. It could be any primitive type except `bigint` and `symbol`.                                                                                                           |
+| `actions?` | `object`                                                                | `optional`. Normally user defined actions have more complex logic than actions of reducers, like fetching data then dispatch actions.                                              |
+| `views?`   | `object`                                                                | `optional`. Functions in views have `cache` mechanism. It holds the returned value of functions. Upadte the `cache` if the state of dependencies has changed.                      |
 
 #### `depends? [array]`
 
@@ -179,9 +159,7 @@ const count = defineModel({
     async getUserInfo() {
       const response = await fetch(`https://example.com/user/detail`)
       const data = await response.json()
-      this.$set({
-        user: data,
-      })
+      this.user = data
     },
   },
 })
