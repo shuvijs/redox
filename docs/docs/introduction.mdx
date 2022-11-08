@@ -1,0 +1,59 @@
+---
+id: introduction
+title: Introduction
+slug: /
+pagination_next: null
+hide_table_of_contents: true
+custom_edit_url: null
+---
+
+Welcome to the Shuvi.js documentation!
+
+Shuvi.js is a meta framework that helps you build all kinds of application in a universal style.
+
+It means to replace Next.js(for Server-Side Rendering Application), Create React App(for Client Application) and Nuxt.js(for Vue.js application).
+
+Hope you like Shuvi.js.
+
+:::info
+
+Vue.js support is still in the plan.
+
+:::
+
+## Getting Started
+
+```sh
+npm init shuvi@latest
+```
+
+import { SimpleDocCardList } from "@site/src/components/SimpleDocCardList";
+
+<SimpleDocCardList
+  items={[
+    {
+      title: "📄️ Quick Start",
+      url: "/docs/tutorials",
+      description:
+        "Spend your first few minutes with Shuvi.js here and let us introduce some of the core features as quickly as possible. After this you can go explore the docs or dive deeper with the other tutorials. We'll build a little markdown blog with data loading, actions, form validation, redirects, and more.",
+    },
+    {
+      title: "📄️ Guides",
+      url: "/docs/guides",
+      description:
+        "Guides take you through the steps required to solve a specific problem. You'll learn how to solve most problems by a step-by-step guide.",
+    },
+    {
+      title: "📄️ Reference",
+      url: "/docs/reference",
+      description:
+        "Shuvi.js has a handful of conventions to make web application development a breeze. You'll spend some time in this document when you're first learning Shuvi.js, but probably won't need it much after you get your feet wet.",
+    },
+    {
+      title: "📄️ API",
+      url: "/docs/api",
+      description:
+        "This is probably the doc page you'll visit the most. It's got all of the API that you'll use day-to-day in your app.",
+    },
+  ]}
+/>

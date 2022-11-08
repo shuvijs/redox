@@ -1,0 +1,81 @@
+{
+  "/__docusaurus/debug-34a": {
+    "__comp": "__comp---theme-debug-config-23-a-2ff",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-4-bc-b61"
+    }
+  },
+  "/__docusaurus/debug/config-ca3": {
+    "__comp": "__comp---theme-debug-config-23-a-2ff",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-4-bc-b61"
+    }
+  },
+  "/__docusaurus/debug/content-5b2": {
+    "__comp": "__comp---theme-debug-contentba-8-ce7",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-4-bc-b61"
+    },
+    "allContent": "allContent---docusaurus-debug-content-246-9aa"
+  },
+  "/__docusaurus/debug/globalData-97a": {
+    "__comp": "__comp---theme-debug-global-dataede-0fa",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-4-bc-b61"
+    }
+  },
+  "/__docusaurus/debug/metadata-9d7": {
+    "__comp": "__comp---theme-debug-site-metadata-68-e-3d4",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-4-bc-b61"
+    }
+  },
+  "/__docusaurus/debug/registry-ded": {
+    "__comp": "__comp---theme-debug-registry-679-501",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-4-bc-b61"
+    }
+  },
+  "/__docusaurus/debug/routes-a8b": {
+    "__comp": "__comp---theme-debug-routes-946-699",
+    "__context": {
+      "plugin": "plugin---docusaurus-debug-4-bc-b61"
+    }
+  },
+  "/search-3f7": {
+    "__comp": "__comp---theme-search-page-1-a-4-d6f",
+    "__context": {
+      "plugin": "plugin---searchc-6-a-be0"
+    }
+  },
+  "/docs-2a1": {
+    "__comp": "__comp---theme-doc-page-1-be-9be",
+    "__context": {
+      "plugin": "plugin---docs-779-5c4"
+    },
+    "versionMetadata": "versionMetadata---docs-935-398"
+  },
+  "/docs/-863": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-972-23e"
+  },
+  "/docs/api/-df4": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-api-5-e-8-853"
+  },
+  "/docs/guides/-a30": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-guidesd-03-678"
+  },
+  "/docs/reference/-684": {
+    "__comp": "__comp---theme-doc-item-178-a40",
+    "content": "content---docs-reference-1-a-3-a30"
+  },
+  "/-230": {
+    "__comp": "__comp---site-src-pages-index-jsc-4-f-f99",
+    "__context": {
+      "plugin": "plugin---138-be1"
+    },
+    "config": "config---5-e-9-4f3"
+  }
+}
